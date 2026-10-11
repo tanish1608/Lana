@@ -36,7 +36,7 @@ function approve(actionId: string, payload: unknown, expiresInMs = 60_000) {
 before(async () => {
   const dir = mkdtempSync(join(tmpdir(), 'fwm-relay-'));
   server = spawn(process.execPath, ['src/server.ts'], {
-    env: { ...process.env, DIAL_API_KEY: '', KEEWANO_API_KEY: '', KEEWANO_PAT: '', MANUAL_ESTIMATES_SECONDS: 'month_review=900,bill_split=999', PORT: String(PORT), RELAY_DEV: '1', RELAY_DB: join(dir, 'relay.db'), PAIRING_CODE: '424242', PAIRED_PHONES: `${PHONE}=user_ashwin` },
+    env: { ...process.env, DIAL_API_KEY: '', DIAL_SELF_HOSTED_SECRET: '', KEEWANO_API_KEY: '', KEEWANO_PAT: '', MANUAL_ESTIMATES_SECONDS: 'month_review=900,bill_split=999', PORT: String(PORT), RELAY_DEV: '1', RELAY_DB: join(dir, 'relay.db'), PAIRING_CODE: '424242', PAIRED_PHONES: `${PHONE}=user_ashwin` },
     stdio: 'ignore',
   });
   for (let i = 0; i < 50; i++) {
@@ -126,4 +126,66 @@ test('browser clients get CORS headers and the stopwatch page loads', async () =
   const page = await fetch(`${BASE}/timer`);
   assert.equal(page.status, 200);
   assert.match(await page.text(), /Lana stopwatch/);
+});
+
+/** Plays Dial's side of a Self-Hosted call: frames in, the agent's response frames out. */
+async function dialCall(callId: string, from: string) {
+  const ws = new WebSocket(`ws://localhost:${PORT}/dial/voice/${callId}`);
+  const frames: any[] = [];
+  ws.onmessage = (e) => frames.push(JSON.parse(String(e.data)));
+  await new Promise((resolve, reject) => { ws.onopen = resolve; ws.onerror = reject; });
+  ws.send(JSON.stringify({ type: 'call_connected', call_id: callId, direction: 'inbound', from, to: '+13144649040', instruction: null, language: 'en-US' }));
+  const until = async (pred: () => boolean) => { for (let i = 0; i < 100 && !pred(); i++) await new Promise((r) => setTimeout(r, 50)); };
+  return { ws, frames, until };
+}
+
+test('a call turn is answered by the paired phone and spoken back, never sent as SMS', async () => {
+  const { ws, frames, until } = await dialCall('call_test1', PHONE);
+  ws.send(JSON.stringify({ type: 'response_required', response_id: 0, transcript: [] }));
+  await until(() => frames.length >= 1);
+  assert.match(frames[0].content, /this is Lana/);
+
+  ws.send(JSON.stringify({ type: 'ping_pong', timestamp: 1 }));
+  ws.send(JSON.stringify({ type: 'response_required', response_id: 1, transcript: [{ role: 'agent', content: frames[0].content }, { role: 'user', content: 'How did September go?' }] }));
+  const next = await call('GET', '/v1/jobs/next?wait=5');
+  assert.equal(next.body.envelope.text, 'How did September go?');
+  const posted = await call('POST', `/v1/jobs/${next.body.job_id}/result`, { reply_text: '2026-09: income $4,800.00, expenses $3,150.00. Data mode: fixture.' });
+  assert.equal(posted.body.delivered, 'call');
+  await until(() => frames.some((f) => f.response_id === 1 && f.content_complete));
+  assert.deepEqual(frames.find((f) => f.type === 'ping_pong'), { type: 'ping_pong', timestamp: 1 });
+  const turn = frames.filter((f) => f.response_id === 1);
+  assert.equal(turn.at(-1).content, 'September 2026: income $4,800, expenses $3,150.');
+
+  const { forCall } = await import('../src/voice.ts');
+  // The v1 app's real reply to "Where is my money going?", as texted back at 3:11 PM.
+  const long = '2026-09: income $4,800.00, expenses $3,150.00, savings $650.00, investments $400.00, retained cash $600.00. Net worth: $11,550.00. Data mode: fixture. Categories: Rent: $1,600.00; Groceries: $500.00; Dining: $300.00; Bills and subscriptions: $250.00; Other: $250.00; Transport: $250.00. Accounts: Demo Bank checking: $3,400.00; Demo Card credit_card: $900.00.';
+  assert.equal(forCall(long), 'September 2026: income $4,800, expenses $3,150, savings $650, investments $400, retained cash $600. Net worth: $11,550. The rest is in Lana.');
+  assert.equal(forCall('Saves $150.00/month.'), 'Saves $150 a month.');
+
+  ws.send(JSON.stringify({ type: 'response_required', response_id: 2, transcript: [{ role: 'user', content: '(unintelligible audio)' }] }));
+  await until(() => frames.some((f) => f.response_id === 2));
+  assert.match(frames.find((f) => f.response_id === 2).content, /didn't catch that/);
+  assert.equal((await call('GET', '/v1/jobs/next?wait=0')).status, 204, 'noise never becomes a phone job');
+  ws.close();
+});
+
+test('a turn replayed after a reconnect gets an answer and does not crash the relay', async () => {
+  for (let i = 0; i < 2; i++) {
+    const { ws, frames, until } = await dialCall('call_replay', PHONE);
+    ws.send(JSON.stringify({ type: 'response_required', response_id: 3, transcript: [{ role: 'user', content: 'Where is my money going?' }] }));
+    const next = await call('GET', '/v1/jobs/next?wait=5');
+    await call('POST', `/v1/jobs/${next.body.job_id}/result`, { reply_text: 'Net worth: $11,550.00.' });
+    await until(() => frames.some((f) => f.content_complete));
+    assert.equal(frames.find((f) => f.content_complete).content, 'Net worth: $11,550.');
+    ws.close();
+  }
+  assert.equal((await fetch(`${BASE}/health`)).status, 200);
+});
+
+test('an unpaired caller is told to pair and the call ends', async () => {
+  const { ws, frames, until } = await dialCall('call_test2', '+15550009999');
+  ws.send(JSON.stringify({ type: 'response_required', response_id: 0, transcript: [] }));
+  await until(() => frames.length >= 1);
+  assert.equal(frames[0].end_call, true);
+  ws.close();
 });

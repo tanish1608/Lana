@@ -7,6 +7,7 @@ import { db, now, id, demoNow, advanceClock } from './store.ts';
 import { dial, FROM, send, startStream, catchUp, verifyWebhook, type InboundMessage } from './dial.ts';
 import { swapMemory, logTiming, keewanoReceipt, toReceipt, manualEstimates, WORKFLOWS } from './keewano.ts';
 import { canonical } from './canonical.ts';
+import { attachVoice, answerCall } from './voice.ts';
 
 const PORT = Number(process.env.PORT || 8787);
 const PUBLIC_BASE = process.env.PUBLIC_BASE_URL || `http://localhost:${PORT}`;
@@ -20,6 +21,14 @@ const SIM_PHONE_ID = process.env.SIM_PHONE_ID || '';
 // ---------- inbound ----------
 
 const waiters: ((jobId: string) => void)[] = [];
+const polling = new Map<string, number>(); // open long polls per paired user
+
+/** A phone counts as open while it holds a long poll or polled in the last FOREGROUND_MS. */
+function phoneOpen(user: string) {
+  if (polling.get(user)) return true;
+  const dev = db.prepare('SELECT MAX(last_seen) AS t FROM devices WHERE paired_user_id = ?').get(user) as any;
+  return Boolean(dev?.t && Date.now() - dev.t < FOREGROUND_MS);
+}
 
 async function onInbound(m: InboundMessage) {
   if (m.from === FROM) return;
@@ -59,8 +68,7 @@ async function onInbound(m: InboundMessage) {
 async function nudgeIfIdle(jobId: string, user: string, to: string) {
   const job = db.prepare('SELECT state, nudged FROM jobs WHERE job_id = ?').get(jobId) as any;
   if (!job || job.state !== 'queued' || job.nudged) return;
-  const dev = db.prepare('SELECT MAX(last_seen) AS t FROM devices WHERE paired_user_id = ?').get(user) as any;
-  if (dev?.t && Date.now() - dev.t < FOREGROUND_MS) return;
+  if (phoneOpen(user)) return;
   db.prepare('UPDATE jobs SET nudged = 1, updated_at = ? WHERE job_id = ?').run(now(), jobId);
   await send({ key: `nudge:${jobId}`, to, body: `Got it. Open Lana to finish: lana://job/${jobId}` });
 }
@@ -179,10 +187,12 @@ const routes: [string, RegExp, (req: IncomingMessage, res: ServerResponse, m: Re
     const wait = Math.min(Number(new URL(req.url!, 'http://x').searchParams.get('wait') || 25), 30) * 1000;
     let next = claimNext(dev.paired_user_id);
     if (!next) {
+      polling.set(dev.paired_user_id, (polling.get(dev.paired_user_id) || 0) + 1);
       await new Promise<void>((resolve) => {
         const t = setTimeout(resolve, wait);
         waiters.push(() => { clearTimeout(t); resolve(); });
       });
+      polling.set(dev.paired_user_id, (polling.get(dev.paired_user_id) || 1) - 1);
       next = claimNext(dev.paired_user_id);
     }
     if (!next) { res.writeHead(204); res.end(); return; }
@@ -207,6 +217,7 @@ const routes: [string, RegExp, (req: IncomingMessage, res: ServerResponse, m: Re
     if (!body.reply_text) return err(res, 400, 'INVALID_ARGUMENTS', 'reply_text is required.');
     const card = body.card?.base64 ? { data: new Uint8Array(Buffer.from(body.card.base64, 'base64')), contentType: body.card.content_type || 'image/png' } : undefined;
     db.prepare(`UPDATE jobs SET state = 'answered', result_id = ?, updated_at = ? WHERE job_id = ?`).run(body.provenance?.result_id || null, now(), job.job_id);
+    if (answerCall(job.job_id, body.reply_text)) return json(res, 200, { job_id: job.job_id, delivered: 'call' });
     const out = await send({ key: `reply:${job.job_id}`, to: job.reply_to, body: body.reply_text, card });
     json(res, 200, { job_id: job.job_id, outbox: out });
   }, true],
@@ -299,7 +310,7 @@ const routes: [string, RegExp, (req: IncomingMessage, res: ServerResponse, m: Re
   }, false],
 ];
 
-createServer(async (req, res) => {
+const server = createServer(async (req, res) => {
   // Browser clients (Ashwin's web preview, the stopwatch) use bearer tokens, not cookies, so any origin is fine.
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type, ngrok-skip-browser-warning');
@@ -323,6 +334,12 @@ createServer(async (req, res) => {
   console.log(`FWM relay on :${PORT}  dial=${dial ? FROM : 'off'}  pairing code=${PAIRING_CODE}  paired phones=${Object.keys(PAIRED_PHONES).length}`);
   catchUp(onInbound).catch((e) => console.error('[dial] catch-up failed:', e.message));
   startStream(onInbound);
+});
+
+attachVoice(server, {
+  pairedUser: (phone) => PAIRED_PHONES[phone],
+  phoneOpen,
+  enqueued: (jobId) => waiters.splice(0).forEach((w) => w(jobId)),
 });
 
 export { onInbound };
