@@ -143,7 +143,13 @@ test('a call turn is answered by the paired phone and spoken back, never sent as
   const { ws, frames, until } = await dialCall('call_test1', PHONE);
   ws.send(JSON.stringify({ type: 'response_required', response_id: 0, transcript: [] }));
   await until(() => frames.length >= 1);
-  assert.match(frames[0].content, /this is Lana/);
+  assert.deepEqual(frames[0], { type: 'interrupt', content: 'Hi, this is Lana. Ask me about your money.', content_complete: true });
+  await until(() => frames.length >= 2);
+  assert.match(frames[1].content, /this is Lana/);
+  ws.send(JSON.stringify({ type: 'response_required', response_id: 9, transcript: [{ role: 'user', content: 'Hello?' }] }));
+  await until(() => frames.some((f) => f.response_id === 9));
+  assert.match(frames.find((f) => f.response_id === 9).content, /this is Lana/);
+  assert.equal((await call('GET', '/v1/jobs/next?wait=0')).status, 204, 'a hello never becomes a phone job');
 
   ws.send(JSON.stringify({ type: 'ping_pong', timestamp: 1 }));
   ws.send(JSON.stringify({ type: 'response_required', response_id: 1, transcript: [{ role: 'agent', content: frames[0].content }, { role: 'user', content: 'How did September go?' }] }));
@@ -175,8 +181,8 @@ test('a turn replayed after a reconnect gets an answer and does not crash the re
     ws.send(JSON.stringify({ type: 'response_required', response_id: 3, transcript: [{ role: 'user', content: 'Where is my money going?' }] }));
     const next = await call('GET', '/v1/jobs/next?wait=5');
     await call('POST', `/v1/jobs/${next.body.job_id}/result`, { reply_text: 'Net worth: $11,550.00.' });
-    await until(() => frames.some((f) => f.content_complete));
-    assert.equal(frames.find((f) => f.content_complete).content, 'Net worth: $11,550.');
+    await until(() => frames.some((f) => f.type === 'response' && f.content_complete));
+    assert.equal(frames.find((f) => f.type === 'response' && f.content_complete).content, 'Net worth: $11,550.');
     ws.close();
   }
   assert.equal((await fetch(`${BASE}/health`)).status, 200);
