@@ -16,6 +16,7 @@ struct ChatMessage: Identifiable, Equatable {
 struct ChatPanel: View {
     let store: DemoStore
     let requestStates: [String: RequestState]
+    var plannedCents = 0
     @Binding var messages: [ChatMessage]
     var onJump: (ChatMessage.Jump) -> Void
     var onClose: () -> Void
@@ -51,6 +52,7 @@ struct ChatPanel: View {
                     }
                     .padding(.horizontal, 14).padding(.top, 12)
                 }
+                .scrollIndicators(.hidden)
                 .onChange(of: messages.count) { _, _ in withAnimation { proxy.scrollTo("end", anchor: .bottom) } }
                 .onChange(of: typing) { _, _ in withAnimation { proxy.scrollTo("end", anchor: .bottom) } }
                 .onAppear { proxy.scrollTo("end", anchor: .bottom) }
@@ -77,8 +79,8 @@ struct ChatPanel: View {
             }
             .padding(.horizontal, 14).padding(.bottom, 14)
         }
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 28, style: .continuous))
-        .background(Theme.cardFill, in: RoundedRectangle(cornerRadius: 28, style: .continuous))
+        // Chat stays close to solid so replies read clearly over any screen.
+        .background(Theme.card, in: RoundedRectangle(cornerRadius: 28, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: 28, style: .continuous).strokeBorder(Theme.glassEdge))
         .compositingGroup()
         .shadow(color: .black.opacity(0.10), radius: 3, y: 2)
@@ -113,13 +115,13 @@ struct ChatPanel: View {
         typing = true
         Task {
             try? await Task.sleep(nanoseconds: 650_000_000)
-            messages.append(Self.reply(to: text, store: store, requestStates: requestStates))
+            messages.append(Self.reply(to: text, store: store, requestStates: requestStates, plannedCents: plannedCents))
             typing = false
         }
     }
 
     /// Deterministic intent match, first rule wins. Every number comes from the engines, never from this file.
-    static func reply(to text: String, store: DemoStore, requestStates: [String: RequestState]) -> ChatMessage {
+    static func reply(to text: String, store: DemoStore, requestStates: [String: RequestState], plannedCents: Int = 0) -> ChatMessage {
         let q = text.lowercased()
         func has(_ words: String...) -> Bool { words.contains { q.contains($0) } }
         func say(_ t: String, _ a: ChatMessage.Action...) -> ChatMessage { ChatMessage(mine: false, text: t, actions: a) }
@@ -140,7 +142,11 @@ struct ChatPanel: View {
         if has("save", "budget", "plan", "150", "cut") {
             let total = PreviewBudgetPlan.swaps.reduce(0) { $0 + $1.savingsCents } + PreviewBudgetPlan.habits.reduce(0) { $0 + $1.savingsCents }
             let top = PreviewBudgetPlan.swaps.sorted { $0.savingsCents > $1.savingsCents }.prefix(2).map { "\($0.title.lowercased()) (\(usd($0.savingsCents)))" }
-            return say("Your plan saves \(usd(total)) a month with rent unchanged. Biggest wins: \(top.joined(separator: " and ")).", .init(jump: .budget, label: "Review plan"))
+            if plannedCents > 0 {
+                let goal = PreviewBudgetPlan.goalCents
+                return say("You’ve kept \(usd(plannedCents)) a month so far" + (plannedCents >= goal ? ", which meets your \(usd(goal)) goal." : ", \(usd(goal - plannedCents)) short of your \(usd(goal)) goal."), .init(jump: .budget, label: "Review plan"))
+            }
+            return say("You could save \(usd(total)) a month with rent unchanged. Biggest wins: \(top.joined(separator: " and ")). Swipe through the ideas to build your plan.", .init(jump: .budget, label: "Review ideas"))
         }
         if has("worth", "net", "assets", "debt") {
             return say("Your net worth is \(usd(v.netWorthCents)): \(usd(v.assetsCents)) you own minus \(usd(v.liabilitiesCents)) you owe, as of \(DemoStore.day(store.dataset.asOf)).", .init(jump: .accounts, label: "See accounts"))

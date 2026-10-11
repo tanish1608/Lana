@@ -31,4 +31,9 @@ final class DemoStoreTests: XCTestCase {
         XCTAssertEqual(p, [66, 14, 8, 12])
         XCTAssertEqual(HomeScreen.percents([1, 1, 1]).reduce(0, +), 100)
     }
+
+    func testEverySwapHasAnActionLanaCanOfferAndHabitsHaveNone() {
+        XCTAssertTrue((PreviewBudgetPlan.swaps + [PreviewBudgetPlan.instantCoffee]).allSatisfy { BudgetIdea.actions[$0.id] != nil })
+        XCTAssertTrue(PreviewBudgetPlan.habits.allSatisfy { !BudgetIdea($0).isSwap })
+    }
 }
