@@ -33,6 +33,7 @@ struct SplitScreen: View {
     var onAction: (String) -> Void = { _ in }
 
     @State private var step = 0
+    @State private var keptAsMine = false
     @State private var importedReceipt: Receipt?
     @State private var importSheet = false
     @State private var transcript = ""
@@ -52,7 +53,7 @@ struct SplitScreen: View {
     @State private var remindTarget: ReimbursementDraft?
     @FocusState private var tipFocused: Bool
 
-    private static let steps = ["Inputs", "Check", "Assign", "Shares", "Requests", "Follow-ups"]
+    private static let steps = ["Receipt", "Check", "Assign", "Shares", "Requests", "Follow-ups"]
     private var receipt: Receipt? { importedReceipt ?? store.dataset.receipts?.first }
     private var payerId: String { store.splitExample?.payerId ?? "c_ashwin" }
     private var tipCents: Int? { try? ReceiptReviewAmounts.cents(tipText) }
@@ -84,7 +85,7 @@ struct SplitScreen: View {
                 VStack(alignment: .leading, spacing: 12) {
                     HStack(spacing: 4) { ForEach(0..<Self.steps.count, id: \.self) { i in Capsule().fill(i <= step ? Theme.accent : Theme.line).frame(height: 4) } }
                         .id("top")
-                    AskChip(SplitDemo.transcript, kind: .split, store: store)
+                    if haveVoice { AskChip(SplitDemo.transcript, kind: .split, store: store) }
                     Text("Step \(step + 1) of \(Self.steps.count) · \(Self.steps[step])").font(.caption).foregroundStyle(Theme.ink3)
                     switch step {
                     case 0: inputs
@@ -97,15 +98,14 @@ struct SplitScreen: View {
                 .animation(.easeOut(duration: 0.2), value: step)
             }
             // The cards grow as inputs arrive; bring the primary button back above the tab bar.
-            .onChange(of: haveReceipt && haveVoice) { _, ready in if ready { withAnimation { proxy.scrollTo("nav", anchor: .bottom) } } }
+            .onChange(of: haveReceipt) { _, ready in if ready { withAnimation { proxy.scrollTo("nav", anchor: .bottom) } } }
             .onChange(of: step) { _, _ in proxy.scrollTo("top", anchor: .top) }
             }
             .scrollIndicators(.hidden).background { Theme.backdrop }
-            .navigationTitle("Split")
+            .navigationTitle("Receipts")
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline) // each step has its own heading
             #endif
-            .toolbar { DemoDataBadge() }
             .onAppear { if owners.isEmpty { resetOwners() } }
             .onChange(of: owners) { _, _ in onInvalidate() }
             .onChange(of: tipText) { _, _ in onInvalidate() }
@@ -155,10 +155,26 @@ struct SplitScreen: View {
         .id("nav")
     }
 
+    private func option(_ icon: String, _ title: String, _ sub: String, _ action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 12) {
+                Image(systemName: icon).font(.body.weight(.semibold)).foregroundStyle(.white).frame(width: 40, height: 40)
+                    .background(Theme.deepBlueFill, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                VStack(alignment: .leading, spacing: 2) { Text(title).fontWeight(.semibold); Text(sub).font(.caption).foregroundStyle(Theme.ink2) }
+                Spacer()
+                Image(systemName: "chevron.right").font(.footnote.weight(.semibold)).foregroundStyle(Theme.ink3)
+            }
+            .foregroundStyle(Theme.ink).padding(14)
+            .background(Theme.cardFill, in: RoundedRectangle(cornerRadius: 18, style: .continuous)).raised(18)
+        }
+        .buttonStyle(PressScaleStyle())
+    }
+
     // MARK: steps
 
     @ViewBuilder private var inputs: some View {
-        Text("Split dinner").font(Theme.display(30))
+        Text("Add a receipt").font(Theme.display(30))
+        Text("Any receipt. Lana reads it, then you choose what to do.").font(.subheadline).foregroundStyle(Theme.ink2)
         Card {
             HStack { Text("Receipt").font(.headline); Spacer(); Tag(text: haveReceipt ? "Received" : "Waiting", tone: haveReceipt ? Theme.accent : Theme.ink2, fill: haveReceipt ? Theme.accentSoft : Theme.line) }
             if haveReceipt, let r = receipt { Text("\(r.merchant ?? "Receipt") · \(r.date ?? "")").font(.caption).foregroundStyle(Theme.ink3) }
@@ -166,7 +182,7 @@ struct SplitScreen: View {
             Button("Use sample receipt") { importedReceipt = nil; haveReceipt = true; resetOwners(); tipText = String(format: "%.2f", Double(SplitDemo.misreadTipCents) / 100); onInvalidate() }.buttonStyle(GhostButtonStyle())
         }
         Card {
-            HStack { Text("Voice note").font(.headline); Spacer(); Tag(text: haveVoice ? "Transcribed" : "Waiting", tone: haveVoice ? Theme.accent : Theme.ink2, fill: haveVoice ? Theme.accentSoft : Theme.line) }
+            HStack { Text("Tell Lana what to do").font(.headline); Spacer(); Tag(text: haveVoice ? "Transcribed" : "Optional", tone: haveVoice ? Theme.accent : Theme.ink2, fill: haveVoice ? Theme.accentSoft : Theme.line) }
             if haveVoice {
                 TextField("Review transcript", text: $transcript, axis: .vertical).lineLimit(2...6)
             }
@@ -185,10 +201,10 @@ struct SplitScreen: View {
         }
         Card(padding: 14) {
             HStack { Text("Messages delivery").font(.subheadline); Spacer()
-                Tag(text: haveReceipt && haveVoice ? "Completed · 2 of 2" : (haveReceipt || haveVoice ? "Pending · 1 of 2" : "Waiting")) }
+                Tag(text: haveReceipt ? (haveVoice ? "Receipt + voice note" : "Receipt received") : "Waiting") }
             SimulatedNote("Simulated")
         }
-        nav("Read receipt", enabled: haveReceipt && haveVoice)
+        nav("Read receipt", enabled: haveReceipt)
     }
 
     @ViewBuilder private var check: some View {
@@ -229,7 +245,28 @@ struct SplitScreen: View {
                 SimulatedNote("Staged misread")
             }
         }
-        nav("Assign items", enabled: !mismatch)
+        SectionLabel("What should Lana do with it?")
+        VStack(spacing: 10) {
+            option("person.2.fill", "Split it with people", "Assign items and get exact shares") { keptAsMine = false; step = 2 }
+            option("person.fill", "One person owes it all", "Request the full amount from someone") {
+                keptAsMine = false
+                if let friend = participants.first(where: { $0.contactId != payerId }), let r = receipt {
+                    owners = Dictionary(uniqueKeysWithValues: r.items.map { ($0.itemId, friend.contactId) })
+                }
+                step = 2
+            }
+            option("tray.and.arrow.down.fill", "It’s just mine", "Keep the receipt, no one owes you") { withAnimation { keptAsMine = true } }
+        }
+        .disabled(mismatch).opacity(mismatch ? 0.45 : 1)
+        if keptAsMine, let r = receipt {
+            Card {
+                Label("Kept in your receipts", systemImage: "checkmark.circle.fill").font(.headline).foregroundStyle(Theme.ok)
+                Text("\(r.merchant ?? "Receipt") · \(usd(r.totalCents, cents: true)). Dated \(r.date ?? "after September"), so it isn’t added to September’s spending.")
+                    .font(.subheadline).foregroundStyle(Theme.ink2)
+                SimulatedNote("Simulated. Not saved to your records in this build.")
+            }
+        }
+        Button("Back") { step -= 1 }.buttonStyle(GhostButtonStyle()).padding(.top, 4).padding(.bottom, 12).id("nav")
     }
 
     @ViewBuilder private var assign: some View {
@@ -417,7 +454,7 @@ struct SplitScreen: View {
         }
         HStack {
             Button("Back") { step -= 1 }.buttonStyle(GhostButtonStyle())
-            Button("Start over") { step = 0; haveReceipt = false; haveVoice = false; tipText = String(format: "%.2f", Double(SplitDemo.misreadTipCents) / 100)
+            Button("Start over") { step = 0; keptAsMine = false; haveReceipt = false; haveVoice = false; tipText = String(format: "%.2f", Double(SplitDemo.misreadTipCents) / 100)
                 states = [:]; reminders = []; disputed = []; tomorrow = false; resetOwners() }.buttonStyle(GhostButtonStyle())
         }
     }

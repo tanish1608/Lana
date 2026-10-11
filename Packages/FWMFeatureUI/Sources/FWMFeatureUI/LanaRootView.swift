@@ -98,7 +98,7 @@ struct LanaDock: View {
         switch t {
         case .home: return ("Home", "house.fill")
         case .budget: return ("Budget", "chart.pie.fill")
-        case .split: return ("Split", "person.2.fill")
+        case .split: return ("Receipts", "doc.text.viewfinder")
         case .accounts: return ("Accounts", "creditcard.fill")
         }
     }

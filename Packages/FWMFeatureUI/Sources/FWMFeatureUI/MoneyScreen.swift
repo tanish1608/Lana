@@ -31,7 +31,6 @@ struct MoneyScreen: View {
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
         #endif
-        .toolbar { DemoDataBadge() }
     }
 
     private var periodPicker: some View {

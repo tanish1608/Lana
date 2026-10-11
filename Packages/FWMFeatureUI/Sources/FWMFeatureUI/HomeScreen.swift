@@ -33,9 +33,6 @@ struct HomeScreen: View {
             .toolbar {
                 #if os(iOS)
                 ToolbarItem(placement: .topBarLeading) { LanaLogo().fixedSize() }.sharedBackgroundVisibility(.hidden)
-                ToolbarItem(placement: .topBarTrailing) { DemoDataBadge() }
-                #else
-                ToolbarItem { DemoDataBadge() }
                 #endif
             }
             #if os(iOS)

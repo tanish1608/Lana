@@ -125,7 +125,6 @@ struct BudgetScreen: View {
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline) // keeps the swipe card and its buttons on one screen
             #endif
-            .toolbar { DemoDataBadge() }
             .sheet(isPresented: $showWhy) { whySheet }
             .sheet(item: $asking) { askSheet($0) }
             .onAppear { if category == nil { category = plan()?.current.first { !pending(in: $0.category).isEmpty }?.category } }
@@ -188,6 +187,16 @@ struct BudgetScreen: View {
     // MARK: categories
 
     /// A row of category tiles: what was spent, what the plan brings it to, and how many ideas are left.
+    /// Taller phones get taller category tiles, so the deck fills the screen; smaller ones keep the
+    /// keep/skip buttons above the dock.
+    private var roomy: Bool {
+        #if os(iOS)
+        (UIApplication.shared.connectedScenes.compactMap { ($0 as? UIWindowScene)?.screen.bounds.height }.first ?? 0) >= 920
+        #else
+        false
+        #endif
+    }
+
     private static func icon(_ category: String) -> String {
         ["Rent": "🏠", "Groceries": "🛒", "Dining": "🍜", "Transport": "🚇", "Bills and subscriptions": "📱", "Other": "🛍️"][category] ?? "•"
     }
@@ -201,20 +210,20 @@ struct BudgetScreen: View {
                     let all = ideas(in: c.category), left = pending(in: c.category).count
                     let target = p.target[c.category] ?? c.totalCents, on = category == c.category
                     Button { if !all.isEmpty { withAnimation(.spring(duration: 0.3)) { category = c.category; drag = .zero } } } label: {
-                        VStack(alignment: .leading, spacing: 6) {
-                            HStack(spacing: 6) { Text(Self.icon(c.category)); Text(short(c.category)).font(.subheadline.weight(.semibold)).lineLimit(1).minimumScaleFactor(0.85) }
+                        VStack(alignment: .leading, spacing: roomy ? 10 : 6) {
+                            HStack(spacing: 6) { Text(Self.icon(c.category)).font(roomy ? .title3 : .body); Text(short(c.category)).font(.subheadline.weight(.semibold)).lineLimit(1).minimumScaleFactor(0.85) }
                             HStack(alignment: .firstTextBaseline, spacing: 5) {
-                                Text(usd(target)).font(.title3.weight(.bold)).foregroundStyle(on ? .white : (target < c.totalCents ? Theme.ok : Theme.ink))
+                                Text(usd(target)).font((roomy ? Font.title : .title3).weight(.bold)).foregroundStyle(on ? .white : (target < c.totalCents ? Theme.ok : Theme.ink))
                                 if target < c.totalCents { Text(usd(c.totalCents)).font(.caption).strikethrough().opacity(0.7) }
                             }
                             .monospacedDigit()
-                            Capsule().fill(on ? Color.white.opacity(0.25) : Theme.line).frame(height: 4).overlay(alignment: .leading) {
+                            Capsule().fill(on ? Color.white.opacity(0.25) : Theme.line).frame(height: 5).overlay(alignment: .leading) {
                                 GeometryReader { g in Capsule().fill(on ? Color.white : Theme.spent).frame(width: g.size.width * CGFloat(target) / maxC) }
                             }
                             badge(all: all.count, left: left, on: on)
                         }
                         .foregroundStyle(on ? .white : Theme.ink)
-                        .padding(12).frame(width: 128, alignment: .leading)
+                        .padding(.horizontal, 14).padding(.vertical, roomy ? 18 : 12).frame(width: roomy ? 140 : 128, alignment: .leading)
                         .background(on ? AnyShapeStyle(Theme.deepBlueFill) : AnyShapeStyle(Theme.cardFill), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
                         .raised(18, tint: on ? Theme.deepBlue : .black, strength: on ? 2 : 1)
                         .opacity(all.isEmpty ? 0.6 : 1)
