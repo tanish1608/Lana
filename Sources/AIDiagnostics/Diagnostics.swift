@@ -61,11 +61,14 @@ struct Diagnostics {
             guard money.source == .onDevice, money.evidence.contains(where: { $0.text.contains("$4,800.00") }),
                   money.text.contains("4,800") || money.text.contains("4800"),
                   money.text.contains("3,150") || money.text.contains("3150") else { exit(1) }
-            archive.documents.append(.init(name: "launch.pdf", pages: ["The launch event venue is Maple Hall."]))
+            archive.documents.append(.init(name: "launch.pdf", pages: ["The launch event venue is Maple Hall. The statement savings balance is $220.00."]))
             let pdf = try await assistant.respond(to: "According to the attached PDF, where is the launch event?", archive: archive)
             line("PDF [\(pdf.source.rawValue)]: \(pdf.text)")
             guard pdf.source == .onDevice, pdf.text.contains("Maple Hall") else { exit(1) }
-            line("4/4 conversational model smoke checks passed.")
+            let statement = try await assistant.respond(to: "According to the attached PDF, what is the statement savings balance?", archive: archive)
+            line("PDF FINANCE [\(statement.source.rawValue)]: \(statement.text)")
+            guard statement.source == .onDevice, statement.text.contains("220"), !statement.text.contains("650") else { exit(1) }
+            line("5/5 conversational model smoke checks passed.")
         } catch { line("FAIL: \(error.localizedDescription)"); exit(1) }
     }
 }
