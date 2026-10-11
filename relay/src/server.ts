@@ -7,6 +7,7 @@ import { db, now, id, demoNow, advanceClock } from './store.ts';
 import { dial, FROM, send, startStream, catchUp, verifyWebhook, type InboundMessage } from './dial.ts';
 import { swapMemory, logTiming, keewanoReceipt, toReceipt, manualEstimates, WORKFLOWS } from './keewano.ts';
 import { canonical } from './canonical.ts';
+import { attachVoice, answerCall } from './voice.ts';
 
 const PORT = Number(process.env.PORT || 8787);
 const PUBLIC_BASE = process.env.PUBLIC_BASE_URL || `http://localhost:${PORT}`;
@@ -207,6 +208,7 @@ const routes: [string, RegExp, (req: IncomingMessage, res: ServerResponse, m: Re
     if (!body.reply_text) return err(res, 400, 'INVALID_ARGUMENTS', 'reply_text is required.');
     const card = body.card?.base64 ? { data: new Uint8Array(Buffer.from(body.card.base64, 'base64')), contentType: body.card.content_type || 'image/png' } : undefined;
     db.prepare(`UPDATE jobs SET state = 'answered', result_id = ?, updated_at = ? WHERE job_id = ?`).run(body.provenance?.result_id || null, now(), job.job_id);
+    if (answerCall(job.job_id, body.reply_text)) return json(res, 200, { job_id: job.job_id, delivered: 'call' });
     const out = await send({ key: `reply:${job.job_id}`, to: job.reply_to, body: body.reply_text, card });
     json(res, 200, { job_id: job.job_id, outbox: out });
   }, true],
@@ -299,7 +301,7 @@ const routes: [string, RegExp, (req: IncomingMessage, res: ServerResponse, m: Re
   }, false],
 ];
 
-createServer(async (req, res) => {
+const server = createServer(async (req, res) => {
   // Browser clients (Ashwin's web preview, the stopwatch) use bearer tokens, not cookies, so any origin is fine.
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type, ngrok-skip-browser-warning');
@@ -323,6 +325,15 @@ createServer(async (req, res) => {
   console.log(`FWM relay on :${PORT}  dial=${dial ? FROM : 'off'}  pairing code=${PAIRING_CODE}  paired phones=${Object.keys(PAIRED_PHONES).length}`);
   catchUp(onInbound).catch((e) => console.error('[dial] catch-up failed:', e.message));
   startStream(onInbound);
+});
+
+attachVoice(server, {
+  pairedUser: (phone) => PAIRED_PHONES[phone],
+  phoneOpen: (user) => {
+    const dev = db.prepare('SELECT MAX(last_seen) AS t FROM devices WHERE paired_user_id = ?').get(user) as any;
+    return Boolean(dev?.t && Date.now() - dev.t < FOREGROUND_MS);
+  },
+  enqueued: (jobId) => waiters.splice(0).forEach((w) => w(jobId)),
 });
 
 export { onInbound };

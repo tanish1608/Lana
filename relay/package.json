@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@getdial/sdk": "^0.41.1",
-    "@modelcontextprotocol/sdk": "^1.0.0"
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "ws": "^7.5.13"
   }
 }

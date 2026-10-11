@@ -127,3 +127,42 @@ test('browser clients get CORS headers and the stopwatch page loads', async () =
   assert.equal(page.status, 200);
   assert.match(await page.text(), /Lana stopwatch/);
 });
+
+/** Plays Dial's side of a Self-Hosted call: frames in, the agent's response frames out. */
+async function dialCall(callId: string, from: string) {
+  const ws = new WebSocket(`ws://localhost:${PORT}/dial/voice/${callId}`);
+  const frames: any[] = [];
+  ws.onmessage = (e) => frames.push(JSON.parse(String(e.data)));
+  await new Promise((resolve, reject) => { ws.onopen = resolve; ws.onerror = reject; });
+  ws.send(JSON.stringify({ type: 'call_connected', call_id: callId, direction: 'inbound', from, to: '+13144649040', instruction: null, language: 'en-US' }));
+  const until = async (pred: () => boolean) => { for (let i = 0; i < 100 && !pred(); i++) await new Promise((r) => setTimeout(r, 50)); };
+  return { ws, frames, until };
+}
+
+test('a call turn is answered by the paired phone and spoken back, never sent as SMS', async () => {
+  const { ws, frames, until } = await dialCall('call_test1', PHONE);
+  ws.send(JSON.stringify({ type: 'response_required', response_id: 0, transcript: [] }));
+  await until(() => frames.length >= 1);
+  assert.match(frames[0].content, /this is Lana/);
+
+  ws.send(JSON.stringify({ type: 'ping_pong', timestamp: 1 }));
+  ws.send(JSON.stringify({ type: 'response_required', response_id: 1, transcript: [{ role: 'agent', content: frames[0].content }, { role: 'user', content: 'How did September go?' }] }));
+  const next = await call('GET', '/v1/jobs/next?wait=5');
+  assert.equal(next.body.envelope.text, 'How did September go?');
+  const posted = await call('POST', `/v1/jobs/${next.body.job_id}/result`, { reply_text: '2026-09: income $4,800.00, expenses $3,150.00. Data mode: fixture.' });
+  assert.equal(posted.body.delivered, 'call');
+  await until(() => frames.some((f) => f.response_id === 1 && f.content_complete));
+  assert.deepEqual(frames.find((f) => f.type === 'ping_pong'), { type: 'ping_pong', timestamp: 1 });
+  const turn = frames.filter((f) => f.response_id === 1);
+  assert.deepEqual(turn.map((f) => f.content_complete), [false, true]);
+  assert.equal(turn[1].content, 'September 2026: income $4,800, expenses $3,150.');
+  ws.close();
+});
+
+test('an unpaired caller is told to pair and the call ends', async () => {
+  const { ws, frames, until } = await dialCall('call_test2', '+15550009999');
+  ws.send(JSON.stringify({ type: 'response_required', response_id: 0, transcript: [] }));
+  await until(() => frames.length >= 1);
+  assert.equal(frames[0].end_call, true);
+  ws.close();
+});

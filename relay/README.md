@@ -56,6 +56,7 @@ Every `/v1/*` call except `/v1/pair` sends `Authorization: Bearer <device_token>
 | `GET /health` | no auth | `{ok, dial, from, demo_now}` |
 | `GET /phone` | no auth (pairs in page) | Demo phone: an iMessage-style thread that texts Lana from a second Dial number (`SIM_PHONE`). Dial-to-Dial SMS is not blocked by 10DLC, so every message in it is real Dial traffic. |
 | `POST /sim/send`, `GET /sim/thread` | `{text, image?: {base64, content_type, filename}}` | Used by `/phone`. |
+| `WS /dial/voice/:call_id` | `X-Dial-Signature` over the call id | Calls through Dial Self-Hosted, LLM mode. Dial does the call audio, speech to text and the voice. Each caller turn becomes a phone job; the caller hears "One sec" and then the phone's answer, read aloud. Unpaired callers are told to pair and the call ends. No SMS is sent for a call turn. |
 | `GET /timer` | no auth (pairs in page) | Stopwatch for timing chores; posts to `/v1/timings`. |
 
 **Identity.** The relay maps the sender's number to `paired_user_id` through `PAIRED_PHONES`. Messages from other numbers are dropped. Nothing in the message text can change the user.
