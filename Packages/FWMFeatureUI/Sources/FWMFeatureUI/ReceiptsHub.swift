@@ -74,7 +74,7 @@ struct SampleReceiptDetail: View {
             SectionLabel("What should Lana do?")
             LazyVGrid(columns: [GridItem(.flexible(), spacing: 10), GridItem(.flexible())], spacing: 10) {
                 ForEach(actions) { a in
-                    let off = a == .pay && receipt.paidWith != nil
+                    let off = a == .pay && (receipt.paidWith != nil || status?.hasPrefix("Payment approved") == true)
                     Button { asking = ReceiptActionRequest(receipt: receipt, action: a) } label: {
                         VStack(alignment: .leading, spacing: 8) {
                             Image(systemName: a.icon).font(.body.weight(.semibold)).foregroundStyle(.white).frame(width: 40, height: 40)

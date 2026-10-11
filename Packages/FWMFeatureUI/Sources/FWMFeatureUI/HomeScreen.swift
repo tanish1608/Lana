@@ -102,7 +102,7 @@ struct HomeScreen: View {
             HStack(alignment: .bottom) {
                 VStack(alignment: .leading, spacing: 2) {
                     HeroAmount(cents: stays, size: 40)
-                    Text("stayed with you").font(.footnote).foregroundStyle(Theme.ink2)
+                    Text("left after spending").font(.footnote).foregroundStyle(Theme.ink2)
                 }
                 Spacer()
                 VStack(alignment: .trailing, spacing: 2) {

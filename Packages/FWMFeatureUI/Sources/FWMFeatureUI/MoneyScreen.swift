@@ -54,7 +54,7 @@ struct MoneyScreen: View {
         let month = DemoStore.monthName(period).components(separatedBy: " ").first ?? period
         AskChip("Where did my money go in \(month)?", kind: .money, store: store)
         VStack(alignment: .leading, spacing: 4) {
-            Eyebrow("Stayed with you · \(month)")
+            Eyebrow("Left after spending · \(month)")
             HeroAmount(cents: stays)
         }
         .padding(.horizontal, 4).padding(.vertical, 4)
