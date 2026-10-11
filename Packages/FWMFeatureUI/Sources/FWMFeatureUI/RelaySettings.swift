@@ -53,7 +53,7 @@ final class LanaRelayConnection {
                     budgetID: s.budgetID, eligibleSwapGroups: s.eligibleSwapGroups)
                 return CoreRoutingContext(scope: scope, reviewedSplit: chat.reviewedSplit)
             }
-        })
+        }, onAnswered: { job, result in await chat.recordRelay(job, result) })
         connected = true
         await setForeground(foreground)
     }

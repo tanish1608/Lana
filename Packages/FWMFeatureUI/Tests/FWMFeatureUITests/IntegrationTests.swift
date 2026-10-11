@@ -106,4 +106,22 @@ final class IntegrationTests: XCTestCase {
         XCTAssertEqual(activity.source, .onDevice)
         XCTAssertTrue(activity.text.localizedCaseInsensitiveContains("adopt"), activity.text)
     }
+
+    func testRelayCallIsStoredLikeAnInAppChat() async throws {
+        let ds = try XCTUnwrap(DemoStore.repoSeed()).dataset
+        let dir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        let chat = await LanaChatController(dataset: ds, directory: dir)
+        func job(_ id: String, _ text: String) throws -> RelayJob {
+            let json = #"{"job_id":"\#(id)","envelope":{"event_id":"evt_\#(id)","conversation_id":"call_test","paired_user_id":"user_ashwin","channel":"sms","received_at":"2026-10-11T15:31:00-07:00","text":"\#(text)","attachments":[]}}"#
+            return try FWMJSON.decoder.decode(RelayJob.self, from: Data(json.utf8))
+        }
+        await chat.recordRelay(try job("job_1", "How did September go?"), AgentResult(jobId: "job_1", replyText: "September 2026: income $4,800."))
+        await chat.recordRelay(try job("job_2", "What can I swap to save money?"), AgentResult(jobId: "job_2", replyText: "Saves $150 a month."))
+        let saved = try await ConversationStore(directory: dir).load(userID: ds.user.userId)
+        XCTAssertEqual(saved.count, 1, "both turns of one call land in one chat")
+        XCTAssertEqual(saved[0].title, "Call · How did September go?")
+        XCTAssertEqual(saved[0].messages.map(\.role), [.user, .assistant, .user, .assistant])
+        let listed = await chat.savedChats.map(\.id)
+        XCTAssertEqual(listed, [saved[0].id], "History shows it without a relaunch")
+    }
 }

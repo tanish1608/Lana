@@ -160,6 +160,23 @@ final class LanaChatController {
         archive?.documents.removeAll { $0.id == id }
         await persist()
     }
+    /// A text or call answered through the relay, kept like an in-app chat: same archive format, same store, shown in History.
+    func recordRelay(_ job: RelayJob, _ result: AgentResult) async {
+        let envelope = job.envelope
+        do {
+            let fresh = ConversationArchive(relayConversation: envelope.conversationId, userID: dataset.user.userId, datasetVersion: dataset.datasetVersion)
+            var thread = try await store.load(userID: fresh.userID).first { $0.id == fresh.id } ?? fresh
+            let call = thread.channel == "Call"
+            thread.messages.append(.init(role: .user, text: envelope.text ?? "Photo", source: call ? "Phone call, transcribed by Dial" : "Text message"))
+            thread.messages.append(.init(role: .assistant, text: result.replyText, source: call ? "Spoken by Dial, answered on this device" : "Texted back, answered on this device",
+                evidence: result.provenance.map { [ChatEvidence(text: result.replyText, provenance: $0)] } ?? []))
+            thread.datasetVersion = dataset.datasetVersion
+            thread.updatedAt = Date()
+            try await store.save(thread)
+            savedChats = try await store.load(userID: thread.userID)
+            if archive?.id == thread.id { archive = thread }
+        } catch { status = "A relay conversation couldn't be saved: \(error.localizedDescription)" }
+    }
     private func persist() async {
         guard var current = archive else { return }
         current.updatedAt = Date(); archive = current
