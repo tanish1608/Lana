@@ -77,8 +77,9 @@ struct ChatPanel: View {
             }
             .padding(.horizontal, 14).padding(.bottom, 14)
         }
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 28, style: .continuous))
         .background(Theme.cardFill, in: RoundedRectangle(cornerRadius: 28, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 28, style: .continuous).strokeBorder(Theme.edge))
+        .overlay(RoundedRectangle(cornerRadius: 28, style: .continuous).strokeBorder(Theme.glassEdge))
         .compositingGroup()
         .shadow(color: .black.opacity(0.10), radius: 3, y: 2)
         .shadow(color: .black.opacity(0.28), radius: 36, y: 18)

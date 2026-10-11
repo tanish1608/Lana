@@ -70,7 +70,7 @@ struct PillPicker<T: Hashable>: View {
                     Text(o.label).font(.subheadline.weight(.semibold)).frame(maxWidth: .infinity, minHeight: 36)
                         .foregroundStyle(on ? Theme.pillOnText : Theme.ink)
                         .background(on ? Theme.ink : Theme.card, in: Capsule())
-                        .overlay(Capsule().strokeBorder(Theme.edge))
+                        .overlay(Capsule().strokeBorder(Theme.glassEdge))
                         .shadow(color: .black.opacity(on ? 0.18 : 0.04), radius: on ? 8 : 3, y: on ? 4 : 1)
                 }
                 .buttonStyle(.plain).accessibilityAddTraits(on ? .isSelected : [])
@@ -87,6 +87,7 @@ struct AskChip: View {
         Label(question, systemImage: "message.fill").font(.footnote.weight(.medium)).lineLimit(1)
             .padding(.horizontal, 12).padding(.vertical, 8)
             .foregroundStyle(Theme.accent).background(Theme.accentSoft, in: Capsule())
+            .overlay(Capsule().strokeBorder(LinearGradient(colors: [Theme.accent.opacity(0.45), Theme.auraViolet.opacity(0.35)], startPoint: .leading, endPoint: .trailing), lineWidth: 1))
             .accessibilityLabel("Asked in Messages: \(question)")
     }
 }
