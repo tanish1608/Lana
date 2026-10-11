@@ -79,15 +79,17 @@ public final class OnDeviceSpeechTranscriber {
 public final class VoiceRecorder {
     private var recorder: AVAudioRecorder?
     private var file: URL?
-    private var preparing = false
+    private var preparingID: UUID?
     public init() {}
     public var isRecording: Bool { recorder?.isRecording == true }
 
     public func start() async throws {
-        guard recorder == nil, !preparing else { throw FinanceAIError.unavailable("Recording is already active.") }
-        preparing = true
-        defer { preparing = false }
+        guard recorder == nil, preparingID == nil else { throw FinanceAIError.unavailable("Recording is already active.") }
+        let id = UUID()
+        preparingID = id
+        defer { if preparingID == id { preparingID = nil } }
         let allowed = await AVAudioApplication.requestRecordPermission()
+        guard preparingID == id else { throw CancellationError() }
         guard allowed else { throw FinanceAIError.unavailable("Allow microphone access in Settings.") }
         try Task.checkCancellation()
         let audio = AVAudioSession.sharedInstance()
@@ -120,6 +122,7 @@ public final class VoiceRecorder {
         return file
     }
     public func cancel() {
+        preparingID = nil
         if let url = try? stop() { try? FileManager.default.removeItem(at: url) }
     }
 }
