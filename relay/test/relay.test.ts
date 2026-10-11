@@ -156,11 +156,30 @@ test('a call turn is answered by the paired phone and spoken back, never sent as
   const turn = frames.filter((f) => f.response_id === 1);
   assert.equal(turn.at(-1).content, 'September 2026: income $4,800, expenses $3,150.');
 
+  const { forCall } = await import('../src/voice.ts');
+  // The v1 app's real reply to "Where is my money going?", as texted back at 3:11 PM.
+  const long = '2026-09: income $4,800.00, expenses $3,150.00, savings $650.00, investments $400.00, retained cash $600.00. Net worth: $11,550.00. Data mode: fixture. Categories: Rent: $1,600.00; Groceries: $500.00; Dining: $300.00; Bills and subscriptions: $250.00; Other: $250.00; Transport: $250.00. Accounts: Demo Bank checking: $3,400.00; Demo Card credit_card: $900.00.';
+  assert.equal(forCall(long), 'September 2026: income $4,800, expenses $3,150, savings $650, investments $400, retained cash $600. Net worth: $11,550. The rest is in Lana.');
+  assert.equal(forCall('Saves $150.00/month.'), 'Saves $150 a month.');
+
   ws.send(JSON.stringify({ type: 'response_required', response_id: 2, transcript: [{ role: 'user', content: '(unintelligible audio)' }] }));
   await until(() => frames.some((f) => f.response_id === 2));
   assert.match(frames.find((f) => f.response_id === 2).content, /didn't catch that/);
   assert.equal((await call('GET', '/v1/jobs/next?wait=0')).status, 204, 'noise never becomes a phone job');
   ws.close();
+});
+
+test('a turn replayed after a reconnect gets an answer and does not crash the relay', async () => {
+  for (let i = 0; i < 2; i++) {
+    const { ws, frames, until } = await dialCall('call_replay', PHONE);
+    ws.send(JSON.stringify({ type: 'response_required', response_id: 3, transcript: [{ role: 'user', content: 'Where is my money going?' }] }));
+    const next = await call('GET', '/v1/jobs/next?wait=5');
+    await call('POST', `/v1/jobs/${next.body.job_id}/result`, { reply_text: 'Net worth: $11,550.00.' });
+    await until(() => frames.some((f) => f.content_complete));
+    assert.equal(frames.find((f) => f.content_complete).content, 'Net worth: $11,550.');
+    ws.close();
+  }
+  assert.equal((await fetch(`${BASE}/health`)).status, 200);
 });
 
 test('an unpaired caller is told to pair and the call ends', async () => {

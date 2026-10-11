@@ -32,7 +32,20 @@ export function speakable(text: string): string {
     .replace(/(\$[\d,]+)\.00\b/g, '$1')
     .replace(/\s*Data mode: \w+\.?/g, '')
     .replace(/[—–]/g, ',')
+    .replace(/\/month\b/g, ' a month')
+    .replace(/_/g, ' ')
     .trim();
+}
+
+/** A caller can't skim. Speak whole sentences up to about 220 characters and leave the rest on the screen. */
+export function forCall(text: string, limit = 220): string {
+  const sentences = speakable(text).split(/(?<=[.!?])\s+/);
+  let out = sentences[0];
+  for (const s of sentences.slice(1)) {
+    if (out.length + s.length + 1 > limit) return `${out} The rest is in Lana.`;
+    out += ` ${s}`;
+  }
+  return out;
 }
 
 export function attachVoice(server: Server, deps: Deps) {
@@ -57,7 +70,15 @@ function onCall(ws: WebSocket, callId: string, deps: Deps) {
     ws.send(serializeServerMessage({ type: 'response', response_id: responseId, content, content_complete: complete, ...(endCall ? { end_call: true } : {}) }));
   };
 
-  ws.on('message', async (raw) => {
+  ws.on('message', (raw) => {
+    // Nothing on a call may take the relay down with it.
+    handle(raw).catch((e) => {
+      console.error(`[voice] call ${callId} turn failed:`, e.message);
+      if (latest >= 0) say(latest, "Sorry, something went wrong on my side. Try again in Lana.");
+    });
+  });
+
+  async function handle(raw: WebSocket.Data) {
     let msg;
     try { msg = parseDialMessage(raw.toString()); } catch { return; }
     if (msg.type === 'ping_pong') {
@@ -75,8 +96,10 @@ function onCall(ws: WebSocket, callId: string, deps: Deps) {
       if (/^\(.*\)$/.test(heard)) return say(turn, "Sorry, I didn't catch that. Ask me again?");
       if (!deps.phoneOpen(user)) return say(turn, 'Open Lana on your iPhone, then ask me again. Your phone works out the answer, not me.');
       const jobId = id('job');
+      // Dial replays the latest turn after a reconnect; a repeated turn gets its own event so the insert can't collide.
+      const seen = db.prepare('SELECT 1 FROM jobs WHERE event_id = ?').get(`evt_${callId}_${turn}`);
       const envelope = {
-        event_id: `evt_${callId}_${turn}`,
+        event_id: seen ? `evt_${callId}_${turn}_${Date.now()}` : `evt_${callId}_${turn}`,
         conversation_id: `conv_${createHash('sha256').update(caller).digest('hex').slice(0, 12)}`,
         paired_user_id: user,
         // The v1 app decodes only imessage, sms and app, so a call turn travels as sms; reply_to marks it as a call.
@@ -97,8 +120,8 @@ function onCall(ws: WebSocket, callId: string, deps: Deps) {
       });
       clearTimeout(filler);
       answers.delete(jobId);
-      say(turn, reply ? speakable(reply) : "Your phone is still working on it. The answer will be waiting in Lana.");
+      say(turn, reply ? forCall(reply) : "Your phone is still working on it. The answer will be waiting in Lana.");
     }
-  });
+  }
   ws.on('close', () => console.log(`[voice] call ${callId} closed`));
 }
