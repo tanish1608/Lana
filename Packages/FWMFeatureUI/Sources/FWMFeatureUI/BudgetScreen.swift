@@ -138,6 +138,7 @@ struct BudgetScreen: View {
 
     @ViewBuilder private func content(_ p: Plan) -> some View {
         let changed = adoptedSignature != nil && adoptedSignature != signature
+        AskChip("Help me save $150 next month without changing my rent.", kind: .budget, store: store)
         progress(p)
         if adoptedSignature != nil {
             Label(changed ? "Edited since adopting. Adopt again to update." : "Adopted for this session. Balances and purchases are unchanged.", systemImage: "checkmark.circle.fill")
@@ -164,13 +165,13 @@ struct BudgetScreen: View {
         let goal = PreviewBudgetPlan.goalCents, met = p.reduction >= goal
         let left = ideas.filter { decisions[$0.id] == nil }.count
         return HStack(spacing: 16) {
-            RingChart(segments: [.init(label: "In your plan", cents: min(max(p.reduction, 0), goal), color: met ? Theme.ok : Theme.accent)], total: goal, diameter: 76, lineWidth: 10) {
+            RingChart(segments: [.init(label: "In your plan", cents: min(max(p.reduction, 0), goal), color: met ? Theme.ok : Theme.accent)], total: goal, diameter: 64, lineWidth: 9) {
                 Text("\(min(100, p.reduction * 100 / max(goal, 1)))%").font(.system(size: 17, weight: .bold)).monospacedDigit()
             }
             VStack(alignment: .leading, spacing: 4) {
-                Eyebrow("Save \(usd(goal)) in \(PreviewBudgetPlan.period.components(separatedBy: " ").first ?? "") · rent unchanged")
+                Eyebrow("\(PreviewBudgetPlan.period.components(separatedBy: " ").first ?? "") plan · rent unchanged").lineLimit(1)
                 HStack(alignment: .firstTextBaseline, spacing: 6) {
-                    HeroAmount(cents: p.reduction, size: 34)
+                    HeroAmount(cents: p.reduction, size: 30)
                     Text("of \(usd(goal))").font(.subheadline).foregroundStyle(Theme.ink2)
                 }
                 Text(met ? "Goal met" : "\(left) \(left == 1 ? "idea" : "ideas") left" + (kept.isEmpty ? "" : " · \(usd(goal - p.reduction)) to go"))
@@ -302,12 +303,11 @@ struct BudgetScreen: View {
             }
             HStack(alignment: .top, spacing: 6) {
                 if i.fromHistory { Tag(text: "From your history", tone: Theme.accent, fill: Theme.accentSoft) }
-                Text(i.reason).font(i.isSwap ? .footnote : .subheadline).foregroundStyle(Theme.ink2)
+                Text(i.reason + (i.isSwap ? " Demo price." : "")).font(i.isSwap ? .footnote : .subheadline).foregroundStyle(Theme.ink2)
             }
             if !i.isSwap { Label("No purchase needed. Lana can remind you.", systemImage: "bell").font(.footnote).foregroundStyle(Theme.ink2) }
-            if i.isSwap { Text("Demo prices, not live quotes.").font(.caption2).foregroundStyle(Theme.ink3) }
         }
-        .padding(16).frame(maxWidth: .infinity, minHeight: i.isSwap ? 210 : 0, alignment: .topLeading)
+        .padding(16).frame(maxWidth: .infinity, alignment: .topLeading)
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 26, style: .continuous))
         .background(Theme.cardFill, in: RoundedRectangle(cornerRadius: 26, style: .continuous))
         .raised(26, strength: 1.6)
@@ -322,7 +322,7 @@ struct BudgetScreen: View {
             Spacer(minLength: 4)
             Text(price).font(.subheadline.weight(.bold)).monospacedDigit().foregroundStyle(faded ? Theme.ink2 : Theme.ink)
         }
-        .padding(.vertical, 10)
+        .padding(.vertical, 8)
     }
 
     private func stamp(_ t: String, _ c: Color) -> some View {
@@ -385,6 +385,7 @@ struct BudgetScreen: View {
         }
         .padding(20)
         .presentationDetents([.height(i.isSwap ? 450 : 400)]).presentationDragIndicator(.visible)
+        .presentationBackground(Theme.sheet)
         .onDisappear { if handling[i.id] == nil { handling[i.id] = .me } } // dismissing never authorizes Lana
     }
 
