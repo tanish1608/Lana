@@ -123,7 +123,7 @@
       </div>
       <button class="card flow-card" data-tab="money" aria-label="${mon} breakdown">
         <div class="row"><span class="eyebrow">${mon}</span><span class="chev">›</span></div>
-        <div class="fc-head"><div>${big(stays, "md")}<div class="small muted">stayed with you</div></div><div class="fc-in"><div class="small muted">Came in</div><b class="num">${fmt(f.net_income_cents)}</b></div></div>
+        <div class="fc-head"><div>${big(stays, "md")}<div class="small muted">left after spending</div></div><div class="fc-in"><div class="small muted">Came in</div><b class="num">${fmt(f.net_income_cents)}</b></div></div>
         <div class="seg-bar" role="img" aria-label="${esc(parts.map((p) => p.label + " " + fmt(p.v)).join(", "))}">${parts.map((p) => `<span style="flex:${p.v};background:${p.c}"></span>`).join("")}</div>
         <div class="fc-rows">${parts.map((p, i) => `<div class="fc-row"><i class="dot" style="background:${p.c}"></i><span class="grow">${p.label}</span><span class="pct num">${pcts[i]}%</span><b class="num">${fmt(p.v)}</b></div>`).join("")}</div>
       </button>
@@ -132,7 +132,7 @@
         <button class="card sky2" data-tab="budget"><div class="sky-num num">${fmt(PL.reduction || budgetPlan(true).reduction)}<small>/mo</small></div><div class="small">${PL.reduction ? "plan to save" : "you could save"}</div><div class="tiny">${S.budget.adopted ? "Adopted" : PL.reduction ? "In progress" : "Swipe to review"}</div></button>
       </div>
       <button class="card msg-card" data-messages><div class="row"><span class="eyebrow">Latest in Messages</span><span class="chev">›</span></div>
-        <div class="bubble lana" style="max-width:100%;margin-top:8px">You kept ${fmt(stays)} of ${fmt(f.net_income_cents)} in ${mon}. Want a plan to save $150 more?</div></button>`;
+        <div class="bubble lana" style="max-width:100%;margin-top:8px">You had ${fmt(stays)} left of ${fmt(f.net_income_cents)} in ${mon}. Want a plan to save $150 more?</div></button>`;
   }
   function owedSummary() {
     const owed = fixtureSplit();
@@ -145,7 +145,7 @@
     const stays = f.to_savings_cents + f.to_investments_cents + f.retained_cash_cents;
     const all = budgetPlan(true), ex = fixtureSplit(), rq = ex.ok ? people().map((x) => ex.r.requests.find((q) => q.contact_id === x.contact_id)).filter(Boolean) : [];
     const T = {
-      money: { tab: "money", title: `${mon} breakdown`, msgs: [["me", `Where did my money go in ${mon}?`], ["lana", `You kept ${fmt(stays)} of ${fmt(f.net_income_cents)}. ${v.categories[0].category} was the biggest cost at ${fmt(v.categories[0].total_cents)}, then ${v.categories[1].category.toLowerCase()} at ${fmt(v.categories[1].total_cents)}.`]] },
+      money: { tab: "money", title: `${mon} breakdown`, msgs: [["me", `Where did my money go in ${mon}?`], ["lana", `You had ${fmt(stays)} left of ${fmt(f.net_income_cents)}. ${v.categories[0].category} was the biggest cost at ${fmt(v.categories[0].total_cents)}, then ${v.categories[1].category.toLowerCase()} at ${fmt(v.categories[1].total_cents)}.`]] },
       budget: { tab: "budget", title: `${P.budget.period} plan`, msgs: [["me", "Help me save $150 next month without changing my rent."], ["lana", `I found ${budgetItems().length} ideas worth up to ${fmt(all.reduction)} a month, and rent stays at ${fmt(all.current.Rent)}. I left out instant coffee since you’ve passed on it before.`], ["lana", "Swipe through them in the app. I’ll ask before buying anything."]] },
       split: { tab: "split", title: `Dinner at ${receipt().merchant}`, msgs: [["me", P.split.transcript], ["me", "📎 Receipt photo"], ["lana", rq.length ? `You’re owed ${fmt(sum(rq, (q) => q.amount_cents), { cents: true })}: ${rq.map((q) => `${q.reviewed_name} ${fmt(q.amount_cents, { cents: true })}`).join(", ")}. Review before I draft the requests?` : "I read the receipt. Review the split in the app?"]] }
     }[kind];
@@ -157,7 +157,7 @@
   }
   function messagesSheet() {
     sheet(`<h3>Lana lives in Messages</h3><p class="small muted" style="margin:6px 0 12px">Ask anything there. This app is for the details.</p>
-      <div class="msg"><div class="bubble me">Where did my money go this month?</div><div class="bubble lana">You kept $1,650 of $4,800 in September. Rent was the biggest cost.</div><div class="bubble me">Split dinner with Tanish and Aryan</div><div class="bubble lana">You’re owed $80.60. Review the requests?</div></div>
+      <div class="msg"><div class="bubble me">Where did my money go this month?</div><div class="bubble lana">You had $1,650 left of $4,800 in September. Rent was the biggest cost.</div><div class="bubble me">Split dinner with Tanish and Aryan</div><div class="bubble lana">You’re owed $80.60. Review the requests?</div></div>
       <div class="sim">◆ Preview only. Messages isn’t connected here.</div>
       <button class="btn ghost" data-close style="margin-top:12px">Done</button>`);
   }
@@ -221,7 +221,7 @@
     const answer = `In ${mon} you brought in <b>${fmt(f.net_income_cents)}</b> and spent <b>${fmt(f.expenses_cents)}</b>. ${esc(biggest.category)} was the biggest cost at ${fmt(biggest.total_cents)}. You moved ${fmt(f.to_savings_cents)} to savings and ${fmt(f.to_investments_cents)} to investing, and ${fmt(f.retained_cash_cents)} stayed in checking.`;
     const head = `<button class="back" data-tab="home">‹ Home</button>
       ${bubbles(`Where did my money go in ${mon}?`, "money")}
-      <div class="eyebrow" style="margin:14px 4px 0">Stayed with you</div>
+      <div class="eyebrow" style="margin:14px 4px 0">Left after spending</div>
       <div style="margin:0 4px 14px">${big(stays)}</div>
       ${seg}
       <div class="seg" role="group" aria-label="View" style="margin-top:8px"><button data-mview="flow" aria-pressed="${S.money.view === "flow"}">In &amp; out</button><button data-mview="bal" aria-pressed="${S.money.view === "bal"}">Balances</button></div>`;
@@ -247,7 +247,7 @@
     const keptSub = pid === snapshotMonth() && chk && chk.opening_balance_cents != null ? `Checking grew from ${fmt(chk.opening_balance_cents)} to ${fmt(chk.balance_cents)}` : "Left in checking this month";
     return head + `
       <div class="card" style="margin-top:12px">${flowSVG(f)}
-        <div class="legend"><span><i class="dot" style="background:var(--goes)"></i>Went out</span><span><i class="dot" style="background:var(--accent)"></i>Stayed with you</span></div></div>
+        <div class="legend"><span><i class="dot" style="background:var(--goes)"></i>Went out</span><span><i class="dot" style="background:var(--accent)"></i>Left after spending</span></div></div>
       <div class="checkline">✓ <span class="num">${fmt(f.net_income_cents)} = ${fmt(f.expenses_cents)} + ${fmt(f.to_savings_cents)} + ${fmt(f.to_investments_cents)} + ${fmt(f.retained_cash_cents)}</span></div>
       <h2>Spending by category</h2>
       <div class="card list">${v.categories.map((c) => `<button class="item" data-cat="${esc(c.category)}"><div class="grow"><div class="row"><span class="t">${esc(c.category)}</span><span class="a num">${fmt(c.total_cents)}</span></div><div class="bar"><span style="width:0" data-w="${(c.total_cents / max) * 100}"></span></div></div><span class="chev">›</span></button>`).join("")}
@@ -653,7 +653,7 @@
     if (has("account", "connect", "bank", "card", "loan", "balance")) return { text: `${v.accounts.length} accounts are connected across ${new Set(v.accounts.map((a) => a.institution)).size} institutions, all demo data synced ${dateLabel(DS.as_of)}.`, actions: [["vault", "Open accounts"]] };
     if (has("where", "spend", "spent", "go", "month", "money", "income")) {
       const big = v.categories[0];
-      return { text: `In ${mon} you kept ${fmt(stays)} of ${fmt(f.net_income_cents)}. ${big.category} was the biggest cost at ${fmt(big.total_cents)}.`, actions: [["money", `Open ${mon}`]] };
+      return { text: `In ${mon} you had ${fmt(stays)} left of ${fmt(f.net_income_cents)}. ${big.category} was the biggest cost at ${fmt(big.total_cents)}.`, actions: [["money", `Open ${mon}`]] };
     }
     if (has("hi", "hey", "hello", "thanks")) return { text: "Hi! Try asking where your money went or who owes you." };
     return { text: "In this preview I can answer about spending, net worth, your plan, the dinner split and connected accounts. On iPhone, the on-device model handles open questions." };
