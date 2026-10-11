@@ -56,8 +56,11 @@ public struct ChatActionRequest: Sendable, Equatable {
     public var target: String?
     public var value: String?
     public var date: String?
-    public init(kind: Kind, target: String? = nil, value: String? = nil, date: String? = nil) {
-        self.kind = kind; self.target = target; self.value = value; self.date = date
+    /// The user's own message. A planner prefers it when the model's `target` or `value` isn't in it, because a small
+    /// model sometimes copies a name from the data snapshot instead of the request.
+    public var utterance: String?
+    public init(kind: Kind, target: String? = nil, value: String? = nil, date: String? = nil, utterance: String? = nil) {
+        self.kind = kind; self.target = target; self.value = value; self.date = date; self.utterance = utterance
     }
 }
 

@@ -40,7 +40,7 @@ struct FeatureTools: CoreToolExecuting {
                 + ". Budget adopted in this session: \(budgetAdopted). User-reported dinner request states: \(status.isEmpty ? "none; requests not sent" : status).",
                 provenance: base.provenance, cardID: base.cardID,
                 chart: v.categories.isEmpty ? nil : ChatChart(title: "Spending by category · \(DemoStore.monthName(period))", style: .bars,
-                                                             points: v.categories.map { .init(label: $0.category, cents: $0.totalCents) }))
+                                                             points: v.categories.filter { $0.totalCents > 0 }.map { .init(label: $0.category, cents: $0.totalCents) }))
         case .prepareSplit(let id, let assignments, let payer):
             let base = try await CoreDatasetTools(dataset: dataset).query(call, scope: scope)
             guard let receipt = dataset.receipts?.first(where: { $0.receiptId == id }) else { throw ToolError(.invalidArguments, "Reviewed receipt missing.") }

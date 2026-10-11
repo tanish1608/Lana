@@ -58,6 +58,8 @@ struct AccountsScreen: View {
     @State private var linking = false
     @State private var working: String?
     @State private var connectionNote: String?
+    /// Read by the app entry point, which reloads Lana with the chosen bundled dataset.
+    @AppStorage(DemoStore.Choice.storageKey) private var dataChoice = DemoStore.Choice.threeYear.rawValue
     private static let unlockedFor: TimeInterval = 300
     #if DEBUG
     /// Xcode previews and screenshot renders only; release builds always start locked.
@@ -73,6 +75,17 @@ struct AccountsScreen: View {
                         connected
                         SectionLabel("Saved connections")
                         connections
+                        SectionLabel("Data")
+                        Card {
+                            Picker("Data", selection: $dataChoice) {
+                                ForEach(DemoStore.Choice.allCases, id: \.rawValue) { Text($0.title).tag($0.rawValue) }
+                            }
+                            .pickerStyle(.segmented)
+                            Text(dataChoice == DemoStore.Choice.threeYear.rawValue
+                                 ? "Synthetic history, Oct 2023 – Sep 2026, across 14 accounts. Linked and imported accounts are added on top."
+                                 : "One synthetic month, September 2026, for the walkthrough. Linked and imported accounts are added on top.")
+                                .font(.caption).foregroundStyle(Theme.ink2)
+                        }
                         SectionLabel("Privacy")
                         Card {
                             Text("The model and financial reasoning run on your phone.").fontWeight(.semibold)

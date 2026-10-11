@@ -83,18 +83,20 @@ enum AccountKind {
     static let all = ["checking", "savings", "credit_card", "brokerage", "retirement", "student_loan"]
     static func name(_ kind: String) -> String {
         ["checking": "Checking", "savings": "Savings", "brokerage": "Brokerage", "retirement": "Retirement",
-         "credit_card": "Credit card", "student_loan": "Student loan"][kind] ?? kind.replacingOccurrences(of: "_", with: " ").capitalized
+         "credit_card": "Credit card", "student_loan": "Student loan", "mortgage": "Mortgage", "prediction_market": "Prediction market",
+         "securities": "Securities", "open_positions": "Open positions", "property": "Home value"][kind] ?? kind.replacingOccurrences(of: "_", with: " ").capitalized
     }
     static func side(_ kind: String) -> Account.Side { ["credit_card", "student_loan", "mortgage", "loan"].contains(kind) ? .liability : .asset }
 
-    enum Group: Int, CaseIterable { case cash, investments, cards, loans
-        var title: String { ["Cash", "Investments", "Credit cards", "Loans"][rawValue] }
+    enum Group: Int, CaseIterable { case cash, investments, property, cards, loans
+        var title: String { ["Cash", "Investments", "Property", "Credit cards", "Loans"][rawValue] }
     }
     static func group(_ kind: String) -> Group {
         switch kind {
         case "checking", "savings": return .cash
         case "credit_card": return .cards
         case "student_loan", "mortgage", "loan": return .loans
+        case "property": return .property
         default: return .investments
         }
     }

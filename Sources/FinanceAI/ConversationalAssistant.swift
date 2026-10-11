@@ -27,6 +27,8 @@ actor ChatToolSession {
     /// The user's message, for dates the model leaves out of a ledger call.
     let request: String
     private var evidence: [ChatEvidence] = []
+    /// Charts of the prefetched snapshot, kept aside and attached only when the question is about them.
+    private var snapshotCharts: [ChatFinanceOperation: ChatChart] = [:]
     private var proposed: [ChatAction] = []
     private var calls = 0
     init(context: CoreRoutingContext, tools: any CoreToolExecuting, ledger: (any LedgerQuerying)? = nil,
@@ -51,7 +53,7 @@ actor ChatToolSession {
         }
         do {
             try Task.checkCancellation()
-            let action = try await planner.plan(.init(kind: kind, target: arguments.target, value: arguments.value, date: arguments.date), scope: context.scope)
+            let action = try await planner.plan(.init(kind: kind, target: arguments.target, value: arguments.value, date: arguments.date, utterance: request), scope: context.scope)
             guard !proposed.contains(where: { $0.kind == action.kind && $0.payload == action.payload }) else { return "That change is already proposed." }
             proposed.append(action)
             return "Proposed, not done: \(action.title). \(action.detail) A card with a \"\(action.confirmLabel)\" button is shown under your reply; nothing changes until the user taps it. Tell the user it's ready to confirm."
@@ -59,6 +61,25 @@ actor ChatToolSession {
         catch { return "Couldn't prepare that change: \((error as? ToolError)?.userMessage ?? error.localizedDescription) Ask the user to clarify; don't claim it was done." }
     }
     func actions() -> [ChatAction] { proposed }
+
+    /// A reply drawn from the snapshot still gets the chart for what was asked: spending → categories, budget → now vs
+    /// plan, net worth or accounts → balances. Only when no tool result already carries a chart.
+    func attachChart(for request: String) async {
+        guard !evidence.contains(where: { $0.chart != nil }) else { return }
+        let text = request.lowercased()
+        func says(_ words: [String]) -> Bool { words.contains { text.contains($0) } }
+        if says(["net worth", "worth", "balance", "accounts", "assets", "debt", "owe"]), let ledger,
+           let out = try? await ledger.query(.init(operation: .accounts), scope: context.scope), let p = out.provenance, out.chart != nil {
+            evidence.append(.init(text: out.replyText, provenance: p, chart: out.chart)); return
+        }
+        let operation: ChatFinanceOperation
+        if says(["budget", "save", "saving", "swap", "plan"]) { operation = .swaps }
+        else if says(["spend", "spent", "category", "categories", "where", "money go", "expense", "breakdown", "chart", "graph"]) { operation = .money }
+        else { return }
+        guard let chart = snapshotCharts[operation] ?? (operation == .swaps ? snapshotCharts[.budget] : nil) else { return }
+        let id = evidence.lastIndex { ($0.provenance.resultId.hasPrefix("mv:") && operation == .money) || ($0.provenance.resultId.hasPrefix("budget:") && operation == .swaps) }
+        if let id { evidence[id] = .init(text: evidence[id].text, provenance: evidence[id].provenance, chart: chart) }
+    }
     func ledger(_ arguments: ChatLedgerArguments) async throws -> String {
         calls += 1
         guard calls <= 6 else { return "Tool budget reached for this turn. Respond using the results already supplied." }
@@ -120,6 +141,7 @@ actor ChatToolSession {
                     throw ToolError(.staleData, "Refresh the dataset before using this result.")
                 }
                 evidence.append(.init(text: output.replyText, provenance: provenance, chart: prefetch ? nil : output.chart))
+                if prefetch, let chart = output.chart { snapshotCharts[arguments.operation] = chart }
             } else if arguments.operation != .receipt {
                 throw ToolError(.invalidArguments, "The financial result is missing provenance.")
             }
@@ -264,9 +286,18 @@ public struct ConversationalAssistant: Sendable {
             let response = try await session.respond(to: prompt,
                 options: GenerationOptions(samplingMode: .greedy, maximumResponseTokens: 500))
             try Task.checkCancellation()
-            return .init(text: response.content, source: .onDevice,
+            await toolSession.attachChart(for: text)
+            var reply = response.content
+            var actions = await toolSession.actions()
+            // A plain command the model answered without calling act still gets its card, resolved from the user's words.
+            if actions.isEmpty, let planner, let kind = Self.command(in: text),
+               let action = try? await planner.plan(.init(kind: kind, target: text, value: kind == .recategorize ? text : nil, utterance: text), scope: context.scope) {
+                actions = [action]
+                reply = "Ready to confirm: \(action.title). \(action.detail)"
+            }
+            return .init(text: reply, source: .onDevice,
                 notice: text.count > 3_000 ? "Only the first 3,000 characters of this message were used. Attach a PDF for longer documents." : nil,
-                evidence: await toolSession.results(), actions: await toolSession.actions())
+                evidence: await toolSession.results(), actions: actions)
         } catch is CancellationError { throw CancellationError() }
         catch {
             try Task.checkCancellation()
@@ -277,6 +308,16 @@ public struct ConversationalAssistant: Sendable {
             }
             return try await offline(text, notice: "Local response generation failed. Try a shorter question.")
         }
+    }
+    /// The change a message plainly asks for, by its leading verb; nil for questions and anything less clear.
+    static func command(in text: String) -> ChatActionRequest.Kind? {
+        let t = text.lowercased().trimmingCharacters(in: .whitespacesAndNewlines.union(.punctuationCharacters))
+        if t.hasPrefix("move ") || t.hasPrefix("recategorize ") || t.hasPrefix("categorize "), t.contains(" to ") { return .recategorize }
+        if t.hasPrefix("keep ") { return .keepIdea }
+        if t.hasPrefix("skip ") { return .skipIdea }
+        if t.hasPrefix("mark "), t.contains("paid") { return .markPaid }
+        if t.hasPrefix("adopt ") { return .adoptPlan }
+        return nil
     }
     private func offline(_ text: String, notice: String) async throws -> ChatReply {
         let greeting = text.lowercased().trimmingCharacters(in: .whitespacesAndNewlines.union(.punctuationCharacters))

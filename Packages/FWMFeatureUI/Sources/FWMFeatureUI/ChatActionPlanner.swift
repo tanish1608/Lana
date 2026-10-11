@@ -16,6 +16,14 @@ struct ChatActionPlanner: ChatActionPlanning {
 
     func plan(_ request: ChatActionRequest, scope: CoreScope) async throws -> ChatAction {
         guard scope.userID == dataset.user.userId else { throw ToolError(.authRequired, "This chat belongs to another user.") }
+        var request = request
+        if let said = request.utterance, !said.isEmpty {
+            // The user's words win: a target the user never said is replaced by the message itself, which `best`
+            // and the merchant/category lookups then resolve.
+            if let t = request.target, Self.words(t).isDisjoint(with: Self.words(said)) { request.target = said }
+            if request.target == nil, request.kind != .adoptPlan { request.target = said }
+            if request.kind == .recategorize, let v = request.value, Self.words(v).isDisjoint(with: Self.words(said)) { request.value = said }
+        }
         switch request.kind {
         case .keepIdea, .skipIdea: return try idea(request.target, keep: request.kind == .keepIdea)
         case .adoptPlan:
@@ -55,15 +63,23 @@ struct ChatActionPlanner: ChatActionPlanning {
     private func recategorize(_ target: String?, to value: String?, on date: String?) throws -> ChatAction {
         let known = Set(dataset.transactions.compactMap(\.category)).union(["Groceries", "Dining", "Transport", "Bills and subscriptions", "Other", "Rent"])
             .subtracting(["Income", "Transfer"]).sorted()
+        // A category named exactly, else the one category whose words appear in the text ("...to groceries").
+        let named = value.map { v in known.filter { !Self.words($0).isEmpty && Self.words($0).isSubset(of: Self.words(v)) } } ?? []
         guard let raw = value?.trimmingCharacters(in: .whitespacesAndNewlines), !raw.isEmpty,
-              let category = known.first(where: { $0.caseInsensitiveCompare(raw) == .orderedSame }) ?? known.first(where: { $0.localizedCaseInsensitiveContains(raw) || raw.localizedCaseInsensitiveContains($0) }) else {
+              let category = known.first(where: { $0.caseInsensitiveCompare(raw) == .orderedSame }) ?? (named.count == 1 ? named[0] : nil)
+                ?? known.first(where: { $0.localizedCaseInsensitiveContains(raw) }) else {
             throw ToolError(.invalidArguments, "Which category? Choose one of: \(known.joined(separator: ", ")).")
         }
         guard let words = target?.trimmingCharacters(in: .whitespacesAndNewlines), !words.isEmpty else { throw ToolError(.invalidArguments, "Which purchase should move?") }
         let day = try LocalLedger.validDate(date)
         let tz = TimeZone(identifier: dataset.user.timezone) ?? .current
+        // Merchants whose full name is in the text ("move my target purchase…" names Target), else a substring match.
+        let said = Self.words(words)
+        let merchants = Set(dataset.transactions.map(\.merchant))
+        let mentioned = merchants.filter { !Self.words($0).isEmpty && Self.words($0).isSubset(of: said) }
+        guard mentioned.count <= 1 else { throw ToolError(.invalidArguments, "Which store: \(mentioned.sorted().joined(separator: " or "))?") }
         let matches = dataset.transactions.filter { t in
-            t.merchant.localizedCaseInsensitiveContains(words) && t.signedAmountCents < 0 && t.transferPairId == nil
+            (mentioned.first.map { t.merchant == $0 } ?? t.merchant.localizedCaseInsensitiveContains(words)) && t.signedAmountCents < 0 && t.transferPairId == nil
                 && (day == nil || LocalLedger.localDate(t.postedAt, tz) == day)
         }
         guard !matches.isEmpty else { throw ToolError(.invalidArguments, "No purchases at “\(words)”\(day.map { " on \($0)" } ?? "") were found.") }

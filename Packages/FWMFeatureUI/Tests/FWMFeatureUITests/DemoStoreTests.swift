@@ -43,3 +43,27 @@ final class DemoStoreTests: XCTestCase {
         XCTAssertEqual(LanaMessagesLine.url(infoValue: "+1 (555) 010-0199")?.absoluteString, "sms:+15550100199")
     }
 }
+
+final class ThreeYearDataTests: XCTestCase {
+    func testThreeYearWorldLoadsReconcilesAndKeepsTheBudgetWorking() throws {
+        let s = try DemoStore(fixtureURL: try XCTUnwrap(DemoStore.threeYearURL))
+        XCTAssertGreaterThan(s.dataset.transactions.count, 2_800, "three years of bank and card history")
+        XCTAssertEqual(s.dataset.accounts.count, 14, "11 accounts plus securities, prediction positions and the condo")
+        XCTAssertEqual(s.snapshotPeriod, "2026-09")
+        XCTAssertEqual(s.periods.first, "2023-10")
+        let v = try MoneyEngine.moneyView(s.dataset, period: "2026-09")
+        XCTAssertTrue(v.reconciled, "September statements reconcile with September activity")
+        XCTAssertTrue(v.accounts.allSatisfy { $0.reconciled == true })
+        // The world's own September summary.
+        let summary = try JSONSerialization.jsonObject(with: Data(contentsOf: DemoStore.repoSeedURL().deletingLastPathComponent()
+            .appendingPathComponent("world-v1/full_financial_world/september.json"))) as! [String: Any]
+        let expected = summary["summary"] as! [String: Any]
+        XCTAssertEqual(v.assetsCents, expected["assets_cents"] as? Int)
+        XCTAssertEqual(v.liabilitiesCents, expected["liabilities_cents"] as? Int)
+        XCTAssertEqual(v.netWorthCents, expected["net_worth_cents"] as? Int)
+        XCTAssertFalse(v.categories.contains { $0.category == "Uncategorized" }, "investment trading isn't spending")
+        let p = try BudgetProjection.make(dataset: s.dataset, period: "2026-09", accepted: Set(PreviewBudgetPlan.swaps.map(\.id) + PreviewBudgetPlan.habits.map(\.id)), useHistory: true)
+        XCTAssertEqual(p.savingsCents, PreviewBudgetPlan.goalCents)
+        XCTAssertNotNil(s.fixtureSplit(), "the dinner split still works")
+    }
+}

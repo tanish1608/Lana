@@ -115,6 +115,10 @@ final class ChatAgentTests: XCTestCase {
         XCTAssertEqual(move.actions.first?.kind, "recategorize", move.text)
         XCTAssertEqual(move.actions.first?.payload["category"], "Groceries")
 
+        // Exactly as typed on the phone, lowercase store name included.
+        let phone = try await assistant.respond(to: "Move my target purchase to groceries", archive: archive)
+        XCTAssertEqual(phone.actions.first?.title, "Move 3 Target purchases to Groceries", phone.text)
+
         let chart = try await assistant.respond(to: "Show me my spending by category for September 2026.", archive: archive)
         XCTAssertTrue(chart.evidence.contains { $0.chart != nil }, "\(chart.evidence.map(\.provenance.resultId)) \(chart.text)")
     }
@@ -124,5 +128,25 @@ final class ChatTextTests: XCTestCase {
     func testDollarAmountsSurviveRendering() {
         let shown = String(ChatPanel.markdown("You spent **$784.50**, about $261.50 a month.").characters)
         XCTAssertEqual(shown, "You spent $784.50, about $261.50 a month.")
+    }
+}
+
+final class ChatGroundingTests: XCTestCase {
+    /// From the phone: the model sent "Laundry detergent" (from the budget snapshot) for "Move my target purchase to groceries".
+    func testUsersWordsWinOverAModelSlip() async throws {
+        let ds = try XCTUnwrap(DemoStore.repoSeed()).dataset
+        let sc = CoreScope(userID: ds.user.userId, conversationID: "c", period: "2026-09", datasetVersion: ds.datasetVersion,
+                           preferencesVersion: ds.user.preferencesVersion, accountIDs: Set(ds.accounts.map(\.accountId)))
+        let planner = ChatActionPlanner(dataset: ds, requests: [], useHistory: true)
+        let said = "Move my target purchase to groceries"
+        let move = try await planner.plan(.init(kind: .recategorize, target: "Laundry detergent", value: "Groceries", utterance: said), scope: sc)
+        XCTAssertEqual(move.title, "Move 3 Target purchases to Groceries")
+        let noValue = try await planner.plan(.init(kind: .recategorize, target: "target", value: "Dining", utterance: said), scope: sc)
+        XCTAssertEqual(noValue.payload["category"], "Groceries", "a category the user didn't say is replaced by the one they did")
+        let keep = try await planner.plan(.init(kind: .keepIdea, target: "Pantry staples", utterance: "keep the phone plan swap"), scope: sc)
+        XCTAssertEqual(keep.payload["idea_id"], "s_phone")
+        // When the model's words are in the message, they're used as given.
+        let tide = try await planner.plan(.init(kind: .recategorize, target: "Tide", value: "Groceries", utterance: "move the Tide purchase to groceries"), scope: sc)
+        XCTAssertTrue(tide.title.contains("Tide detergent"), tide.title)
     }
 }

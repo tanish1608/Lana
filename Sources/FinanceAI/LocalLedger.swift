@@ -242,7 +242,8 @@ public actor LocalLedger: LedgerQuerying {
         let from = try Self.validDate(request.from), to = try Self.validDate(request.to)
         if let from, let to, from > to { throw ToolError(.invalidArguments, "The start date is after the end date.") }
         let limit = max(1, min(request.limit, 25))
-        let like = Self.likePattern(request.text)
+        // Activity matches whole phrases; transaction searches drop filler like "my … purchase".
+        let like = Self.likePattern(request.operation == .activity ? request.text : Self.searchTerms(request.text))
         guard !scope.accountIDs.isEmpty || request.operation == .activity else {
             throw ToolError(.authRequired, "No accounts are in scope for this conversation.")
         }
@@ -278,8 +279,9 @@ public actor LocalLedger: LedgerQuerying {
             // Spending per month when the matches span more than one month.
             let months = try rows("SELECT substr(t.posted_date, 1, 7) AS month, sum(CASE WHEN \(spending) THEN -t.amount_cents ELSE 0 END) FROM transactions t WHERE \(filter) GROUP BY month ORDER BY month", args)
             if months.count > 1 {
-                chart = ChatChart(title: "\(request.text.map { "\($0) s" } ?? "S")pending by month", style: .columns,
-                                  points: months.map { .init(label: Self.monthLabel($0.text(0)), cents: $0.int(1)) })
+                let recent = months.suffix(12)
+                chart = ChatChart(title: "\(Self.searchTerms(request.text).map { "\($0) s" } ?? "S")pending by month\(months.count > 12 ? " · last 12 months" : "")", style: .columns,
+                                  points: recent.map { .init(label: Self.monthLabel($0.text(0)), cents: $0.int(1)) })
             }
             for r in found {
                 sources.append(r.text(0)); imported = imported || r.text(9) != "dataset"
@@ -311,6 +313,11 @@ public actor LocalLedger: LedgerQuerying {
                 lines.append("- \(r.text(1)) \(r.text(2).replacingOccurrences(of: "_", with: " ")): \(CoreDatasetTools.money(r.int(4)))\(r.text(3) == "liability" ? " owed" : "") as of \(r.text(5).prefix(10))\(Self.originTag(r.text(6)).map { " · \($0)" } ?? "")")
             }
             if lines.isEmpty { lines.append("No matching accounts.") }
+            let balances = try rows("SELECT institution, kind, balance_cents FROM accounts WHERE \(accountFilter) ORDER BY balance_cents DESC", accountArgs)
+            if !balances.isEmpty {
+                chart = ChatChart(title: "Balances", style: .bars, points: balances.prefix(10).map {
+                    .init(label: "\($0.text(0)) \($0.text(1).replacingOccurrences(of: "_", with: " "))", cents: $0.int(2)) })
+            }
         case .activity:
             let found = try events(userID: scope.userID, matching: request.text, limit: limit)
             let formatter = ISO8601DateFormatter(); formatter.formatOptions = [.withFullDate, .withTime, .withColonSeparatorInTime]
@@ -367,6 +374,15 @@ public actor LocalLedger: LedgerQuerying {
         let f = DateFormatter(); f.calendar = Calendar(identifier: .gregorian); f.locale = Locale(identifier: "en_US_POSIX")
         f.timeZone = tz; f.dateFormat = "yyyy-MM-dd"
         return f.string(from: d)
+    }
+
+    /// The merchant or category words in a request: "my Target purchases" → "Target". Nil when nothing specific is left.
+    static func searchTerms(_ text: String?) -> String? {
+        let filler: Set<String> = ["my", "the", "a", "an", "all", "any", "at", "on", "in", "from", "for", "of", "to", "purchase", "purchases",
+                                   "transaction", "transactions", "payment", "payments", "charge", "charges", "spending", "spend", "spent", "buys", "bought", "stuff"]
+        guard let text else { return nil }
+        let kept = text.split(separator: " ").filter { !filler.contains($0.lowercased().trimmingCharacters(in: .punctuationCharacters)) }
+        return kept.isEmpty ? nil : kept.joined(separator: " ")
     }
 
     /// Words to a LIKE pattern with wildcards escaped; nil matches everything.
