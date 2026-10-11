@@ -67,10 +67,11 @@ async function nudgeIfIdle(jobId: string, user: string, to: string) {
 
 // ---------- device auth and approvals ----------
 
-function device(req: IncomingMessage) {
+/** `touch` marks the device as open. The demo phone page stands in for the SMS app, not Lana, so it passes false. */
+function device(req: IncomingMessage, touch = true) {
   const token = (req.headers.authorization || '').replace(/^Bearer /, '');
   const d = token && (db.prepare('SELECT * FROM devices WHERE device_token = ?').get(token) as any);
-  if (d) db.prepare('UPDATE devices SET last_seen = ? WHERE device_token = ?').run(Date.now(), token);
+  if (d && touch) db.prepare('UPDATE devices SET last_seen = ? WHERE device_token = ?').run(Date.now(), token);
   return d || null;
 }
 
@@ -309,7 +310,7 @@ createServer(async (req, res) => {
     for (const [method, re, handler, auth] of routes) {
       const m = path.match(re);
       if (!m || req.method !== method) continue;
-      const dev = auth ? device(req) : null;
+      const dev = auth ? device(req, !path.startsWith('/sim/')) : null;
       if (auth && !dev) return err(res, 401, 'AUTH_REQUIRED', 'Pair this device first.');
       return await handler(req, res, m, dev);
     }
