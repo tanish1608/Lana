@@ -59,7 +59,8 @@ The shared product plan uses **local inference, without a cloud LLM**. The relay
 | `Packages/FWMCore/` | Shared records/contracts; money and split engines; provider adapters (fixture, bank CSV import); golden tests | Engines on `main`; adapters in PR #3 |
 | `fixtures/` | Canonical and edge inputs, generator | Drafted on `main`; Ashwin owns subsequent changes |
 | `ios/` | Integrated iPhone host and feature screens | Intended app location; not yet present at this baseline |
-| `relay/` | Dial inbox/outbox, job transport, reminders, Keewano | Aryan's lane; not yet present at this baseline |
+| `relay/` | Dial inbox/outbox, job transport, reminders, Keewano | Aryan's lane; PR #1 |
+| `sparta/` | Sparta Worlds tests for the approved-action executor (phone-plan swap) | Aryan's lane; PR #2 |
 | `docs/README.md` | Technical contracts and collaboration procedure | Shared documentation |
 | Root `Package.swift`, `Sources/FinanceAI/`, `Tests/FinanceAITests/` | Tanish's reusable local AI module | On `codex/on-device-ai`; integrated with `FWMCore` |
 | `Examples/AIPlayground/` | AI-only SwiftUI test harness | Development harness on AI branch; separate from final feature screens |

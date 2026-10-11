@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "name": "Lana phone plan",
+  "templateId": "customer-desk",
+  "seed": "seed.json",
+  "missions": "missions.json",
+  "checks": "checks.json",
+  "agent": {
+    "command": [
+      "node",
+      "executor.mjs"
+    ],
+    "timeoutSec": 60
+  }
+}
