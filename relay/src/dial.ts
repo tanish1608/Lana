@@ -46,6 +46,7 @@ export async function startStream(onMessage: Handler) {
       const conn = await dial.newEventsConnection();
       console.log('[dial] event stream connected');
       for await (const ev of conn) {
+        if (process.env.DIAL_DEBUG) console.log('[dial] event', JSON.stringify(ev).slice(0, 600));
         const m = fromEvent(ev);
         if (m) await onMessage(m).catch((e) => console.error('[dial] inbound failed:', e.message));
       }

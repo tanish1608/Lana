@@ -15,7 +15,7 @@ The relay **never calls an LLM** and never sees balances or transactions. It sto
 cd relay
 npm install
 cp .env.example .env      # fill in DIAL_API_KEY, PAIRED_PHONES
-npm start                 # prints the pairing code
+npm start                 # prints the pairing code; DIAL_DEBUG=1 logs raw stream events
 npm test                  # end-to-end checks against a real server, Dial off
 RELAY_DEV=1 npm start     # then, in another shell:
 npm run fake-phone        # plays sender + phone: message -> job -> reply -> approved reminder -> clock +48h
@@ -77,7 +77,7 @@ For reminders, `payload = {action_id, contact_id, to, body, due_at}`. A changed 
 |---|---|
 | Job queue, pairing, idempotent replies, approvals, reminders, demo clock | `npm test` passes (5 end-to-end tests) |
 | Swift client | `swift test` passes; `testLiveRelayLoop` ran against a local relay (pair, job, result, signed reminder, forged approval rejected) |
-| Dial send/receive | Code complete. Our number is SMS/voice. Inbound SMS from any phone works. Outbound SMS to US numbers is blocked until 10DLC registration ($25, 3 to 5 days), and iMessage costs $250 up front, so the demo shows replies in the app. |
+| Dial send/receive | Verified live at 1:19 PM: Dial's Test Inbound SMS reached the relay over the event stream, became a job for user_ashwin, and the relay sent the "Open FWM" nudge back through Dial (provider message ID recorded in `/v1/evidence`). Our number is SMS/voice. Inbound SMS from any phone works. Outbound SMS to US numbers is blocked until 10DLC registration ($25, 3 to 5 days), and iMessage costs $250 up front, so the demo shows replies in the app. |
 | Dial webhook | Signature check written. Not exercised; the event stream is the primary path. |
 | Keewano swap memory | Events registered and history ingested (`npm run seed:keewano`). Query verification pending ingest processing. |
 | Sparta Worlds runner | Not started |
