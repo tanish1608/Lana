@@ -51,8 +51,8 @@ enum Theme {
     static let lanaGradient = LinearGradient(colors: [Color(light: 0x3B9BFF, dark: 0x3B9BFF), Color(light: 0x5E5CE6, dark: 0x5E5CE6)], startPoint: .topLeading, endPoint: .bottomTrailing)
     /// Card surface: a slightly lighter top edge so cards read as lit from above.
     static let cardHi = Color(light: 0xFFFFFF, dark: 0x26262A)
-    /// Slightly see-through so the ambient backdrop tints each card.
-    static let cardFill: some ShapeStyle = LinearGradient(colors: [cardHi, card], startPoint: .top, endPoint: .bottom).opacity(0.86)
+    /// Frosted and see-through: the ambient backdrop shows through every card.
+    static let cardFill: some ShapeStyle = LinearGradient(colors: [cardHi.opacity(0.62), card.opacity(0.42)], startPoint: .top, endPoint: .bottom)
     /// Glass edge: bright along the top, fading out toward the bottom.
     static let glassEdge = LinearGradient(colors: [Color(light: 0xFFFFFF, dark: 0xFFFFFF).opacity(0.55), edgeLow, edgeLow.opacity(0.4)], startPoint: .top, endPoint: .bottom)
     #if canImport(UIKit)
