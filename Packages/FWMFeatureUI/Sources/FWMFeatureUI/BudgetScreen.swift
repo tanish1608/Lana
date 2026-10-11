@@ -214,16 +214,18 @@ struct BudgetScreen: View {
                             HStack(spacing: 6) { Text(Self.icon(c.category)).font(roomy ? .title3 : .body); Text(short(c.category)).font(.subheadline.weight(.semibold)).lineLimit(1).minimumScaleFactor(0.85) }
                             HStack(alignment: .firstTextBaseline, spacing: 5) {
                                 Text(usd(target)).font((roomy ? Font.title : .title3).weight(.bold)).foregroundStyle(on ? .white : (target < c.totalCents ? Theme.ok : Theme.ink))
-                                if target < c.totalCents { Text(usd(c.totalCents)).font(.caption).strikethrough().opacity(0.7) }
                             }
                             .monospacedDigit()
                             Capsule().fill(on ? Color.white.opacity(0.25) : Theme.line).frame(height: 5).overlay(alignment: .leading) {
                                 GeometryReader { g in Capsule().fill(on ? Color.white : Theme.spent).frame(width: g.size.width * CGFloat(target) / maxC) }
                             }
+                            Text(all.isEmpty ? "Stays the same" : (target < c.totalCents ? "Plan \(usd(target)) · was \(usd(c.totalCents))" : "Up to −\(usd(all.reduce(0) { $0 + $1.savingsCents }))"))
+                                .font(.caption).opacity(0.85).lineLimit(1).minimumScaleFactor(0.8)
+                            if roomy { Spacer(minLength: 0) }
                             badge(all: all.count, left: left, on: on)
                         }
                         .foregroundStyle(on ? .white : Theme.ink)
-                        .padding(.horizontal, 14).padding(.vertical, roomy ? 18 : 12).frame(width: roomy ? 140 : 128, alignment: .leading)
+                        .padding(.horizontal, 14).padding(.vertical, roomy ? 16 : 12).frame(width: roomy ? 140 : 128, height: roomy ? 176 : nil, alignment: .topLeading)
                         .background(on ? AnyShapeStyle(Theme.deepBlueFill) : AnyShapeStyle(Theme.cardFill), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
                         .raised(18, tint: on ? Theme.deepBlue : .black, strength: on ? 2 : 1)
                         .opacity(all.isEmpty ? 0.6 : 1)

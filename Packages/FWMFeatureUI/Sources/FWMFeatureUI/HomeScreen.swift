@@ -12,6 +12,7 @@ struct HomeScreen: View {
     var plannedCents = 0
     @Binding var path: NavigationPath
     var openChat: () -> Void
+    var openDinner: () -> Void = {}
 
     var body: some View {
         NavigationStack(path: $path) {
@@ -152,7 +153,7 @@ struct HomeScreen: View {
         let owed = unpaid
         let plan = PreviewBudgetPlan.swaps.reduce(0) { $0 + $1.savingsCents } + PreviewBudgetPlan.habits.reduce(0) { $0 + $1.savingsCents }
         return HStack(spacing: 12) {
-            Button { tab = .split } label: {
+            Button { tab = .split; openDinner() } label: {
                 duoCard(fill: Theme.deepBlueFill, ink: .white, glow: Theme.deepBlue) {
                     Text(usd(owed.reduce(0) { $0 + $1.amountCents }, cents: true)).font(.system(size: 28, weight: .bold)).monospacedDigit()
                     Text("owed to you").font(.footnote)

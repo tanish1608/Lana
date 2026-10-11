@@ -34,6 +34,11 @@ struct SplitScreen: View {
 
     @State private var step = 0
     @State private var keptAsMine = false
+    /// nil = the Receipts hub; "flow" = the add/split flow; otherwise a sample receipt id.
+    @State private var open: String?
+    @State private var receiptStatus: [String: String] = [:]
+    /// Bumped by Home's owed card and the chat shortcut to jump straight into the dinner split.
+    var dinnerRequest = 0
     @State private var importedReceipt: Receipt?
     @State private var importSheet = false
     @State private var transcript = ""
@@ -83,8 +88,15 @@ struct SplitScreen: View {
             ScrollViewReader { proxy in
             ScrollView {
                 VStack(alignment: .leading, spacing: 12) {
+                    if open == nil {
+                        hub.id("top")
+                    } else if let sample = PreviewReceipts.all.first(where: { $0.id == open }) {
+                        SampleReceiptDetail(receipt: sample, status: receiptStatus[sample.id], people: participants.map(\.reviewedName),
+                                            onBack: { open = nil },
+                                            onConfirm: { _, status, logLine in receiptStatus[sample.id] = status; onAction(logLine) }).id("top")
+                    } else {
+                    Button { open = nil } label: { Label("Receipts", systemImage: "chevron.left").font(.subheadline.weight(.semibold)) }.frame(minHeight: 36).id("top")
                     HStack(spacing: 4) { ForEach(0..<Self.steps.count, id: \.self) { i in Capsule().fill(i <= step ? Theme.accent : Theme.line).frame(height: 4) } }
-                        .id("top")
                     if haveVoice { AskChip(SplitDemo.transcript, kind: .split, store: store) }
                     Text("Step \(step + 1) of \(Self.steps.count) · \(Self.steps[step])").font(.caption).foregroundStyle(Theme.ink3)
                     switch step {
@@ -93,6 +105,7 @@ struct SplitScreen: View {
                     case 2: assign
                     default: computed
                     }
+                    }
                 }
                 .padding(.horizontal, 16).padding(.bottom, 24)
                 .animation(.easeOut(duration: 0.2), value: step)
@@ -100,6 +113,8 @@ struct SplitScreen: View {
             // The cards grow as inputs arrive; bring the primary button back above the tab bar.
             .onChange(of: haveReceipt) { _, ready in if ready { withAnimation { proxy.scrollTo("nav", anchor: .bottom) } } }
             .onChange(of: step) { _, _ in proxy.scrollTo("top", anchor: .top) }
+            .onChange(of: open) { _, _ in proxy.scrollTo("top", anchor: .top) }
+            .onChange(of: dinnerRequest) { _, _ in openDinner() }
             }
             .scrollIndicators(.hidden).background { Theme.backdrop }
             .navigationTitle("Receipts")
@@ -162,6 +177,61 @@ struct SplitScreen: View {
                     .background(Theme.deepBlueFill, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
                 VStack(alignment: .leading, spacing: 2) { Text(title).fontWeight(.semibold); Text(sub).font(.caption).foregroundStyle(Theme.ink2) }
                 Spacer()
+                Image(systemName: "chevron.right").font(.footnote.weight(.semibold)).foregroundStyle(Theme.ink3)
+            }
+            .foregroundStyle(Theme.ink).padding(14)
+            .background(Theme.cardFill, in: RoundedRectangle(cornerRadius: 18, style: .continuous)).raised(18)
+        }
+        .buttonStyle(PressScaleStyle())
+    }
+
+    // MARK: hub
+
+    /// Opens the dinner fixture in the split flow, at the check step (or wherever it was left).
+    private func openDinner() {
+        if !haveReceipt || importedReceipt != nil {
+            importedReceipt = nil; haveReceipt = true; resetOwners()
+            tipText = String(format: "%.2f", Double(SplitDemo.misreadTipCents) / 100); onInvalidate()
+            step = 1
+        }
+        open = "flow"
+    }
+
+    @ViewBuilder private var hub: some View {
+        AskChip(SplitDemo.transcript, kind: .split, store: store)
+        Text("Receipts").font(Theme.display(30))
+        VStack(spacing: 10) {
+            Image(systemName: "doc.text.viewfinder").font(.title).foregroundStyle(Theme.accent)
+            Text("Add any receipt").font(.headline)
+            Text("A bill, a store receipt, a dinner. Lana reads it, then you choose what to do.").font(.footnote).foregroundStyle(Theme.ink2).multilineTextAlignment(.center)
+            Button("Upload photo") { step = 0; haveReceipt = false; importedReceipt = nil; open = "flow" }.buttonStyle(PrimaryButtonStyle())
+        }
+        .padding(18).frame(maxWidth: .infinity)
+        .overlay(RoundedRectangle(cornerRadius: 22, style: .continuous).strokeBorder(Theme.accent.opacity(0.5), style: StrokeStyle(lineWidth: 1.5, dash: [6, 5])))
+        SectionLabel("Recent")
+        if let r = store.dataset.receipts?.first {
+            hubRow(icon: "fork.knife", merchant: r.merchant ?? "Dinner", sub: "\(r.date.map(DemoStore.shortDate) ?? "") · \(r.items.count) items", cents: r.totalCents,
+                   status: store.unpaidRequests(states).isEmpty ? "Settled" : "You’re owed \(usd(store.unpaidRequests(states).reduce(0) { $0 + $1.amountCents }, cents: true))", sample: false) { openDinner() }
+        }
+        ForEach(PreviewReceipts.all) { s in
+            hubRow(icon: s.icon, merchant: s.merchant, sub: s.date + (s.due.map { " · due \($0)" } ?? "") + (s.paidWith.map { " · paid, \($0)" } ?? ""), cents: s.totalCents,
+                   status: receiptStatus[s.id], sample: true) { open = s.id }
+        }
+        Text("Sample receipts are demo stand-ins.").font(.caption).foregroundStyle(Theme.ink3).padding(.horizontal, 4)
+    }
+
+    private func hubRow(icon: String, merchant: String, sub: String, cents: Int, status: String?, sample: Bool, _ action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 12) {
+                Image(systemName: icon).font(.body.weight(.semibold)).foregroundStyle(.white).frame(width: 44, height: 44)
+                    .background(Theme.deepBlueFill, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(merchant).fontWeight(.semibold).lineLimit(1)
+                    Text(sub).font(.caption).foregroundStyle(Theme.ink2).lineLimit(1)
+                    if let status { Text(status).font(.caption.weight(.semibold)).foregroundStyle(Theme.ok).lineLimit(1) }
+                }
+                Spacer()
+                Text(usd(cents, cents: true)).fontWeight(.bold).monospacedDigit()
                 Image(systemName: "chevron.right").font(.footnote.weight(.semibold)).foregroundStyle(Theme.ink3)
             }
             .foregroundStyle(Theme.ink).padding(14)

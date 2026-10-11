@@ -13,6 +13,7 @@ public struct LanaRootView: View {
     @State private var requestStates: [String: RequestState] = [:]
     @State private var budgetAdopted = false
     @State private var plannedCents = 0
+    @State private var dinnerRequest = 0
     @State private var homePath = NavigationPath()
     @State private var showChat = false
     @State private var chat: LanaChatController
@@ -28,7 +29,7 @@ public struct LanaRootView: View {
     public var body: some View {
         // Native tab containment keeps each navigation stack's toolbar scoped to its section.
         LanaSectionHost(selection: $tab) {
-            section(.home) { HomeScreen(store: store, tab: $tab, requestStates: requestStates, budgetAdopted: budgetAdopted, plannedCents: plannedCents, path: $homePath, openChat: { setChat(true) }) }
+            section(.home) { HomeScreen(store: store, tab: $tab, requestStates: requestStates, budgetAdopted: budgetAdopted, plannedCents: plannedCents, path: $homePath, openChat: { setChat(true) }, openDinner: { dinnerRequest += 1 }) }
             section(.budget) { BudgetScreen(store: store, unlocker: unlocker, onSelection: { chat.updateBudget(accepted: $0, useHistory: $1)
                 store.dataset = chat.dataset
                 if var split = store.reviewedResult { split.provenance.datasetVersion = chat.dataset.datasetVersion; store.reviewedResult = split }
@@ -40,7 +41,7 @@ public struct LanaRootView: View {
                 store.reviewedResult = try? SplitEngine.prepareSplit(receipt: receipt, assignments: assignments, payerId: payer,
                     contacts: store.dataset.contacts ?? [], datasetVersion: store.dataset.datasetVersion, dataMode: receipt.receiptId.hasPrefix("local-") ? .cached : store.dataset.dataMode)
                 log.insert("Reviewed split · \(result.outstandingCents) cents outstanding; nothing sent", at: 0)
-            }, onInvalidate: { chat.reviewedSplit = nil; store.reviewedResult = nil }, onAction: { log.insert($0, at: 0) }, states: $requestStates) }
+            }, onInvalidate: { chat.reviewedSplit = nil; store.reviewedResult = nil }, onAction: { log.insert($0, at: 0) }, dinnerRequest: dinnerRequest, states: $requestStates) }
             section(.accounts) { AccountsScreen(store: store, dataset: chat.dataset, unlocker: unlocker, log: log, relay: relay, isActive: tab == .accounts,
                 onLink: { account, txns in
                     chat.addAccount(account, transactions: txns); syncStore()
@@ -92,7 +93,7 @@ public struct LanaRootView: View {
         switch j {
         case .money: tab = .home; homePath = NavigationPath([HomeRoute.money])
         case .budget: tab = .budget
-        case .split: tab = .split
+        case .split: tab = .split; dinnerRequest += 1
         case .accounts: tab = .accounts
         }
     }
