@@ -36,7 +36,7 @@ function approve(actionId: string, payload: unknown, expiresInMs = 60_000) {
 before(async () => {
   const dir = mkdtempSync(join(tmpdir(), 'fwm-relay-'));
   server = spawn(process.execPath, ['src/server.ts'], {
-    env: { ...process.env, DIAL_API_KEY: '', PORT: String(PORT), RELAY_DEV: '1', RELAY_DB: join(dir, 'relay.db'), PAIRING_CODE: '424242', PAIRED_PHONES: `${PHONE}=user_ashwin` },
+    env: { ...process.env, DIAL_API_KEY: '', KEEWANO_API_KEY: '', KEEWANO_PAT: '', PORT: String(PORT), RELAY_DEV: '1', RELAY_DB: join(dir, 'relay.db'), PAIRING_CODE: '424242', PAIRED_PHONES: `${PHONE}=user_ashwin` },
     stdio: 'ignore',
   });
   for (let i = 0; i < 50; i++) {
@@ -102,4 +102,15 @@ test('a paid request cancels its reminder before it fires', async () => {
   const rem = await call('POST', '/v1/reminders', { ...payload, approval: approve(actionId, payload) });
   const paid = await call('POST', `/v1/reminders/${rem.body.reminder_id}/status`, { status: 'paid' });
   assert.equal(paid.body.status, 'paid');
+});
+
+test('time receipt averages measured runs per chore and reports minutes saved', async () => {
+  assert.equal((await call('POST', '/v1/timings', { workflow: 'bill_split', mode: 'manual', seconds: 0 })).status, 400);
+  for (const [mode, seconds] of [['manual', 560], ['manual', 640], ['lana', 40]] as const)
+    assert.equal((await call('POST', '/v1/timings', { workflow: 'bill_split', mode, seconds })).status, 201);
+  const r = await call('GET', '/v1/time-receipt');
+  const split = r.body.rows.find((x: any) => x.workflow === 'bill_split');
+  assert.deepEqual([split.manual_seconds, split.lana_seconds, split.saved_seconds, split.manual_runs], [600, 40, 560, 2]);
+  assert.equal(r.body.data_mode, 'local');
+  assert.equal(r.body.rows.find((x: any) => x.workflow === 'month_review').saved_seconds, null);
 });

@@ -15,6 +15,7 @@ export const CUSTOM_EVENTS = [
   { eventTypeId: 2102, name: 'WorkflowName', dataType: 'string' },
   { eventTypeId: 2103, name: 'WorkflowMode', dataType: 'string' },
   { eventTypeId: 2104, name: 'WorkflowSeconds', dataType: 'uint' },
+  { eventTypeId: 2105, name: 'WorkflowSource', dataType: 'string' },
 ];
 const HASH = parseInt(createHash('sha256').update(JSON.stringify(CUSTOM_EVENTS)).digest('hex').slice(0, 8), 16) || 1;
 const TYPE = Object.fromEntries(CUSTOM_EVENTS.map((e) => [e.name, e]));
@@ -114,4 +115,34 @@ GROUP BY "SwapGroup"`;
     if (cached) return { ...cached, data_mode: 'cached' };
     throw e;
   }
+}
+
+// Time receipt (SRS section 10). Each timed run is its own entity: WorkflowSource, WorkflowName, WorkflowMode, WorkflowSeconds.
+// Only WorkflowSource = 'measured' counts, so the synthetic history from the seed script never reaches the receipt.
+export const WORKFLOWS = ['month_review', 'budget_swaps', 'bill_split'] as const;
+
+export async function logTiming(runId: string, workflow: string, mode: 'manual' | 'lana', seconds: number) {
+  const t = Math.floor(Date.now() / 1000);
+  return sendEntity(`timing_${runId}`, [['WorkflowSource', 'measured', t], ['WorkflowName', workflow, t], ['WorkflowMode', mode, t], ['WorkflowSeconds', Math.round(seconds), t]]);
+}
+
+export type ReceiptRow = { workflow: string; manual_seconds: number | null; lana_seconds: number | null; saved_seconds: number | null; manual_runs: number; lana_runs: number };
+
+export function toReceipt(rows: { workflow: string; mode: string; avg_s: number; runs: number }[]): ReceiptRow[] {
+  return WORKFLOWS.map((w) => {
+    const m = rows.find((r) => r.workflow === w && r.mode === 'manual');
+    const l = rows.find((r) => r.workflow === w && r.mode === 'lana');
+    const manual = m ? Math.round(m.avg_s) : null;
+    const lana = l ? Math.round(l.avg_s) : null;
+    return { workflow: w, manual_seconds: manual, lana_seconds: lana, saved_seconds: manual !== null && lana !== null ? manual - lana : null, manual_runs: m?.runs ?? 0, lana_runs: l?.runs ?? 0 };
+  });
+}
+
+export async function keewanoReceipt() {
+  const query = `SELECT "WorkflowName", "WorkflowMode", avg("WorkflowSeconds") AS avg_s, count("WorkflowSeconds") AS runs
+FROM events
+WHERE "WorkflowSource" = 'measured'
+GROUP BY "WorkflowName", "WorkflowMode"`;
+  const rows = await sql(query);
+  return { query, rows: rows.map((r) => ({ workflow: String(r.WorkflowName), mode: String(r.WorkflowMode), avg_s: Number(r.avg_s), runs: Number(r.runs) })) };
 }

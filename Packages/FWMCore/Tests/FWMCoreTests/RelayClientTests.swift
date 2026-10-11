@@ -23,6 +23,14 @@ final class RelayClientTests: XCTestCase {
         XCTAssertNil(job.envelope.text)
     }
 
+    func testDecodesTimeReceipt() throws {
+        let json = #"{"rows":[{"workflow":"bill_split","manual_seconds":600,"lana_seconds":40,"saved_seconds":560,"manual_runs":2,"lana_runs":1},{"workflow":"month_review","manual_seconds":null,"lana_seconds":null,"saved_seconds":null,"manual_runs":0,"lana_runs":0}],"total_saved_seconds":560,"data_mode":"local","as_of":"2026-10-11T20:30:00.000Z","query":null}"#
+        let r = try FWMJSON.decoder.decode(TimeReceipt.self, from: Data(json.utf8))
+        XCTAssertEqual(r.rows.first?.savedSeconds, 560)
+        XCTAssertNil(r.rows.last?.manualSeconds)
+        XCTAssertEqual(r.totalSavedSeconds, 560)
+    }
+
     /// Full loop against a running relay. Start one with:
     /// cd relay && RELAY_DEV=1 PAIRING_CODE=424242 PAIRED_PHONES=+15550001111=user_ashwin PORT=8798 RELAY_DB=data/swift-test.db npm start
     /// then: RELAY_TEST_URL=http://localhost:8798 swift test --filter RelayClientTests

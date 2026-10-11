@@ -24,6 +24,7 @@ CREATE TABLE IF NOT EXISTS reminders (
   body TEXT NOT NULL, due_at INTEGER NOT NULL, status TEXT NOT NULL, outbox_id TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS nonces (nonce TEXT PRIMARY KEY, used_at TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS kv (k TEXT PRIMARY KEY, v TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS timings (run_id TEXT PRIMARY KEY, workflow TEXT NOT NULL, mode TEXT NOT NULL, seconds INTEGER NOT NULL, keewano TEXT, created_at TEXT NOT NULL);
 `);
 
 export const now = () => new Date().toISOString();

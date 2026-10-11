@@ -50,6 +50,8 @@ Every `/v1/*` call except `/v1/pair` sends `Authorization: Bearer <device_token>
 | `POST /v1/reminders/:id/status` | `{"status": "paid" \| "disputed" \| "cancelled"}` | reminder (only a `scheduled` one changes) |
 | `POST /v1/clock/advance` | `{"seconds": 172800}` | `{demo_now}` |
 | `GET /v1/swap-memory?user_id=user_ashwin&groups=a,b` | | `{blocked_groups, evidence_ids, as_of, data_mode: live\|cached, query}` |
+| `POST /v1/timings` | `{workflow: month_review \| budget_swaps \| bill_split, mode: manual \| lana, seconds, run_id?}` | `201 {run_id, keewano}`. Stored locally, then sent to Keewano as a measured run. |
+| `GET /v1/time-receipt` | | `{rows: [{workflow, manual_seconds, lana_seconds, saved_seconds, manual_runs, lana_runs}], total_saved_seconds, data_mode: live\|local, query}`. Averages measured runs only; seeded history is excluded. |
 | `GET /v1/evidence` | | recent jobs, outbox rows with Dial message IDs, reminders (integration evidence, T09) |
 | `GET /health` | no auth | `{ok, dial, from, demo_now}` |
 
@@ -79,5 +81,6 @@ For reminders, `payload = {action_id, contact_id, to, body, due_at}`. A changed 
 | Swift client | `swift test` passes; `testLiveRelayLoop` ran against a local relay (pair, job, result, signed reminder, forged approval rejected) |
 | Dial send/receive | Verified live at 1:19 PM: Dial's Test Inbound SMS reached the relay over the event stream, became a job for user_ashwin, and the relay sent the "Open FWM" nudge back through Dial (provider message ID recorded in `/v1/evidence`). Our number is SMS/voice. Inbound SMS from any phone works. Outbound SMS to US numbers is blocked until 10DLC registration ($25, 3 to 5 days), and iMessage costs $250 up front, so the demo shows replies in the app. |
 | Dial webhook | Signature check written. Not exercised; the event stream is the primary path. |
+| Time receipt | `npm test` covers averaging and minutes saved (local mode). Keewano query is the same timeline SQL as swap memory. |
 | Keewano swap memory | Events registered and history ingested (`npm run seed:keewano`). Query verification pending ingest processing. |
 | Sparta Worlds runner | Not started |

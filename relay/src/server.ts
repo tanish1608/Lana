@@ -4,7 +4,7 @@ import { createServer, type IncomingMessage, type ServerResponse } from 'node:ht
 import { createHash, createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
 import { db, now, id, demoNow, advanceClock } from './store.ts';
 import { dial, FROM, send, startStream, catchUp, verifyWebhook, type InboundMessage } from './dial.ts';
-import { swapMemory } from './keewano.ts';
+import { swapMemory, logTiming, keewanoReceipt, toReceipt, WORKFLOWS } from './keewano.ts';
 import { canonical } from './canonical.ts';
 
 const PORT = Number(process.env.PORT || 8787);
@@ -208,6 +208,33 @@ const routes: [string, RegExp, (req: IncomingMessage, res: ServerResponse, m: Re
     } catch (e: any) {
       err(res, 502, 'PROVIDER_UNAVAILABLE', `Keewano is unavailable: ${e.message}`, true);
     }
+  }, true],
+
+  // Time receipt: log one timed run (a stopwatch for manual, the app for Lana). Stored locally first, then sent to Keewano.
+  ['POST', /^\/v1\/timings$/, async (req, res) => {
+    const b = JSON.parse((await readBody(req)) || '{}');
+    if (!WORKFLOWS.includes(b.workflow) || !['manual', 'lana'].includes(b.mode) || !(Number(b.seconds) > 0))
+      return err(res, 400, 'INVALID_ARGUMENTS', `workflow must be one of ${WORKFLOWS.join(', ')}, mode manual or lana, seconds > 0.`);
+    const runId = String(b.run_id || id('run'));
+    db.prepare('INSERT OR IGNORE INTO timings (run_id, workflow, mode, seconds, created_at) VALUES (?, ?, ?, ?, ?)').run(runId, b.workflow, b.mode, Math.round(Number(b.seconds)), now());
+    const sent = await logTiming(runId, b.workflow, b.mode, Number(b.seconds)).then(() => 'sent', (e) => `failed: ${e.message}`);
+    db.prepare('UPDATE timings SET keewano = ? WHERE run_id = ?').run(sent, runId);
+    json(res, 201, { run_id: runId, keewano: sent });
+  }, true],
+
+  // Minutes saved per chore, averaged over measured runs. Keewano is the source; local rows cover indexing lag.
+  ['GET', /^\/v1\/time-receipt$/, async (_req, res) => {
+    const local = db.prepare('SELECT workflow, mode, AVG(seconds) AS avg_s, COUNT(*) AS runs FROM timings GROUP BY workflow, mode').all() as any[];
+    let source = { data_mode: 'local', query: null as string | null, rows: local };
+    try {
+      const k = await keewanoReceipt();
+      const kRuns = k.rows.reduce((n, r) => n + r.runs, 0);
+      const localRuns = local.reduce((n, r) => n + Number(r.runs), 0);
+      if (kRuns > 0 && kRuns >= localRuns) source = { data_mode: 'live', query: k.query, rows: k.rows };
+    } catch {}
+    const rows = toReceipt(source.rows);
+    const saved = rows.reduce((n, r) => n + (r.saved_seconds ?? 0), 0);
+    json(res, 200, { rows, total_saved_seconds: saved, data_mode: source.data_mode, as_of: now(), query: source.query });
   }, true],
 
   // Integration evidence for T09: provider IDs for every inbound and outbound message.

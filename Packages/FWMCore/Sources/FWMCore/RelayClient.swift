@@ -23,6 +23,23 @@ public struct SwapMemory: Codable, Sendable, Equatable {
     public var query: String
 }
 
+public struct TimeReceipt: Codable, Sendable, Equatable {
+    public enum Mode: String, Codable, Sendable { case manual, lana }
+    public struct Row: Codable, Sendable, Equatable {
+        public var workflow: String
+        public var manualSeconds: Int?
+        public var lanaSeconds: Int?
+        public var savedSeconds: Int?
+        public var manualRuns: Int
+        public var lanaRuns: Int
+    }
+    public var rows: [Row]
+    public var totalSavedSeconds: Int
+    /// "live" (Keewano) or "local" (relay rows while Keewano indexes).
+    public var dataMode: String
+    public var asOf: String
+}
+
 public struct ReminderRecord: Codable, Sendable, Equatable {
     public enum Status: String, Codable, Sendable { case scheduled, dispatching, sent, deliveryUnknown = "delivery_unknown", failed, paid, disputed, cancelled }
     public var reminderId: String
@@ -163,6 +180,17 @@ public struct RelayClient: Sendable {
         var c = URLComponents()
         c.queryItems = [URLQueryItem(name: "user_id", value: userId), URLQueryItem(name: "groups", value: groups.joined(separator: ","))]
         return try await send("GET", "/v1/swap-memory?\(c.percentEncodedQuery ?? "")")
+    }
+
+    /// Time receipt: log one timed run of a chore. `workflow` is month_review, budget_swaps or bill_split.
+    public func logTiming(workflow: String, mode: TimeReceipt.Mode, seconds: Int, runId: String? = nil) async throws {
+        struct Body: Encodable { let workflow: String; let mode: TimeReceipt.Mode; let seconds: Int; let runId: String? }
+        let _: AnyJSON = try await send("POST", "/v1/timings", json: Body(workflow: workflow, mode: mode, seconds: seconds, runId: runId))
+    }
+
+    /// Average manual vs Lana seconds per chore over measured runs. `dataMode` is live when it came from Keewano.
+    public func timeReceipt() async throws -> TimeReceipt {
+        try await send("GET", "/v1/time-receipt")
     }
 
     // MARK: wire
