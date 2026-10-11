@@ -9,6 +9,7 @@ public struct LanaRootView: View {
     @State private var tab = LanaTab.home
     @State private var requestStates: [String: RequestState] = [:]
     @State private var budgetAdopted = false
+    @State private var plannedCents = 0
     @State private var homePath = NavigationPath()
     @State private var showChat = false
     @State private var chat: [ChatMessage] = []
@@ -21,8 +22,8 @@ public struct LanaRootView: View {
     public var body: some View {
         // All four stay alive so each keeps its place and state while you move around.
         ZStack {
-            section(.home) { HomeScreen(store: store, tab: $tab, requestStates: requestStates, budgetAdopted: budgetAdopted, path: $homePath, openChat: { setChat(true) }) }
-            section(.budget) { BudgetScreen(store: store, onAdopt: { log.insert($0, at: 0); budgetAdopted = true }) }
+            section(.home) { HomeScreen(store: store, tab: $tab, requestStates: requestStates, budgetAdopted: budgetAdopted, plannedCents: plannedCents, path: $homePath, openChat: { setChat(true) }) }
+            section(.budget) { BudgetScreen(store: store, onAdopt: { log.insert($0, at: 0); budgetAdopted = true }, onApprove: { log.insert($0, at: 0) }, onPlanChange: { plannedCents = $0 }) }
             section(.split) { SplitScreen(store: store, onAction: { log.insert($0, at: 0) }, states: $requestStates) }
             section(.accounts) { AccountsScreen(store: store, unlocker: unlocker, log: log) }
         }
@@ -31,7 +32,7 @@ public struct LanaRootView: View {
                 GeometryReader { g in
                     ZStack(alignment: .bottom) {
                         Color.black.opacity(0.28).ignoresSafeArea().onTapGesture { setChat(false) }.accessibilityHidden(true)
-                        ChatPanel(store: store, requestStates: requestStates, messages: $chat, onJump: jump, onClose: { setChat(false) })
+                        ChatPanel(store: store, requestStates: requestStates, plannedCents: plannedCents, messages: $chat, onJump: jump, onClose: { setChat(false) })
                             .frame(height: min(g.size.height - 8, max(320, g.size.height * 0.78)))
                             .padding(.horizontal, 10).padding(.bottom, 2)
                     }
@@ -96,7 +97,7 @@ struct LanaDock: View {
         .overlay(alignment: .top) {
             Button(action: toggleChat) {
                 LanaOrb(size: 62, symbol: chatOpen ? "xmark" : "sparkles")
-                    .padding(4).background(.ultraThinMaterial, in: Circle()).overlay(Circle().strokeBorder(Theme.glassEdge, lineWidth: 1))
+                    .padding(4).background(Theme.base, in: Circle())
                     .shadow(color: Color(red: 0.37, green: 0.36, blue: 0.9).opacity(0.5), radius: 14, y: 8)
             }
             .buttonStyle(PressScaleStyle())

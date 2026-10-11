@@ -34,27 +34,68 @@ enum PreviewBudgetPlan {
     ]
 }
 
-/// Journey 2: budget proposal with reviewable swaps. Adopting changes the budget only.
+/// One swipeable suggestion: a product/service swap or a habit change.
+struct BudgetIdea: Identifiable, Equatable {
+    let id: String, category: String, title: String, savingsCents: Int, reason: String
+    var from: String?, to: String?, currentCents: Int?, proposedCents: Int?
+    var fromHistory = false
+    /// What Lana would do if asked to carry it out. Nil for habits: nothing to buy or switch.
+    var action: String?
+    var isSwap: Bool { action != nil }
+    /// Plans are switched; everything else in the demo catalog is bought on the next order.
+    var isSwitch: Bool { id == "s_phone" }
+    var approveLabel: String { isSwitch ? "Switch plan" : "Buy for \(usd(proposedCents ?? 0))" }
+    var handledStatus: String { isSwitch ? "Switch requested · simulated" : "On next order · simulated" }
+
+    /// The follow-through Lana offers for each swap. Bounded demo copy; no purchase integration exists yet.
+    static let actions = [
+        "s_pantry": "Put the store-brand staples in your next grocery order",
+        "s_detergent": "Swap the detergent in your next grocery order",
+        "s_coffee": "Order the house-brand beans when you next run out",
+        "s_phone": "Ask your carrier to move you to the 30 GB plan",
+    ]
+    init(_ s: SwapOption) {
+        id = s.id; category = s.category; title = s.title; savingsCents = s.savingsCents; reason = s.reason
+        from = s.from; to = s.to; currentCents = s.currentCents; proposedCents = s.proposedCents; fromHistory = s.fromHistory
+        action = Self.actions[s.id] ?? "Make this switch for you"
+    }
+    init(_ h: HabitOption) { id = h.id; category = h.category; title = h.title; savingsCents = h.savingsCents; reason = h.reason }
+}
+
+/// Journey 2: spending by category, then one suggestion at a time to keep or skip. Keeping a swap asks
+/// whether Lana should carry it out; every approval is explicit and, in this build, simulated.
 struct BudgetScreen: View {
     let store: DemoStore
     var onAdopt: (String) -> Void = { _ in }
-    @State private var accepted = Set(PreviewBudgetPlan.swaps.map(\.id) + PreviewBudgetPlan.habits.map(\.id))
+    var onApprove: (String) -> Void = { _ in }
+    /// Monthly savings currently kept in the plan, so Home and chat can reflect it.
+    var onPlanChange: (Int) -> Void = { _ in }
+
+    enum Handling: Equatable { case lana, me }
+    @State private var decisions: [String: Bool] = [:]   // idea id → kept
+    @State private var handling: [String: Handling] = [:]
+    @State private var order: [String] = []               // decision order, for undo
+    @State private var category: String?
+    @State private var drag: CGSize = .zero
+    @State private var asking: BudgetIdea?
     @State private var useHistory = true
     @State private var adoptedSignature: String?
     @State private var reviewing = false
     @State private var showWhy = false
 
     private var swaps: [SwapOption] { useHistory ? PreviewBudgetPlan.swaps : PreviewBudgetPlan.swaps.map { $0.id == "s_coffee" ? PreviewBudgetPlan.instantCoffee : $0 } }
-    private var signature: String { accepted.sorted().joined(separator: ",") + "|\(useHistory)" }
+    private var ideas: [BudgetIdea] { swaps.map(BudgetIdea.init) + PreviewBudgetPlan.habits.map(BudgetIdea.init) }
+    private func ideas(in c: String) -> [BudgetIdea] { ideas.filter { $0.category == c } }
+    private func pending(in c: String) -> [BudgetIdea] { ideas(in: c).filter { decisions[$0.id] == nil } }
+    private var kept: [BudgetIdea] { ideas.filter { decisions[$0.id] == true } }
+    private var signature: String { decisions.filter(\.value).keys.sorted().joined(separator: ",") + "|\(useHistory)" }
 
     private struct Plan { var current: [CategoryTotal]; var target: [String: Int]; var reduction: Int; var flow: MoneyFlow }
     private func plan() -> Plan? {
         guard case .success(let v) = store.moneyView(PreviewBudgetPlan.basePeriod) else { return nil }
         var target = Dictionary(uniqueKeysWithValues: v.categories.map { ($0.category, $0.totalCents) })
-        for s in swaps where accepted.contains(s.id) { target[s.category, default: 0] -= s.savingsCents }
-        for h in PreviewBudgetPlan.habits where accepted.contains(h.id) { target[h.category, default: 0] -= h.savingsCents }
-        let reduction = v.flow.expensesCents - target.values.reduce(0, +)
-        return Plan(current: v.categories, target: target, reduction: reduction, flow: v.flow)
+        for i in kept { target[i.category, default: 0] -= i.savingsCents }
+        return Plan(current: v.categories, target: target, reduction: v.flow.expensesCents - target.values.reduce(0, +), flow: v.flow)
     }
 
     var body: some View {
@@ -66,106 +107,313 @@ struct BudgetScreen: View {
                     }
                     .padding(.horizontal, 16).padding(.bottom, 24)
                 }
-                // The adopt button is at the bottom and its confirmation banner at the top; show the banner.
                 .onChange(of: adoptedSignature) { _, _ in withAnimation { proxy.scrollTo("adopted", anchor: .center) } }
             }
-            .background { Theme.backdrop }
+            .scrollIndicators(.hidden).background { Theme.backdrop }
             .navigationTitle("Budget")
+            #if os(iOS)
+            .navigationBarTitleDisplayMode(.inline) // keeps the swipe card and its buttons on one screen
+            #endif
             .toolbar { DemoDataBadge() }
             .sheet(isPresented: $showWhy) { whySheet }
+            .sheet(item: $asking) { askSheet($0) }
+            .onAppear { if category == nil { category = plan()?.current.first { !pending(in: $0.category).isEmpty }?.category } }
+            .onChange(of: signature) { _, _ in onPlanChange(kept.reduce(0) { $0 + $1.savingsCents }) }
         }
     }
 
     @ViewBuilder private func content(_ p: Plan) -> some View {
-        let goal = PreviewBudgetPlan.goalCents
         let changed = adoptedSignature != nil && adoptedSignature != signature
-        let rent = p.current.first { $0.category == "Rent" }?.totalCents ?? 0
-        let met = p.reduction >= goal
-        AskChip("Help me save $150 next month without changing my rent.")
-        VStack(spacing: 6) {
-            HStack { Eyebrow(PreviewBudgetPlan.period); Spacer(); Eyebrow("per month") }
-            RingChart(segments: [.init(label: "Projected", cents: min(max(p.reduction, 0), goal), color: met ? Theme.ok : Theme.accent)], total: goal) {
-                VStack(spacing: 4) {
-                    Text("Projected").font(.footnote).foregroundStyle(Theme.ink2)
-                    HeroAmount(cents: p.reduction, size: 34)
-                    Text(met ? "Meets goal" : "\(usd(goal - p.reduction)) short").font(.caption.weight(.semibold))
-                        .padding(.horizontal, 10).padding(.vertical, 3)
-                        .foregroundStyle(met ? Theme.ok : Theme.warn).background(met ? Theme.okSoft : Theme.warnSoft, in: Capsule())
-                }
-                .padding(.horizontal, 30)
-            }
-        }
-        .padding(18).frame(maxWidth: .infinity)
-        .background(Theme.cardFill, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
-        .raised(24)
+        progress(p)
         if adoptedSignature != nil {
-            Label(changed ? "Edited since adopting. Review and adopt again." : "Adopted. Balances and purchases are unchanged.", systemImage: "checkmark.circle.fill")
+            Label(changed ? "Edited since adopting. Adopt again to update." : "Adopted. Your budget is updated.", systemImage: "checkmark.circle.fill")
                 .font(.subheadline).foregroundStyle(Theme.accent).padding(14).frame(maxWidth: .infinity, alignment: .leading)
-                .background(Theme.accentSoft, in: RoundedRectangle(cornerRadius: 16))
-                .id("adopted")
+                .background(Theme.accentSoft, in: RoundedRectangle(cornerRadius: 16)).id("adopted")
         }
-        Card {
-            Grid(alignment: .leading, horizontalSpacing: 14, verticalSpacing: 8) {
-                GridRow { Text("CATEGORY"); Text("SEP").gridColumnAlignment(.trailing); Text("PLAN").gridColumnAlignment(.trailing) }
-                    .font(.caption2.weight(.bold)).foregroundStyle(Theme.ink3)
-                ForEach(p.current, id: \.category) { c in
-                    let t = p.target[c.category] ?? c.totalCents
-                    GridRow {
-                        Text(c.category.replacingOccurrences(of: " and subscriptions", with: " & subs"))
-                            .frame(maxWidth: .infinity, alignment: .leading) // category column takes the slack so amounts sit at the card edge
-                        Text(usd(c.totalCents)).foregroundStyle(Theme.ink3)
-                        Text(usd(t)).fontWeight(t < c.totalCents ? .semibold : .regular).foregroundStyle(t < c.totalCents ? Theme.accent : Theme.ink)
-                    }
-                }
-                Divider().gridCellUnsizedAxes(.horizontal)
-                GridRow { Text("Total").bold(); Text(usd(p.flow.expensesCents)).foregroundStyle(Theme.ink3); Text(usd(p.flow.expensesCents - p.reduction)).bold() }
-            }
-            .monospacedDigit()
-            HStack { Text("To savings & investing").foregroundStyle(Theme.ink3); Spacer(); Text("\(usd(p.flow.toSavingsCents + p.flow.toInvestmentsCents)) · unchanged") }.font(.subheadline)
-            HStack { Text("Kept in checking").foregroundStyle(Theme.ink3); Spacer(); Text("\(usd(p.flow.retainedCashCents)) → ") + Text(usd(p.flow.retainedCashCents + p.reduction)).bold().foregroundColor(Theme.accent) }.font(.subheadline)
+        categories(p).padding(.top, 4)
+        if let c = category {
+            HStack { Eyebrow("Ideas for \(short(c))"); Spacer()
+                Button { undo() } label: { Label("Undo", systemImage: "arrow.uturn.backward") }.font(.footnote.weight(.semibold)).disabled(order.isEmpty)
+                Text("·").foregroundStyle(Theme.ink3)
+                Button("Why these?") { showWhy = true }.font(.footnote.weight(.semibold)) }
+                .padding(.horizontal, 4).padding(.top, 6)
+            deck(c, p)
         }
-        SectionLabel("Your rules")
-        FlowChips(items: ["Keep rent at \(usd(rent))", "Keep my preferred oat milk"] + (useHistory ? ["No instant coffee"] : []))
-        SectionLabel("Swaps · \(usd(swaps.filter { accepted.contains($0.id) }.reduce(0) { $0 + $1.savingsCents }))")
-        ForEach(swaps) { s in
-            OptionCard(title: s.title, savings: s.savingsCents, isOn: binding(s.id), fromHistory: s.fromHistory, reason: s.reason) {
-                (Text(s.from).strikethrough().foregroundColor(Theme.ink3) + Text(" \(usd(s.currentCents))").bold()
-                 + Text("\n→ \(s.to) ") + Text(usd(s.proposedCents)).bold())
-            }
-        }
-        Text("Demo prices, not live quotes.").font(.caption).foregroundStyle(Theme.ink3).padding(.horizontal, 4)
-        SectionLabel("Habits · \(usd(PreviewBudgetPlan.habits.filter { accepted.contains($0.id) }.reduce(0) { $0 + $1.savingsCents }))")
-        ForEach(PreviewBudgetPlan.habits) { h in
-            OptionCard(title: h.title, savings: h.savingsCents, isOn: binding(h.id), fromHistory: false, reason: h.reason) { Text("\(h.category) · habit change") }
-        }
-        SectionLabel("Left out on purpose")
-        Card {
-            ForEach(PreviewBudgetPlan.excluded.filter { useHistory || !$0.fromHistory }) { x in
-                HStack { VStack(alignment: .leading) { Text(x.title).fontWeight(.semibold); Text(x.why).font(.caption).foregroundStyle(Theme.ink3) }
-                    Spacer(); Text("\(usd(x.savingsCents))/mo").foregroundStyle(Theme.ink3).monospacedDigit() }
-            }
-            Button("Why these suggestions?") { showWhy = true }.foregroundStyle(Theme.accent).fontWeight(.semibold)
-        }
-        Button(adoptedSignature != nil && !changed ? "Plan adopted" : "Review & adopt plan") { reviewing = true }
-            .buttonStyle(PrimaryButtonStyle()).disabled(adoptedSignature != nil && !changed).padding(.top, 8)
-            .confirmationDialog("Adopt budget for \(PreviewBudgetPlan.period)?", isPresented: $reviewing, titleVisibility: .visible) {
-                Button("Adopt plan · \(usd(p.reduction))/mo projected") {
-                    guard adoptedSignature != signature else { return } // duplicate tap does nothing
-                    adoptedSignature = signature
-                    onAdopt("Budget for \(PreviewBudgetPlan.period) · \(usd(p.reduction))/mo projected")
-                }
-            } message: {
-                Text("This updates your budget only. It doesn’t move money, change account balances, buy products or switch your phone plan.")
-            }
+        if !kept.isEmpty { planCard(p, changed: changed) }
     }
 
-    private func binding(_ id: String) -> Binding<Bool> {
-        Binding(get: { accepted.contains(id) }, set: { if $0 { accepted.insert(id) } else { accepted.remove(id) } })
+    private func short(_ c: String) -> String { c.replacingOccurrences(of: " and subscriptions", with: " & subs") }
+
+    // MARK: goal progress
+
+    private func progress(_ p: Plan) -> some View {
+        let goal = PreviewBudgetPlan.goalCents, met = p.reduction >= goal
+        let left = ideas.filter { decisions[$0.id] == nil }.count
+        return HStack(spacing: 16) {
+            RingChart(segments: [.init(label: "In your plan", cents: min(max(p.reduction, 0), goal), color: met ? Theme.ok : Theme.accent)], total: goal, diameter: 76, lineWidth: 10) {
+                Text("\(min(100, p.reduction * 100 / max(goal, 1)))%").font(.system(size: 17, weight: .bold)).monospacedDigit()
+            }
+            VStack(alignment: .leading, spacing: 4) {
+                Eyebrow("Save \(usd(goal)) in \(PreviewBudgetPlan.period.components(separatedBy: " ").first ?? "") · rent unchanged")
+                HStack(alignment: .firstTextBaseline, spacing: 6) {
+                    HeroAmount(cents: p.reduction, size: 34)
+                    Text("of \(usd(goal))").font(.subheadline).foregroundStyle(Theme.ink2)
+                }
+                Text(met ? "Goal met" : "\(left) \(left == 1 ? "idea" : "ideas") left" + (kept.isEmpty ? "" : " · \(usd(goal - p.reduction)) to go"))
+                    .font(.caption.weight(.semibold)).padding(.horizontal, 10).padding(.vertical, 3)
+                    .foregroundStyle(met ? Theme.ok : Theme.accent).background(met ? Theme.okSoft : Theme.accentSoft, in: Capsule())
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(14).frame(maxWidth: .infinity, alignment: .leading)
+        .background(Theme.cardFill, in: RoundedRectangle(cornerRadius: 24, style: .continuous)).raised(24)
+        .animation(.spring(duration: 0.4), value: p.reduction)
+    }
+
+    // MARK: categories
+
+    /// A row of category tiles: what was spent, what the plan brings it to, and how many ideas are left.
+    private func categories(_ p: Plan) -> some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 10) {
+                // Categories with ideas first, biggest spend first; fixed ones (rent) at the end.
+                ForEach(p.current.filter { !ideas(in: $0.category).isEmpty } + p.current.filter { ideas(in: $0.category).isEmpty }, id: \.category) { c in
+                    let all = ideas(in: c.category), left = pending(in: c.category).count
+                    let target = p.target[c.category] ?? c.totalCents, on = category == c.category
+                    Button { if !all.isEmpty { withAnimation(.spring(duration: 0.3)) { category = c.category; drag = .zero } } } label: {
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text(short(c.category)).font(.subheadline.weight(.semibold)).lineLimit(1)
+                            HStack(alignment: .firstTextBaseline, spacing: 5) {
+                                Text(usd(target)).font(.title3.weight(.bold)).foregroundStyle(on ? .white : (target < c.totalCents ? Theme.ok : Theme.ink))
+                                if target < c.totalCents { Text(usd(c.totalCents)).font(.caption).strikethrough().opacity(0.7) }
+                            }
+                            .monospacedDigit()
+                            badge(all: all.count, left: left, on: on)
+                        }
+                        .foregroundStyle(on ? .white : Theme.ink)
+                        .padding(12).frame(width: 128, alignment: .leading)
+                        .background(on ? AnyShapeStyle(Theme.accent.gradient) : AnyShapeStyle(Theme.cardFill), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+                        .raised(18, tint: on ? Theme.accent : .black, strength: on ? 2 : 1)
+                        .opacity(all.isEmpty ? 0.6 : 1)
+                    }
+                    .buttonStyle(PressScaleStyle()).disabled(all.isEmpty)
+                    .accessibilityAddTraits(on ? .isSelected : [])
+                }
+            }
+            .padding(.horizontal, 16).padding(.vertical, 10)
+        }
+        .padding(.horizontal, -16).padding(.vertical, -10)
+    }
+
+    @ViewBuilder private func badge(all: Int, left: Int, on: Bool) -> some View {
+        if all == 0 { Tag(text: "Fixed") }
+        else if left == 0 { Tag(text: "Reviewed", tone: on ? .white : Theme.ok, fill: on ? .white.opacity(0.22) : Theme.okSoft) }
+        else { Tag(text: left == 1 ? "1 idea" : "\(left) ideas", tone: on ? .white : Theme.accent, fill: on ? .white.opacity(0.22) : Theme.accentSoft) }
+    }
+
+    // MARK: swipe deck
+
+    @ViewBuilder private func deck(_ c: String, _ p: Plan) -> some View {
+        let queue = pending(in: c)
+        if let top = queue.first {
+            ZStack {
+                if queue.count > 1 { ideaCard(queue[1]).scaleEffect(0.95).offset(y: 12).opacity(0.6).allowsHitTesting(false).accessibilityHidden(true) }
+                ideaCard(top)
+                    .overlay(alignment: .topLeading) { stamp("KEEP", Theme.ok).opacity(Double(max(0, drag.width) / 90)).padding(16) }
+                    .overlay(alignment: .topTrailing) { stamp("SKIP", Theme.bad).opacity(Double(max(0, -drag.width) / 90)).padding(16) }
+                    .offset(x: drag.width, y: drag.height * 0.15).rotationEffect(.degrees(Double(drag.width) / 22))
+                    .gesture(DragGesture(minimumDistance: 12)
+                        .onChanged { drag = $0.translation }
+                        .onEnded { v in
+                            if abs(v.translation.width) > 90 { fling(top, keep: v.translation.width > 0) }
+                            else { withAnimation(.spring(duration: 0.3)) { drag = .zero } }
+                        })
+                    .accessibilityAction(named: "Keep") { fling(top, keep: true) }
+                    .accessibilityAction(named: "Skip") { fling(top, keep: false) }
+                    .id(top.id)
+            }
+            .padding(.bottom, queue.count > 1 ? 12 : 0)
+            // Spread to the sides so neither button sits under the Lana orb.
+            HStack {
+                round("xmark", Theme.bad, "Skip") { fling(top, keep: false) }
+                Spacer()
+                Text("\(ideas(in: c).count - queue.count + 1) of \(ideas(in: c).count)").font(.footnote.weight(.semibold)).foregroundStyle(Theme.ink2).monospacedDigit()
+                Spacer()
+                round("checkmark", Theme.ok, "Keep") { fling(top, keep: true) }
+            }
+            .padding(.horizontal, 28).padding(.top, 4)
+        } else {
+            let mine = ideas(in: c).filter { decisions[$0.id] == true }
+            Card {
+                Label("\(short(c)) reviewed", systemImage: "checkmark.circle.fill").font(.headline).foregroundStyle(Theme.ok)
+                Text(mine.isEmpty ? "Nothing kept here." : "Kept \(mine.count) · \(usd(mine.reduce(0) { $0 + $1.savingsCents }))/mo").font(.subheadline).foregroundStyle(Theme.ink2)
+                HStack {
+                    if let next = p.current.first(where: { !pending(in: $0.category).isEmpty }) {
+                        Button("Next: \(short(next.category))") { withAnimation { category = next.category } }.buttonStyle(PrimaryButtonStyle())
+                    }
+                    Button { undo() } label: { Label("Undo", systemImage: "arrow.uturn.backward") }.buttonStyle(GhostButtonStyle()).disabled(order.isEmpty)
+                }
+            }
+        }
+    }
+
+    private func ideaCard(_ i: BudgetIdea) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .top) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Eyebrow(i.isSwap ? "Swap" : "Habit")
+                    Text(i.title).font(.title2.bold())
+                }
+                Spacer()
+                VStack(alignment: .trailing, spacing: 0) {
+                    Text(usd(i.savingsCents)).font(.system(size: 30, weight: .bold)).monospacedDigit().foregroundStyle(Theme.ok)
+                    Text("saved / mo").font(.caption).foregroundStyle(Theme.ink2)
+                }
+            }
+            if let from = i.from, let to = i.to, let cur = i.currentCents, let prop = i.proposedCents {
+                VStack(spacing: 0) {
+                    line("Now", from, usd(cur), faded: true)
+                    Divider()
+                    line("Instead", to, usd(prop), faded: false)
+                }
+                .padding(.horizontal, 12).background(Theme.line.opacity(0.6), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+            }
+            HStack(alignment: .top, spacing: 6) {
+                if i.fromHistory { Tag(text: "From your history", tone: Theme.accent, fill: Theme.accentSoft) }
+                Text(i.reason).font(.footnote).foregroundStyle(Theme.ink2)
+            }
+            if i.isSwap { Text("Demo prices, not live quotes.").font(.caption2).foregroundStyle(Theme.ink3) }
+        }
+        .padding(16).frame(maxWidth: .infinity, minHeight: 210, alignment: .topLeading)
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 26, style: .continuous))
+        .background(Theme.cardFill, in: RoundedRectangle(cornerRadius: 26, style: .continuous))
+        .raised(26, strength: 1.6)
+        .accessibilityElement(children: .combine)
+        .accessibilityHint("Swipe right to keep, left to skip")
+    }
+
+    private func line(_ k: String, _ what: String, _ price: String, faded: Bool) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 10) {
+            Text(k).font(.caption.weight(.semibold)).foregroundStyle(Theme.ink2).frame(width: 52, alignment: .leading)
+            Text(what).font(.subheadline).strikethrough(faded).foregroundStyle(faded ? Theme.ink2 : Theme.ink)
+            Spacer(minLength: 4)
+            Text(price).font(.subheadline.weight(.bold)).monospacedDigit().foregroundStyle(faded ? Theme.ink2 : Theme.ink)
+        }
+        .padding(.vertical, 10)
+    }
+
+    private func stamp(_ t: String, _ c: Color) -> some View {
+        Text(t).font(.headline.weight(.heavy)).tracking(1.5).foregroundStyle(c).padding(.horizontal, 10).padding(.vertical, 4)
+            .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(c, lineWidth: 2.5)).rotationEffect(.degrees(t == "KEEP" ? -10 : 10))
+    }
+
+    private func round(_ icon: String, _ c: Color, _ label: String, _ action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: icon).font(.title2.weight(.bold)).foregroundStyle(c).frame(width: 60, height: 60)
+                .background(Theme.cardFill, in: Circle()).raised(30, tint: c, strength: 1.8)
+        }
+        .buttonStyle(PressScaleStyle()).accessibilityLabel(label)
+    }
+
+    private func fling(_ i: BudgetIdea, keep: Bool) {
+        guard decisions[i.id] == nil else { return } // a second tap mid-animation does nothing
+        withAnimation(.easeIn(duration: 0.22)) { drag = CGSize(width: keep ? 520 : -520, height: 30) }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.22) {
+            decisions[i.id] = keep; order.append(i.id); drag = .zero
+            if keep && i.isSwap { asking = i }
+        }
+    }
+
+    private func undo() {
+        guard let last = order.popLast() else { return }
+        withAnimation(.spring(duration: 0.3)) {
+            decisions[last] = nil; handling[last] = nil
+            if let i = ideas.first(where: { $0.id == last }) { category = i.category }
+        }
+    }
+
+    // MARK: "want me to handle it?"
+
+    private func askSheet(_ i: BudgetIdea) -> some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(spacing: 10) { LanaOrb(size: 36); Text(i.isSwitch ? "Switch it for you?" : "Buy it for you?").font(.title3.bold()) }
+            VStack(alignment: .leading, spacing: 8) {
+                Text(i.action ?? "").font(.headline).fixedSize(horizontal: false, vertical: true)
+                if let to = i.to, let prop = i.proposedCents, let cur = i.currentCents {
+                    Text("\(to), \(usd(prop)) instead of \(usd(cur)).").font(.subheadline).foregroundStyle(Theme.ink2).fixedSize(horizontal: false, vertical: true)
+                }
+                Text("Saves \(usd(i.savingsCents)) a month").font(.subheadline.weight(.semibold)).foregroundStyle(Theme.ok)
+            }
+            .padding(14).frame(maxWidth: .infinity, alignment: .leading)
+            .background(Theme.line.opacity(0.6), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+            Text(i.isSwitch ? "You confirm with your carrier before anything changes." : "You approve the cart before anything is charged.").font(.footnote).foregroundStyle(Theme.ink2)
+            SimulatedNote("Simulated. Nothing is bought, sent or switched.")
+            Spacer(minLength: 0)
+            Button(i.approveLabel) {
+                if handling[i.id] != .lana { // duplicate tap guard
+                    handling[i.id] = .lana
+                    onApprove("Approved: \(i.title) · \(i.isSwitch ? "switch" : "buy") for \(usd(i.proposedCents ?? 0)) (simulated, nothing charged)")
+                }
+                asking = nil
+            }
+            .buttonStyle(PrimaryButtonStyle())
+            Button("Just add to plan") { handling[i.id] = .me; asking = nil }.buttonStyle(GhostButtonStyle()).frame(maxWidth: .infinity)
+        }
+        .padding(20)
+        .presentationDetents([.height(450)]).presentationDragIndicator(.visible)
+        .onDisappear { if handling[i.id] == nil { handling[i.id] = .me } } // dismissing never authorizes Lana
+    }
+
+    // MARK: plan summary + adopt
+
+    private func planCard(_ p: Plan, changed: Bool) -> some View {
+        let done = adoptedSignature != nil && !changed
+        return VStack(alignment: .leading, spacing: 10) {
+            SectionLabel("Your plan · \(usd(p.reduction))/mo")
+            Card {
+                ForEach(kept) { i in
+                    HStack {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(i.title).fontWeight(.semibold)
+                            Text(!i.isSwap ? "Habit · up to you" : (handling[i.id] == .lana ? i.handledStatus : "In plan · you’ll do it yourself"))
+                                .font(.caption).foregroundStyle(handling[i.id] == .lana ? Theme.warn : Theme.ink2)
+                        }
+                        Spacer()
+                        Text("\(usd(i.savingsCents))/mo").fontWeight(.semibold).monospacedDigit().foregroundStyle(Theme.ok)
+                    }
+                }
+                Divider()
+                HStack { Text("Kept in checking").foregroundStyle(Theme.ink2); Spacer()
+                    Text("\(usd(p.flow.retainedCashCents)) → ") + Text(usd(p.flow.retainedCashCents + p.reduction)).bold().foregroundColor(Theme.ok) }
+                    .font(.subheadline).monospacedDigit()
+            }
+            Button(done ? "Plan adopted" : "Adopt plan · \(usd(p.reduction))/mo") { reviewing = true }
+                .buttonStyle(PrimaryButtonStyle()).disabled(done).opacity(done ? 0.5 : 1)
+                .confirmationDialog("Adopt budget for \(PreviewBudgetPlan.period)?", isPresented: $reviewing, titleVisibility: .visible) {
+                    Button("Adopt plan · \(usd(p.reduction))/mo projected") {
+                        guard adoptedSignature != signature else { return } // duplicate tap does nothing
+                        adoptedSignature = signature
+                        onAdopt("Budget for \(PreviewBudgetPlan.period) · \(usd(p.reduction))/mo projected")
+                    }
+                } message: {
+                    Text("This updates your budget only. Savings are projected, not money already saved, and no account balance changes.")
+                }
+        }
     }
 
     private var whySheet: some View {
         NavigationStack {
             Form {
+                Section("Your rules") {
+                    Label("Keep rent unchanged", systemImage: "checkmark")
+                    Label("Keep my preferred oat milk", systemImage: "checkmark")
+                    if useHistory { Label("No instant coffee", systemImage: "checkmark") }
+                }
+                Section("Left out on purpose") {
+                    ForEach(PreviewBudgetPlan.excluded.filter { useHistory || !$0.fromHistory }) { x in
+                        LabeledContent(x.title, value: "\(usd(x.savingsCents))/mo")
+                    }
+                }
                 Section("Evidence") {
                     LabeledContent("History checked", value: "Oct 11, 12:58 PM")
                     LabeledContent("Past decisions", value: "Rejected instant coffee 3 times")
@@ -186,39 +434,3 @@ struct BudgetScreen: View {
     }
 }
 
-struct OptionCard<Detail: View>: View {
-    let title: String
-    let savings: Int
-    @Binding var isOn: Bool
-    let fromHistory: Bool
-    let reason: String
-    @ViewBuilder var detail: Detail
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack { Text(title).font(.headline); Spacer(); Text("\(usd(savings))/mo").fontWeight(.bold).foregroundStyle(Theme.accent).monospacedDigit() }
-            detail.font(.subheadline).foregroundStyle(Theme.ink2)
-            HStack(alignment: .top, spacing: 6) {
-                if fromHistory { Tag(text: "From your history", tone: Theme.accent, fill: Theme.accentSoft) }
-                Text(reason).font(.footnote)
-            }
-            Picker(title, selection: $isOn) { Text("Keep").tag(true); Text("Skip").tag(false) }.pickerStyle(.segmented).frame(maxWidth: 200)
-        }
-        .padding(14)
-        .background(isOn ? Theme.card : Color.clear, in: RoundedRectangle(cornerRadius: 16))
-        .overlay(RoundedRectangle(cornerRadius: 16).stroke(Theme.line))
-        .opacity(isOn ? 1 : 0.6)
-        .animation(.easeOut(duration: 0.2), value: isOn)
-    }
-}
-
-struct FlowChips: View {
-    let items: [String]
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            ForEach(items, id: \.self) { t in
-                Label(t, systemImage: "checkmark").font(.subheadline.weight(.semibold)).foregroundStyle(Theme.accent)
-                    .padding(.horizontal, 12).padding(.vertical, 8).background(Theme.accentSoft, in: Capsule())
-            }
-        }
-    }
-}

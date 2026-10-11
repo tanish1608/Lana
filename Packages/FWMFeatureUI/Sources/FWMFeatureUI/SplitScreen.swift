@@ -87,7 +87,7 @@ struct SplitScreen: View {
             .onChange(of: haveReceipt && haveVoice) { _, ready in if ready { withAnimation { proxy.scrollTo("nav", anchor: .bottom) } } }
             .onChange(of: step) { _, _ in proxy.scrollTo("top", anchor: .top) }
             }
-            .background { Theme.backdrop }
+            .scrollIndicators(.hidden).background { Theme.backdrop }
             .navigationTitle("Split")
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline) // each step has its own heading
