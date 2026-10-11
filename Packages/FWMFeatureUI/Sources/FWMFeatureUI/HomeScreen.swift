@@ -28,7 +28,7 @@ struct HomeScreen: View {
                 }
                 .padding(.horizontal, 16).padding(.bottom, 24)
             }
-            .background(Theme.bg)
+            .background { Theme.backdrop }
             .toolbar { DemoDataBadge() }
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
@@ -109,30 +109,25 @@ struct HomeScreen: View {
             }
         }
         .foregroundStyle(Theme.ink)
-        .padding(18).background(Theme.card, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+        .padding(18).background(Theme.cardFill, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
         .raised(24)
     }
 
-    private var unpaid: [ReimbursementDraft] {
-        (store.fixtureSplit()?.requests ?? []).filter {
-            let s = requestStates[$0.contactId] ?? .draft
-            return s != .paidReported && s != .cancelled
-        }
-    }
+    private var unpaid: [ReimbursementDraft] { store.unpaidRequests(requestStates) }
 
     private var duo: some View {
         let owed = unpaid
         let plan = PreviewBudgetPlan.swaps.reduce(0) { $0 + $1.savingsCents } + PreviewBudgetPlan.habits.reduce(0) { $0 + $1.savingsCents }
         return HStack(spacing: 12) {
             Button { tab = .split } label: {
-                duoCard(fill: Theme.inkCard, ink: .white, glow: .black) {
+                duoCard(fill: Theme.inkCardFill, ink: .white, glow: .black) {
                     Text(usd(owed.reduce(0) { $0 + $1.amountCents }, cents: true)).font(.system(size: 28, weight: .bold)).monospacedDigit().foregroundStyle(Theme.warn)
                     Text("owed to you").font(.footnote)
                     Text(owed.isEmpty ? "All settled" : owed.map(\.reviewedName).joined(separator: ", ")).font(.caption).opacity(0.6)
                 }
             }
             Button { tab = .budget } label: {
-                duoCard(fill: Theme.sky2, ink: Theme.skyInk, glow: Theme.accent) {
+                duoCard(fill: Theme.sky2.gradient, ink: Theme.skyInk, glow: Theme.accent) {
                     (Text(usd(plan)).font(.system(size: 28, weight: .bold)) + Text("/mo").font(.subheadline.weight(.semibold))).monospacedDigit().foregroundStyle(Theme.accent)
                     Text("plan to save").font(.footnote)
                     Text(budgetAdopted ? "Adopted" : "Ready to review").font(.caption).opacity(0.6)
@@ -142,11 +137,11 @@ struct HomeScreen: View {
         .buttonStyle(PressScaleStyle())
     }
 
-    private func duoCard<C: View>(fill: Color, ink: Color, glow: Color, @ViewBuilder _ content: () -> C) -> some View {
+    private func duoCard<F: ShapeStyle, C: View>(fill: F, ink: Color, glow: Color, @ViewBuilder _ content: () -> C) -> some View {
         VStack(alignment: .leading, spacing: 2) { Spacer(minLength: 0); content() }
             .foregroundStyle(ink).lineLimit(1).minimumScaleFactor(0.8)
             .padding(18).frame(maxWidth: .infinity, minHeight: 132, alignment: .bottomLeading)
-            .background(fill.gradient, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+            .background(fill, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
             .raised(24, tint: glow, strength: 1.4)
     }
 
@@ -163,7 +158,7 @@ struct HomeScreen: View {
             }
             .foregroundStyle(Theme.ink)
             .padding(18).frame(maxWidth: .infinity, alignment: .leading)
-            .background(Theme.card, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+            .background(Theme.cardFill, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
             .raised(24)
         }
         .buttonStyle(PressScaleStyle())

@@ -51,6 +51,7 @@ struct AccountsScreen: View {
     @Environment(\.scenePhase) private var scenePhase
     private let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
     @State private var now = Date()
+    @State private var addNote = false
 
     var body: some View {
         NavigationStack {
@@ -58,7 +59,7 @@ struct AccountsScreen: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 12) {
                     connected
-                    SectionLabel("Access keys")
+                    SectionLabel("Sign-in keys")
                     Card {
                         switch stage {
                         case .locked, .checking: locked
@@ -85,9 +86,20 @@ struct AccountsScreen: View {
             }
             .onChange(of: stage) { _, _ in withAnimation { proxy.scrollTo("keys", anchor: .center) } } // keep the keys card in view
             }
-            .background(Theme.bg)
+            .background { Theme.backdrop }
             .navigationTitle("Accounts")
-            .toolbar { DemoDataBadge() }
+            .toolbar {
+                Button { withAnimation { addNote = true }; Task { try? await Task.sleep(nanoseconds: 2_000_000_000); withAnimation { addNote = false } } } label: {
+                    Label("Add", systemImage: "plus").labelStyle(.titleAndIcon).font(.subheadline.weight(.semibold))
+                }
+            }
+            .overlay(alignment: .top) {
+                if addNote {
+                    SimulatedNote("Simulated. Linking a new account isn’t wired in this build.")
+                        .padding(.horizontal, 14).padding(.vertical, 10).background(.regularMaterial, in: Capsule()).raised(22)
+                        .padding(.top, 8).transition(.move(edge: .top).combined(with: .opacity))
+                }
+            }
             .onChange(of: scenePhase) { _, phase in if phase != .active { lock() } }
             .onReceive(timer) { t in now = t; if stage == .unlocked && t >= lockAt { lock(); error = "Vault locked after 60 seconds." } }
         }
@@ -97,7 +109,7 @@ struct AccountsScreen: View {
         VStack(spacing: 14) {
             HStack(spacing: 12) {
                 Image(systemName: "lock.fill").font(.title3).foregroundStyle(Theme.accent).frame(width: 44, height: 44).background(Theme.accentSoft, in: Circle())
-                VStack(alignment: .leading, spacing: 2) { Text("Locked").font(.headline); Text("\(demoEntries.count) keys and tokens").font(.footnote).foregroundStyle(Theme.ink2) }
+                VStack(alignment: .leading, spacing: 2) { Text("\(demoEntries.count) keys · Locked").font(.headline); Text("Tokens Lana uses to reach your services").font(.footnote).foregroundStyle(Theme.ink2) }
                 Spacer()
             }
             if let error { Label(error, systemImage: "exclamationmark.triangle").font(.footnote).foregroundStyle(Theme.bad) }
@@ -113,53 +125,109 @@ struct AccountsScreen: View {
         .frame(maxWidth: .infinity)
     }
 
-    private var connected: some View {
-        let accounts: [AccountBalance] = { if case .success(let v) = store.moneyView(store.snapshotPeriod) { return v.accounts }; return [] }()
-        return VStack(alignment: .leading, spacing: 12) {
-            HStack(alignment: .firstTextBaseline, spacing: 8) {
-                Text("\(accounts.count)").font(.system(size: 56, weight: .bold)).monospacedDigit()
-                VStack(alignment: .leading, spacing: 0) {
-                    Text("accounts connected").font(.headline)
-                    Text("\(Set(accounts.map(\.institution)).count) institutions").font(.footnote).foregroundStyle(Theme.ink2)
-                }
-            }
-            .padding(.horizontal, 4)
-            VStack(spacing: 10) {
-                ForEach(accounts, id: \.accountId) { a in
-                    let style = Self.style(a.kind)
-                    HStack(spacing: 12) {
-                        Image(systemName: style.icon).font(.body.weight(.semibold)).foregroundStyle(.white)
-                            .frame(width: 44, height: 44).background(style.color.gradient, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-                            .shadow(color: style.color.opacity(0.35), radius: 6, y: 3)
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(style.name).fontWeight(.semibold)
-                            HStack(spacing: 5) {
-                                Circle().fill(Theme.ok).frame(width: 7, height: 7)
-                                Text("\(a.institution) · \(DemoStore.day(a.asOf))").font(.caption).foregroundStyle(Theme.ink2)
-                            }
-                        }
-                        Spacer()
-                        VStack(alignment: .trailing, spacing: 2) {
-                            Text(usd(a.balanceCents)).fontWeight(.semibold).monospacedDigit()
-                            Text(a.assetOrLiability == .asset ? "owned" : "owed").font(.caption).foregroundStyle(Theme.ink2)
+    // MARK: connected accounts
+
+    private var accounts: [AccountBalance] {
+        if case .success(let v) = store.moneyView(store.snapshotPeriod) { return v.accounts }
+        return []
+    }
+    /// Institutions in first-seen order.
+    private var institutions: [String] { accounts.reduce(into: [String]()) { if !$0.contains($1.institution) { $0.append($1.institution) } } }
+
+    @ViewBuilder private var connected: some View {
+        let all = accounts, synced = DemoStore.day(store.dataset.asOf)
+        Text("\(all.count) accounts at \(institutions.count) institutions · demo data").font(.subheadline).foregroundStyle(Theme.ink2).padding(.horizontal, 4)
+        if case .success(let v) = store.moneyView(store.snapshotPeriod) {
+            VStack(alignment: .leading, spacing: 10) {
+                Eyebrow("Net worth")
+                HeroAmount(cents: v.netWorthCents, size: 40)
+                GeometryReader { g in
+                    let total = CGFloat(max(all.reduce(0) { $0 + $1.balanceCents }, 1)), w = g.size.width - CGFloat(max(all.count - 1, 0)) * 3
+                    HStack(spacing: 3) {
+                        ForEach(all, id: \.accountId) { a in
+                            Capsule().fill(Self.brand(a.institution).colors[0].gradient).opacity(a.assetOrLiability == .asset ? 1 : 0.35)
+                                .frame(width: max(4, w * CGFloat(a.balanceCents) / total))
                         }
                     }
-                    .padding(14).background(Theme.card, in: RoundedRectangle(cornerRadius: 18, style: .continuous)).raised(18)
+                }
+                .frame(height: 12)
+                .accessibilityElement().accessibilityLabel(all.map { "\(Self.kindName($0.kind)) \(usd($0.balanceCents))" }.joined(separator: ", "))
+                HStack { Text(usd(v.assetsCents)).bold() + Text(" owned"); Spacer(); Text(usd(v.liabilitiesCents)).bold() + Text(" owed") }
+                    .font(.footnote).monospacedDigit().foregroundStyle(Theme.ink2)
+            }
+            .padding(18).frame(maxWidth: .infinity, alignment: .leading)
+            .background(Theme.cardFill, in: RoundedRectangle(cornerRadius: 24, style: .continuous)).raised(24)
+        }
+        ForEach(institutions, id: \.self) { inst in
+            let brand = Self.brand(inst)
+            VStack(alignment: .leading, spacing: 12) {
+                HStack(spacing: 12) {
+                    Text(brand.monogram).font(.headline.weight(.bold)).foregroundStyle(.white).frame(width: 44, height: 44)
+                        .background(LinearGradient(colors: brand.colors, startPoint: .topLeading, endPoint: .bottomTrailing), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                        .shadow(color: brand.colors[0].opacity(0.35), radius: 6, y: 3)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(inst).font(.headline)
+                        HStack(spacing: 5) { Circle().fill(Theme.ok).frame(width: 7, height: 7); Text("Connected · synced \(synced)").font(.caption).foregroundStyle(Theme.ink2) }
+                    }
+                    Spacer()
+                }
+                ForEach(all.filter { $0.institution == inst }, id: \.accountId) { a in
+                    Divider()
+                    HStack {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(Self.kindName(a.kind)).fontWeight(.semibold)
+                            Text(change(a)).font(.caption).foregroundStyle(Theme.ink2).monospacedDigit()
+                        }
+                        Spacer()
+                        Text(usd(a.balanceCents)).font(.title3.weight(.bold)).monospacedDigit()
+                    }
                     .accessibilityElement(children: .combine)
                 }
             }
+            .padding(16).background(Theme.cardFill, in: RoundedRectangle(cornerRadius: 20, style: .continuous)).raised(20)
+        }
+        SectionLabel("Also connected")
+        Card {
+            service("message.fill", .green, "Messages", "Talk to Lana by text", "Simulated here")
+            Divider()
+            service("arrow.up.right.square.fill", .blue, "Venmo", "Lana never holds your login", "Handoff")
+            Divider()
+            service("bag.fill", .orange, "Purchase history", "Past swap decisions", "Simulated here")
         }
     }
 
-    private static func style(_ kind: String) -> (name: String, icon: String, color: Color) {
-        switch kind {
-        case "checking": return ("Checking", "building.columns.fill", .blue)
-        case "savings": return ("Savings", "banknote.fill", .green)
-        case "brokerage": return ("Brokerage", "chart.line.uptrend.xyaxis", .indigo)
-        case "credit_card": return ("Credit card", "creditcard.fill", .orange)
-        case "student_loan": return ("Student loan", "graduationcap.fill", .pink)
-        default: return (kind.replacingOccurrences(of: "_", with: " ").capitalized, "wallet.pass.fill", .gray)
+    /// Month's change from the seed's opening balance; liabilities read as what you owe.
+    private func change(_ a: AccountBalance) -> String {
+        if a.assetOrLiability == .liability { return "You owe" }
+        let month = DemoStore.monthName(store.snapshotPeriod, short: true)
+        guard let open = store.dataset.accounts.first(where: { $0.accountId == a.accountId })?.openingBalanceCents else { return "Balance" }
+        let d = a.balanceCents - open
+        return d == 0 ? "No change in \(month)" : "\(usd(d, plus: true)) in \(month)"
+    }
+
+    private func service(_ icon: String, _ color: Color, _ title: String, _ sub: String, _ tag: String) -> some View {
+        HStack(spacing: 12) {
+            Image(systemName: icon).font(.subheadline.weight(.semibold)).foregroundStyle(.white).frame(width: 36, height: 36)
+                .background(color.gradient, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+            VStack(alignment: .leading, spacing: 1) { Text(title).fontWeight(.semibold); Text(sub).font(.caption).foregroundStyle(Theme.ink2) }
+            Spacer()
+            Tag(text: tag, tone: tag == "Handoff" ? Theme.accent : Theme.warn, fill: tag == "Handoff" ? Theme.accentSoft : Theme.warnSoft)
         }
+    }
+
+    private static func kindName(_ kind: String) -> String {
+        ["checking": "Checking", "savings": "Savings", "brokerage": "Brokerage", "credit_card": "Credit card", "student_loan": "Student loan"][kind]
+            ?? kind.replacingOccurrences(of: "_", with: " ").capitalized
+    }
+
+    /// Demo institution colours, matched on the name so new fixture institutions still get a sensible mark.
+    private static func brand(_ institution: String) -> (monogram: String, colors: [Color]) {
+        let n = institution.lowercased()
+        let letter = String(institution.replacingOccurrences(of: "Demo ", with: "").prefix(1)).uppercased()
+        if n.contains("broker") { return (letter, [Color(light: 0x34C759, dark: 0x30D158), Color(light: 0x248A3D, dark: 0x248A3D)]) }
+        if n.contains("card") { return (letter, [Color(light: 0x636366, dark: 0x8E8E93), Color(light: 0x2C2C2E, dark: 0x48484A)]) }
+        if n.contains("loan") { return (letter, [Color(light: 0xFF9F0A, dark: 0xFF9F0A), Color(light: 0xFF6B00, dark: 0xFF6B00)]) }
+        return (letter, [Color(light: 0x0A84FF, dark: 0x0A84FF), Color(light: 0x5E5CE6, dark: 0x5E5CE6)])
     }
 
     private var secondFactor: some View {

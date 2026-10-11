@@ -26,7 +26,7 @@ struct MoneyScreen: View {
             }
             .padding(.horizontal, 16).padding(.bottom, 24)
         }
-        .background(Theme.bg)
+        .background { Theme.backdrop }
         .navigationTitle("Money")
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
@@ -201,7 +201,7 @@ struct TransactionList: View {
             }
             Section { HStack { Text("Total").bold(); Spacer(); Text(usd(total, cents: true)).bold().monospacedDigit() } }
         }
-        .scrollContentBackground(.hidden).background(Theme.bg)
+        .scrollContentBackground(.hidden).background { Theme.backdrop }
         .navigationTitle(title)
     }
 }

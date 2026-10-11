@@ -48,7 +48,19 @@ enum Theme {
     static let edge = Color.primary.opacity(0.06)
     #endif
     static let skyDeep = Color(light: 0xB9DBF8, dark: 0x0C2540)
-    static let lanaGradient = LinearGradient(colors: [Color(light: 0x3FA2FF, dark: 0x3FA2FF), Color(light: 0x5E5CE6, dark: 0x6E6CF0)], startPoint: .topLeading, endPoint: .bottomTrailing)
+    static let lanaGradient = LinearGradient(colors: [Color(light: 0x3B9BFF, dark: 0x3B9BFF), Color(light: 0x5E5CE6, dark: 0x5E5CE6)], startPoint: .topLeading, endPoint: .bottomTrailing)
+    /// Card surface: a slightly lighter top edge so cards read as lit from above.
+    static let cardHi = Color(light: 0xFFFFFF, dark: 0x26262A)
+    static let cardFill = LinearGradient(colors: [cardHi, card], startPoint: .top, endPoint: .bottom)
+    static let inkCardFill = LinearGradient(colors: [Color(light: 0x2C2C30, dark: 0x2C2C30), Color(light: 0x0B0B0D, dark: 0x0B0B0D)], startPoint: .top, endPoint: .bottom)
+    /// Screen background: the grouped background with a faint blue glow at the top.
+    static var backdrop: some View {
+        ZStack(alignment: .top) {
+            bg
+            RadialGradient(colors: [accent.opacity(0.09), .clear], center: UnitPoint(x: 0.5, y: 0), startRadius: 0, endRadius: 340).frame(height: 340)
+        }
+        .ignoresSafeArea()
+    }
 
     static func display(_ size: CGFloat) -> Font { .system(size: size, weight: .bold) }
 }
@@ -113,7 +125,7 @@ struct Card<Content: View>: View {
         VStack(alignment: .leading, spacing: 10) { content }
             .padding(padding)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Theme.card, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .background(Theme.cardFill, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
             .raised(16)
     }
 }

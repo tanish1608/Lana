@@ -69,7 +69,7 @@ struct BudgetScreen: View {
                 // The adopt button is at the bottom and its confirmation banner at the top; show the banner.
                 .onChange(of: adoptedSignature) { _, _ in withAnimation { proxy.scrollTo("adopted", anchor: .center) } }
             }
-            .background(Theme.bg)
+            .background { Theme.backdrop }
             .navigationTitle("Budget")
             .toolbar { DemoDataBadge() }
             .sheet(isPresented: $showWhy) { whySheet }
@@ -96,7 +96,7 @@ struct BudgetScreen: View {
             }
         }
         .padding(18).frame(maxWidth: .infinity)
-        .background(Theme.card, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+        .background(Theme.cardFill, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
         .raised(24)
         if adoptedSignature != nil {
             Label(changed ? "Edited since adopting. Review and adopt again." : "Adopted. Balances and purchases are unchanged.", systemImage: "checkmark.circle.fill")

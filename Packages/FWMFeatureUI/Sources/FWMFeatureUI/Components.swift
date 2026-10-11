@@ -34,6 +34,7 @@ struct RingChart<Center: View>: View {
         return segments.map { s in
             let frac = CGFloat(s.cents) / t
             defer { off += frac }
+            if segments.count == 1 && frac >= 1 { return (0, 1, s.color) } // a full ring closes with no gap
             return (off + inset, max(off + inset, off + frac - inset), s.color)
         }
     }
@@ -108,7 +109,7 @@ struct Eyebrow: View {
 
 struct PressScaleStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
-        configuration.label.scaleEffect(configuration.isPressed ? 0.98 : 1)
+        configuration.label.scaleEffect(configuration.isPressed ? 0.97 : 1)
             .animation(.easeOut(duration: 0.12), value: configuration.isPressed)
     }
 }
