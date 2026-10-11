@@ -1,0 +1,138 @@
+{
+  "name": "lana-phone-plan",
+  "version": 1,
+  "epoch": 1789516800,
+  "clock_mode": "manual",
+  "auto_tick_seconds": 1,
+  "data": {
+    "customers": [
+      {
+        "id": "cus_lana_ashwin",
+        "name": "Ashwin",
+        "email": "ashwin@example.test",
+        "description": null,
+        "phone": null,
+        "balance": 0,
+        "metadata": {},
+        "created_offset": 0
+      },
+      {
+        "id": "cus_lana_roommate",
+        "name": "Priya",
+        "email": "priya@example.test",
+        "description": null,
+        "phone": null,
+        "balance": 0,
+        "metadata": {},
+        "created_offset": 0
+      }
+    ],
+    "products": [
+      {
+        "id": "prod_lana_phone",
+        "name": "Carrier phone plan",
+        "description": null,
+        "active": true,
+        "metadata": {}
+      },
+      {
+        "id": "prod_lana_stream",
+        "name": "StreamBox",
+        "description": null,
+        "active": true,
+        "metadata": {}
+      }
+    ],
+    "prices": [
+      {
+        "id": "price_phone_unlimited",
+        "product": "prod_lana_phone",
+        "unit_amount": 6500,
+        "currency": "usd",
+        "nickname": "Unlimited Plus",
+        "recurring": {
+          "interval": "month",
+          "interval_count": 1
+        },
+        "active": true,
+        "metadata": {}
+      },
+      {
+        "id": "price_phone_essentials",
+        "product": "prod_lana_phone",
+        "unit_amount": 4500,
+        "currency": "usd",
+        "nickname": "Essentials",
+        "recurring": {
+          "interval": "month",
+          "interval_count": 1
+        },
+        "active": true,
+        "metadata": {}
+      },
+      {
+        "id": "price_stream",
+        "product": "prod_lana_stream",
+        "unit_amount": 1599,
+        "currency": "usd",
+        "nickname": "StreamBox monthly",
+        "recurring": {
+          "interval": "month",
+          "interval_count": 1
+        },
+        "active": true,
+        "metadata": {}
+      }
+    ],
+    "invoices": [],
+    "subscriptions": [
+      {
+        "id": "sub_lana_phone",
+        "customer": "cus_lana_ashwin",
+        "price": "price_phone_unlimited",
+        "quantity": 1,
+        "status": "active",
+        "cancel_at_period_end": false,
+        "created_offset": 0,
+        "metadata": {}
+      },
+      {
+        "id": "sub_lana_stream",
+        "customer": "cus_lana_ashwin",
+        "price": "price_stream",
+        "quantity": 1,
+        "status": "active",
+        "cancel_at_period_end": false,
+        "created_offset": 0,
+        "metadata": {}
+      },
+      {
+        "id": "sub_roommate_phone",
+        "customer": "cus_lana_roommate",
+        "price": "price_phone_unlimited",
+        "quantity": 1,
+        "status": "active",
+        "cancel_at_period_end": false,
+        "created_offset": 0,
+        "metadata": {}
+      }
+    ],
+    "tickets": [
+      {
+        "subject": "Lana: switch phone plan",
+        "body": "Lana found a cheaper plan with the same carrier. Essentials covers Ashwin's last 3 months of usage. Switching sub_lana_phone from Unlimited Plus ($65.00/mo) to Essentials ($45.00/mo) saves $20.00/mo.",
+        "status": "open",
+        "priority": "normal",
+        "requester": {
+          "name": "Ashwin",
+          "email": "ashwin@example.test"
+        },
+        "tags": [
+          "lana",
+          "swap"
+        ],
+        "created_offset": 0
+      }
+    ]
+  }
+}
