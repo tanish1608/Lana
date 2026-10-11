@@ -1,0 +1,8 @@
+.DS_Store
+.build/
+*.xcuserstate
+xcuserdata/
+DerivedData/
+node_modules/
+.env
+relay/data/
