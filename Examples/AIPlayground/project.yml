@@ -1,0 +1,31 @@
+name: AIPlayground
+options:
+  bundleIdPrefix: io.speedhacks
+  deploymentTarget:
+    iOS: "26.0"
+packages:
+  FinanceAI:
+    path: ../..
+targets:
+  AIPlayground:
+    type: application
+    platform: iOS
+    sources:
+      - path: .
+        excludes: ["project.yml", "AIPlayground.xcodeproj", "Info.plist"]
+    dependencies:
+      - package: FinanceAI
+    settings:
+      base:
+        SWIFT_VERSION: "6.0"
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_CFBundleDisplayName: Finance AI Lab
+        INFOPLIST_KEY_NSMicrophoneUsageDescription: Record a request for on-device transcription.
+        INFOPLIST_KEY_NSSpeechRecognitionUsageDescription: Transcribe your request on this device.
+        INFOPLIST_KEY_NSFaceIDUsageDescription: Authorize access to service credentials and confirmed actions.
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
+        TARGETED_DEVICE_FAMILY: "1,2"
+        PRODUCT_BUNDLE_IDENTIFIER: io.speedhacks.AIPlayground
+    scheme:
+      testTargets: []

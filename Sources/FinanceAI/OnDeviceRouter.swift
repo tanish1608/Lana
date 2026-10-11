@@ -70,7 +70,7 @@ public struct OnDeviceRouter: IntentRouting {
         )
         do {
             let response = try await session.respond(to: text, generating: ModelRoute.self,
-                                                      options: GenerationOptions(sampling: .greedy))
+                                                      options: GenerationOptions(samplingMode: .greedy, maximumResponseTokens: 180))
             try Task.checkCancellation()
             let result = response.content
             let intent = result.intent.domain

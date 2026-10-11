@@ -81,7 +81,7 @@ public struct ReceiptDraftBuilder: Sendable {
         )
         do {
             let result = try await session.respond(to: document.text, generating: ExtractedReceipt.self,
-                                                  options: GenerationOptions(sampling: .greedy)).content
+                                                  options: GenerationOptions(samplingMode: .greedy, maximumResponseTokens: 1_400)).content
             try Task.checkCancellation()
             let items = result.items.map { ReceiptItemDraft(name: $0.name, amountText: $0.amountText) }
             guard Self.fieldsAppearInSource(merchant: result.merchant, total: result.totalText, items: items, source: document.text) else {
