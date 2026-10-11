@@ -38,6 +38,7 @@ struct SplitScreen: View {
     @State private var tomorrow = false
     @State private var reviewing: ReimbursementDraft?
     @State private var remindTarget: ReimbursementDraft?
+    @FocusState private var tipFocused: Bool
 
     private static let steps = ["Inputs", "Check", "Assign", "Shares", "Requests", "Follow-ups"]
     private var receipt: Receipt? { store.dataset.receipts?.first }
@@ -66,9 +67,11 @@ struct SplitScreen: View {
 
     var body: some View {
         NavigationStack {
+            ScrollViewReader { proxy in
             ScrollView {
                 VStack(alignment: .leading, spacing: 12) {
                     HStack(spacing: 4) { ForEach(0..<Self.steps.count, id: \.self) { i in Capsule().fill(i <= step ? Theme.accent : Theme.line).frame(height: 4) } }
+                        .id("top")
                     Text("Step \(step + 1) of \(Self.steps.count) · \(Self.steps[step])").font(.caption).foregroundStyle(Theme.ink3)
                     switch step {
                     case 0: inputs
@@ -79,6 +82,10 @@ struct SplitScreen: View {
                 }
                 .padding(.horizontal, 16).padding(.bottom, 24)
                 .animation(.easeOut(duration: 0.2), value: step)
+            }
+            // The cards grow as inputs arrive; bring the primary button back above the tab bar.
+            .onChange(of: haveReceipt && haveVoice) { _, ready in if ready { withAnimation { proxy.scrollTo("nav", anchor: .bottom) } } }
+            .onChange(of: step) { _, _ in proxy.scrollTo("top", anchor: .top) }
             }
             .background(Theme.bg)
             .navigationTitle("Split")
@@ -98,7 +105,8 @@ struct SplitScreen: View {
             if step > 0 { Button("Back") { step -= 1 }.buttonStyle(GhostButtonStyle()) }
             Button(label) { step += 1 }.buttonStyle(PrimaryButtonStyle()).disabled(!enabled).opacity(enabled ? 1 : 0.4)
         }
-        .padding(.top, 8)
+        .padding(.top, 8).padding(.bottom, 12)
+        .id("nav")
     }
 
     // MARK: steps
@@ -146,8 +154,13 @@ struct SplitScreen: View {
                     Spacer()
                     TextField("Tip", text: $tipText).multilineTextAlignment(.trailing).monospacedDigit().frame(width: 90)
                         .padding(8).background(fixed ? Theme.card : Theme.warnSoft, in: RoundedRectangle(cornerRadius: 10))
+                        .focused($tipFocused)
                         #if os(iOS)
                         .keyboardType(.decimalPad)
+                        // Select the misread value on focus so typing replaces it (the decimal pad has no quick way to clear).
+                        .onChange(of: tipFocused) { _, focused in
+                            if focused { DispatchQueue.main.async { UIApplication.shared.sendAction(#selector(UIResponder.selectAll(_:)), to: nil, from: nil, for: nil) } }
+                        }
                         #endif
                         .accessibilityLabel("Tip amount")
                 }
@@ -304,17 +317,18 @@ struct SplitScreen: View {
             .navigationTitle("Request \(usd(q.amountCents, cents: true))")
             .toolbar { Button("Not now") { reviewing = nil } }
         }
-        .presentationDetents([.medium, .large])
+        .presentationDetents([.large])
     }
 
     @ViewBuilder private func followUps(_ r: SplitResult) -> some View {
         Text("Follow-ups").font(Theme.display(30))
         Text("Lana can remind people who haven’t paid. Each reminder needs your OK.").foregroundStyle(Theme.ink2)
         Card {
-            HStack {
-                VStack(alignment: .leading) { Text("Demo clock").font(.caption).foregroundStyle(Theme.ink3); Text(tomorrow ? "Mon, Oct 12 · 10:00 AM" : "Sun, Oct 11 · 8:40 PM").fontWeight(.semibold) }
-                Spacer()
-                Button(tomorrow ? "Back to today" : "Jump to tomorrow") { tomorrow.toggle() }.buttonStyle(GhostButtonStyle())
+            let clock = VStack(alignment: .leading) { Text("Demo clock").font(.caption).foregroundStyle(Theme.ink3); Text(tomorrow ? "Mon, Oct 12 · 10:00 AM" : "Sun, Oct 11 · 8:40 PM").fontWeight(.semibold).fixedSize() }
+            let jump = Button(tomorrow ? "Back to today" : "Jump to tomorrow") { tomorrow.toggle() }.buttonStyle(GhostButtonStyle())
+            ViewThatFits(in: .horizontal) { // date stays on one line; the button drops below when they don't fit side by side
+                HStack { clock; Spacer(); jump }
+                VStack(alignment: .leading, spacing: 10) { clock; jump }
             }
             SimulatedNote("Simulated clock. Real time and security timeouts are unchanged.")
         }
@@ -381,7 +395,7 @@ struct SplitScreen: View {
             .navigationTitle("Remind \(q.reviewedName)?")
             .toolbar { Button("Not now") { remindTarget = nil } }
         }
-        .presentationDetents([.medium])
+        .presentationDetents([.large])
     }
 }
 
