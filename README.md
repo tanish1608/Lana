@@ -62,7 +62,7 @@ The model runs on your phone, so your financial data never goes to a cloud AI or
 
 We're starting with young professionals whose money already spans several apps. Lana makes money two ways: a $10 a month subscription, and referral fees when someone adopts one of its fixes, like a cheaper phone plan. You pick the swap, and we never sell your data.
 
-Next comes live bank connections, then iMessage and WhatsApp, then shared money for roommates and couples.
+Next comes broader bank coverage beyond SimpleFIN, then iMessage and WhatsApp, then shared money for roommates and couples.
 
 ## Run it
 
@@ -73,7 +73,7 @@ Next comes live bank connections, then iMessage and WhatsApp, then shared money 
 
 ## What isn't real yet
 
-- The bank data is a synthetic fixture plus CSV import. There are no live bank connections.
+- The bundled bank data is synthetic: a three-year history (default) or one September month, switchable in Accounts › Data. Real accounts come in through SimpleFIN Bridge (a paid service that links your bank; the phone reads it directly, and Refresh pulls new transactions) or a CSV statement import. Linking with no SimpleFIN account uses SimpleFIN's own demo bank.
 - Dial can't text US numbers until 10DLC registration clears, so the demo sends texts from the relay's `/phone` page. Calls work from any phone.
 - iOS won't let Lana answer in the background. That's why the relay texts you to open it.
 - The Budget screen labels its preference history as simulated. The live Keewano connection is in the relay.
