@@ -33,6 +33,17 @@ public final class DemoStore {
 
     public static func repoSeed() -> DemoStore? { try? DemoStore(fixtureURL: repoSeedURL()) }
 
+    /// Three years of synthetic history (Oct 2023 – Sep 2026, 11 accounts), exported from fixtures/world-v1 by
+    /// `python3 -m tools.synthetic_data.export_app_dataset`. September 2026 is the current period.
+    public static var threeYearURL: URL? { Bundle.module.url(forResource: "world-3y", withExtension: "json") }
+
+    /// Which bundled dataset the app shows; the Accounts screen switches it.
+    public enum Choice: String, CaseIterable, Sendable {
+        case threeYear = "three_year", september = "september"
+        public static let storageKey = "lana.dataset"
+        public var title: String { self == .threeYear ? "3-year history" : "September sample" }
+    }
+
     /// Months that have transactions, plus the demo clock's month (in progress).
     var periods: [String] {
         var set = Set(dataset.transactions.compactMap { Self.month($0.postedAt) })

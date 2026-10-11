@@ -1,5 +1,6 @@
 import SwiftUI
 import FWMCore
+import FinanceAI
 
 /// Entry point the iOS host embeds. Sections: Home, Budget, Split, Accounts. Money is pushed from Home.
 /// A floating glass dock replaces the system tab bar; its centre orb toggles the Lana chat from anywhere.
@@ -13,6 +14,8 @@ public struct LanaRootView: View {
     @State private var requestStates: [String: RequestState] = [:]
     @State private var budgetAdopted = false
     @State private var plannedCents = 0
+    @State private var budgetChatDecisions: [BudgetChatDecision] = []
+    @State private var budgetReview = 0
     @State private var dinnerRequest = 0
     @State private var homePath = NavigationPath()
     @State private var showChat = false
@@ -38,7 +41,8 @@ public struct LanaRootView: View {
                 chat.journal("budget_selection", "Budget plan has \(accepted.count) kept idea\(accepted.count == 1 ? "" : "s")\(useHistory ? "" : ", preference history off")",
                              details: ["kept": accepted.sorted().joined(separator: ","), "use_history": String(useHistory)])
             }, onAdopt: { record("plan_adopted", $0); budgetAdopted = true; chat.budgetAdopted = true },
-                onApprove: { record("plan_item_confirmed", $0) }, onPlanChange: { plannedCents = $0 }) }
+                onApprove: { record("plan_item_confirmed", $0) }, onPlanChange: { plannedCents = $0 },
+                chatDecisions: budgetChatDecisions, reviewRequest: budgetReview) }
             section(.split) { SplitScreen(store: store, isActive: tab == .split, onReview: { receipt, assignments, payer, result in
                 chat.review(receipt: receipt, assignments: assignments, payerID: payer)
                 store.dataset = chat.dataset
@@ -47,11 +51,13 @@ public struct LanaRootView: View {
                 record("split_reviewed", "Reviewed split · \(result.outstandingCents) cents outstanding; nothing sent",
                        details: ["receipt_id": receipt.receiptId, "total_cents": String(receipt.totalCents), "payer_id": payer])
             }, onInvalidate: { chat.reviewedSplit = nil; store.reviewedResult = nil }, onAction: { record("split_action", $0) }, dinnerRequest: dinnerRequest, states: $requestStates) }
-            section(.accounts) { AccountsScreen(store: store, dataset: chat.dataset, unlocker: unlocker, log: log, relay: relay, isActive: tab == .accounts,
+            section(.accounts) { AccountsScreen(store: store, dataset: chat.dataset, unlocker: unlocker, log: log, relay: relay, chat: chat, isActive: tab == .accounts,
                 onLink: { account, txns in
                     chat.addAccount(account, transactions: txns); syncStore()
                     record("account_imported", "Imported \(account.institution) \(AccountDisplay(account).subtitle) · \(txns.count) transactions, on this iPhone",
                            details: ["account_id": account.accountId, "institution": account.institution, "kind": account.kind])
+                }, onConnect: { url, label, ids in
+                    Task { if let note = await chat.saveSimpleFIN(accessURL: url, label: label, accountIDs: ids) { chat.status = note } }
                 }, onRemove: { id in
                     let removed = chat.dataset.accounts.first { $0.accountId == id }
                     chat.removeImportedAccount(id); syncStore()
@@ -63,7 +69,7 @@ public struct LanaRootView: View {
                 GeometryReader { g in
                     ZStack(alignment: .bottom) {
                         Color.black.opacity(0.28).ignoresSafeArea().onTapGesture { setChat(false) }.accessibilityHidden(true)
-                        ChatPanel(controller: chat, onJump: jump, onClose: { setChat(false) })
+                        ChatPanel(controller: chat, onJump: jump, onClose: { setChat(false) }, perform: perform)
                             .frame(height: min(g.size.height - 8, max(320, g.size.height * 0.78)))
                             .padding(.horizontal, 10).padding(.bottom, 2)
                     }
@@ -81,9 +87,11 @@ public struct LanaRootView: View {
             // The Approvals list survives relaunch; anything recorded this session before the read is kept on top.
             let saved = await chat.approvalLog()
             log = log.filter { !saved.contains($0) } + saved
+            chat.requestRoster = roster(requestStates)
         }
         .onChange(of: requestStates) { old, states in
             chat.requestStates = Dictionary(uniqueKeysWithValues: states.map { (name($0.key), $0.value.label) })
+            chat.requestRoster = roster(states)
             for (id, state) in states where old[id] != state {
                 chat.journal("request_state", "\(name(id)) request marked \(state.label)", details: ["contact_id": id, "state": state.label])
             }
@@ -113,6 +121,64 @@ public struct LanaRootView: View {
         #else
         content().opacity(tab == t ? 1 : 0).allowsHitTesting(tab == t).accessibilityHidden(tab != t)
         #endif
+    }
+
+    /// The dinner's reimbursement requests with their current states, for chat cards that mark one paid or sent.
+    private func roster(_ states: [String: RequestState]) -> [ChatRequestRow] {
+        (store.fixtureSplit()?.requests ?? []).map { r in
+            ChatRequestRow(contactID: r.contactId, name: r.reviewedName, amountCents: r.amountCents, state: (states[r.contactId] ?? .draft).label)
+        }
+    }
+
+    /// Performs a chat card the user confirmed. Each case re-checks the card against current state; adopting the plan
+    /// goes through Budget's own review and Face ID rather than happening here.
+    @MainActor private func perform(_ action: ChatAction) async throws -> String {
+        let p = action.payload
+        switch action.kind {
+        case "keep_idea", "skip_idea":
+            guard let id = p["idea_id"], let keep = p["keep"].flatMap(Bool.init),
+                  let title = (PreviewBudgetPlan.swaps.map { ($0.id, $0.title) } + PreviewBudgetPlan.habits.map { ($0.id, $0.title) }).first(where: { $0.0 == id })?.1 else {
+                throw ToolError(.staleData, "That idea is no longer in the plan.")
+            }
+            budgetChatDecisions.append(BudgetChatDecision(ideaID: id, keep: keep))
+            return keep ? "Kept “\(title)” in your plan. It now counts toward the $150 goal." : "Skipped “\(title)”."
+        case "adopt_plan":
+            guard !budgetAdopted else { return "The current plan is already adopted." }
+            jump(.budget)
+            budgetReview += 1
+            return "Opened the plan review in Budget. Confirm with Face ID to adopt it."
+        case "mark_request":
+            guard let id = p["contact_id"], let state = p["state"].flatMap(RequestState.init(rawValue:)),
+                  store.fixtureSplit()?.requests.contains(where: { $0.contactId == id }) == true else { throw ToolError(.staleData, "That request isn't part of the current split.") }
+            requestStates[id] = state
+            return "\(name(id)) is now marked \(state.label)."
+        case "recategorize":
+            guard let category = p["category"], let ids = p["transaction_ids"]?.split(separator: ",").map(String.init), !ids.isEmpty else {
+                throw ToolError(.invalidArguments, "That change is incomplete.")
+            }
+            let moved = chat.recategorize(Set(ids), to: category)
+            guard moved > 0 else { throw ToolError(.staleData, "Those purchases already changed. Ask again for current figures.") }
+            syncStore()
+            return "Moved \(moved) purchase\(moved == 1 ? "" : "s") to \(category). Totals and the budget use the new category."
+        case "open_screen":
+            switch p["screen"] {
+            case "money": jump(.money)
+            case "budget": jump(.budget)
+            case "split": jump(.split)
+            case "accounts": jump(.accounts)
+            default: setChat(false); tab = .home
+            }
+            return "Opened."
+        case "remove_account":
+            guard let id = p["account_id"], let account = chat.dataset.accounts.first(where: { $0.accountId == id }), AccountDisplay(account).isImported else {
+                throw ToolError(.staleData, "That account is no longer connected.")
+            }
+            chat.removeImportedAccount(id); syncStore()
+            record("account_removed", "Removed \(account.institution) \(AccountDisplay(account).subtitle) from Lana", details: ["account_id": id])
+            return "Removed \(account.institution) \(AccountDisplay(account).subtitle)."
+        default:
+            throw ToolError(.unknownTool, "Lana can't perform that change.")
+        }
     }
 
     private func jump(_ j: LanaChatJump) {

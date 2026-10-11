@@ -33,8 +33,22 @@ struct MoneyScreen: View {
         #endif
     }
 
-    private var periodPicker: some View {
-        PillPicker(options: store.periods.map { ($0, DemoStore.monthName($0, short: true)) }, selection: $period)
+    /// Pills for a few months; a month menu once there's real history (the 3-year dataset has 36).
+    @ViewBuilder private var periodPicker: some View {
+        if store.periods.count <= 4 {
+            PillPicker(options: store.periods.map { ($0, DemoStore.monthName($0, short: true)) }, selection: $period)
+        } else {
+            HStack {
+                Menu {
+                    Picker("Month", selection: $period) { ForEach(store.periods.reversed(), id: \.self) { Text(DemoStore.monthName($0)).tag($0) } }
+                } label: {
+                    Label(DemoStore.monthName(period), systemImage: "calendar").font(.subheadline.weight(.semibold))
+                        .padding(.horizontal, 14).frame(minHeight: 36).background(Theme.card, in: Capsule())
+                }
+                Spacer()
+                Text("\(store.periods.count) months of history").font(.caption).foregroundStyle(Theme.ink2)
+            }
+        }
     }
 
     private var inProgress: some View {

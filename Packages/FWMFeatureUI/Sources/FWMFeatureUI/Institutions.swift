@@ -83,18 +83,20 @@ enum AccountKind {
     static let all = ["checking", "savings", "credit_card", "brokerage", "retirement", "student_loan"]
     static func name(_ kind: String) -> String {
         ["checking": "Checking", "savings": "Savings", "brokerage": "Brokerage", "retirement": "Retirement",
-         "credit_card": "Credit card", "student_loan": "Student loan"][kind] ?? kind.replacingOccurrences(of: "_", with: " ").capitalized
+         "credit_card": "Credit card", "student_loan": "Student loan", "mortgage": "Mortgage", "prediction_market": "Prediction market",
+         "securities": "Securities", "open_positions": "Open positions", "property": "Home value"][kind] ?? kind.replacingOccurrences(of: "_", with: " ").capitalized
     }
     static func side(_ kind: String) -> Account.Side { ["credit_card", "student_loan", "mortgage", "loan"].contains(kind) ? .liability : .asset }
 
-    enum Group: Int, CaseIterable { case cash, investments, cards, loans
-        var title: String { ["Cash", "Investments", "Credit cards", "Loans"][rawValue] }
+    enum Group: Int, CaseIterable { case cash, investments, property, cards, loans
+        var title: String { ["Cash", "Investments", "Property", "Credit cards", "Loans"][rawValue] }
     }
     static func group(_ kind: String) -> Group {
         switch kind {
         case "checking", "savings": return .cash
         case "credit_card": return .cards
         case "student_loan", "mortgage", "loan": return .loans
+        case "property": return .property
         default: return .investments
         }
     }
@@ -118,7 +120,10 @@ struct AccountDisplay {
         return String(format: "%04d", Int(h % 9000) + 1000)
     }
     var subtitle: String { "\(AccountKind.name(kind)) ••\(mask)" }
-    var isImported: Bool { sourceId?.hasPrefix("csv:") == true }
+    /// Added on this phone: a statement import or a SimpleFIN link. Both persist in the ledger and can be removed.
+    var isImported: Bool { isLinked || sourceId?.hasPrefix("csv:") == true }
+    var isLinked: Bool { sourceId?.hasPrefix("sfin:") == true }
+    var originLabel: String { isLinked ? "Linked via SimpleFIN" : isImported ? "Statement imported on this iPhone" : "Sample data" }
     var color: Color { institution?.color ?? Theme.accent }
 }
 

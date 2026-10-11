@@ -1,11 +1,15 @@
 import SwiftUI
 import UniformTypeIdentifiers
 import FinanceAI
+import FWMCore
 
 struct ChatPanel: View {
     @Bindable var controller: LanaChatController
     var onJump: (LanaChatJump) -> Void
     var onClose: () -> Void
+    /// Performs a confirmed action card; supplied by the root view, which owns the screens' state.
+    var perform: @MainActor (ChatAction) async throws -> String = { _ in throw ToolError(.providerUnavailable, "Actions aren't connected here.") }
+    @State private var acting: UUID?
     @State private var draft = ""
     @State private var importing = false
     @State private var history = false
@@ -21,7 +25,7 @@ struct ChatPanel: View {
                 LanaMark(size: 34)
                 VStack(alignment: .leading, spacing: 1) {
                     Text("Lana").font(.headline)
-                    Text(OnDeviceRouter.status == .ready ? "On-device AI · demo financial data" : "Local model unavailable · basic answers")
+                    Text(OnDeviceRouter.status == .ready ? "On-device AI · your data stays on this iPhone" : "Local model unavailable · basic answers")
                         .font(.caption).foregroundStyle(Theme.ink3).lineLimit(1)
                 }
                 Spacer()
@@ -55,8 +59,16 @@ struct ChatPanel: View {
                             HStack(alignment: .bottom) {
                                 if m.role == .user { Spacer(minLength: 40) }
                                 VStack(alignment: .leading, spacing: 6) {
-                                    Text(LocalizedStringKey(m.text)).font(.subheadline).textSelection(.enabled)
+                                    // Markdown, not LocalizedStringKey: a key treats "$784.50" as a format argument and drops the dollars.
+                                    Text(Self.markdown(m.text)).font(.subheadline).textSelection(.enabled)
                                     if let source = m.source { Text(source == "onDevice" ? "On-device AI" : "Basic local answer").font(.caption2).opacity(0.65) }
+                                    ForEach(m.evidence.compactMap(\.chart).prefix(2).enumerated().map { $0 }, id: \.offset) { _, chart in ChatChartView(chart: chart) }
+                                    ForEach(m.actions ?? []) { action in
+                                        ChatActionCard(action: action, busy: acting != nil || controller.busy, confirm: {
+                                            acting = action.id
+                                            Task { await controller.confirm(action, in: m.id, perform: perform); acting = nil }
+                                        }, cancel: { Task { await controller.cancel(action, in: m.id) } })
+                                    }
                                     if !m.evidence.isEmpty {
                                         DisclosureGroup("Financial sources") {
                                             ForEach(m.evidence) { e in
@@ -138,6 +150,9 @@ struct ChatPanel: View {
         .onDisappear { voice.cancel() }
         .onChange(of: scenePhase) { _, phase in if phase != .active { voice.cancel() } }
         #endif
+    }
+    static func markdown(_ text: String) -> AttributedString {
+        (try? AttributedString(markdown: text, options: .init(interpretedSyntax: .inlineOnlyPreservingWhitespace))) ?? AttributedString(text)
     }
     private func send(_ raw: String) {
         guard !controller.busy, !raw.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }

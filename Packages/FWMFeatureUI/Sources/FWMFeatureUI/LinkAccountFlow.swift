@@ -52,11 +52,13 @@ struct StatementImport {
 struct LinkAccountSheet: View {
     let user: UserPrefs
     var onLink: (Account, [FWMCore.Transaction]) -> Void
+    /// A SimpleFIN link to remember for refresh: access URL, label, account IDs.
+    var onConnect: (URL, String, [String]) -> Void = { _, _, _ in }
     @Environment(\.dismiss) private var dismiss
     @State private var path: [Step] = []
-    @State private var linked: (account: Account, count: Int)?
+    @State private var linked: (accounts: [Account], count: Int)?
 
-    enum Step: Hashable { case pick, connect(String), statement(String), done }
+    enum Step: Hashable { case pick, connect(String), statement(String), simplefin(String?), done }
 
     var body: some View {
         NavigationStack(path: $path) {
@@ -64,12 +66,18 @@ struct LinkAccountSheet: View {
                 .navigationDestination(for: Step.self) { step in
                     switch step {
                     case .pick: InstitutionPicker { path.append(.connect($0.id)) }
-                    case .connect(let id): if let i = Institution.id(id) { ConnectInstitutionView(institution: i) { path.append(.statement(id)) } }
+                    case .connect(let id): if let i = Institution.id(id) { ConnectInstitutionView(institution: i, onImport: { path.append(.statement(id)) }, onLink: { path.append(.simplefin(id)) }) }
                     case .statement(let id):
                         if let i = Institution.id(id) {
                             StatementImportView(institution: i, user: user) { account, txns in
-                                onLink(account, txns); linked = (account, txns.count); path.append(.done)
+                                onLink(account, txns); linked = ([account], txns.count); path.append(.done)
                             }
+                        }
+                    case .simplefin(let id):
+                        SimpleFINConnectView(institution: id.flatMap(Institution.id), user: user) { accounts, txns, url, label in
+                            for a in accounts { onLink(a, txns.filter { $0.accountId == a.accountId }) }
+                            onConnect(url, label, accounts.map(\.accountId))
+                            linked = (accounts, txns.count); path.append(.done)
                         }
                     case .done: done
                     }
@@ -104,6 +112,7 @@ struct LinkAccountSheet: View {
                 }
                 .padding(18).background(Theme.cardFill, in: RoundedRectangle(cornerRadius: 20, style: .continuous)).raised(20)
                 Button("Continue") { path.append(.pick) }.buttonStyle(PrimaryButtonStyle())
+                Button("Try a live demo connection") { path.append(.simplefin(nil)) }.buttonStyle(GhostButtonStyle())
                 Text("By continuing you choose what to share with Lana on this device.").font(.caption).foregroundStyle(Theme.ink3).multilineTextAlignment(.center)
             }
             .padding(20)
@@ -119,18 +128,20 @@ struct LinkAccountSheet: View {
     }
 
     @ViewBuilder private var done: some View {
-        if let linked {
-            let display = AccountDisplay(linked.account)
+        if let linked, let first = linked.accounts.first {
+            let display = AccountDisplay(first)
             VStack(spacing: 18) {
                 Spacer()
                 ZStack(alignment: .bottomTrailing) {
-                    InstitutionLogo(name: linked.account.institution, size: 88).shadow(color: display.color.opacity(0.35), radius: 16, y: 8)
+                    InstitutionLogo(name: first.institution, size: 88).shadow(color: display.color.opacity(0.35), radius: 16, y: 8)
                     Image(systemName: "checkmark.circle.fill").font(.system(size: 34)).foregroundStyle(.white, Theme.ok).background(Circle().fill(.white).padding(4)).offset(x: 12, y: 12)
                 }
                 Text("You’re all set").font(Theme.display(28))
-                Text("\(display.title) ••\(display.mask) is now in Lana with \(linked.count) transactions.")
+                Text(linked.accounts.count == 1 ? "\(display.title) ••\(display.mask) is now in Lana with \(linked.count) transactions."
+                     : "\(linked.accounts.count) \(first.institution) accounts are now in Lana with \(linked.count) transactions.")
                     .multilineTextAlignment(.center).foregroundStyle(Theme.ink2)
-                Text("Imported on this iPhone for this session. Nothing was uploaded.").font(.caption).foregroundStyle(Theme.ink3)
+                Text(display.isLinked ? "Read from SimpleFIN and kept on this iPhone. Nothing was uploaded." : "Saved on this iPhone. Nothing was uploaded.")
+                    .font(.caption).foregroundStyle(Theme.ink3)
                 Spacer()
                 Button("Done") { dismiss() }.buttonStyle(PrimaryButtonStyle())
                 Button("Add another account") { self.linked = nil; path = [.pick] }.buttonStyle(GhostButtonStyle())
@@ -217,6 +228,7 @@ struct InstitutionPicker: View {
 struct ConnectInstitutionView: View {
     let institution: Institution
     var onImport: () -> Void
+    var onLink: () -> Void = {}
 
     var body: some View {
         ScrollView {
@@ -236,8 +248,11 @@ struct ConnectInstitutionView: View {
                            text: "Download your account activity as a CSV and choose the file. It’s read on this iPhone.", tag: "Recommended", enabled: true)
                 }
                 .buttonStyle(PressScaleStyle())
-                option(icon: "person.badge.key", title: "Sign in to \(institution.name)",
-                       text: "Direct sign-in needs a bank-data partner, which isn’t set up in this build.", tag: "Not available yet", enabled: false)
+                Button(action: onLink) {
+                    option(icon: "link", title: "Connect with SimpleFIN Bridge",
+                           text: "Live balances and transactions from \(institution.name) through SimpleFIN, read directly by this iPhone.", tag: "Live", enabled: true)
+                }
+                .buttonStyle(PressScaleStyle())
                 VStack(alignment: .leading, spacing: 10) {
                     Eyebrow("Lana will be able to")
                     Label("See balances and transactions", systemImage: "checkmark").foregroundStyle(Theme.ok)

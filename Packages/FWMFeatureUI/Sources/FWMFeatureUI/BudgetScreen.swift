@@ -13,6 +13,13 @@ struct SwapOption: Identifiable, Equatable {
 struct HabitOption: Identifiable, Equatable { let id: String, category: String, title: String, savingsCents: Int, reason: String }
 struct ExcludedOption: Identifiable { let id: String, title: String, savingsCents: Int, why: String, fromHistory: Bool }
 
+/// A keep/skip decision confirmed on a chat card.
+struct BudgetChatDecision: Equatable, Identifiable {
+    let id = UUID()
+    let ideaID: String
+    let keep: Bool
+}
+
 enum PreviewBudgetPlan {
     static let period = "November 2026", basePeriod = "2026-09", goalCents = 15_000
     static let swaps = [
@@ -83,6 +90,12 @@ struct BudgetScreen: View {
     var onApprove: (String) -> Void = { _ in }
     /// Monthly savings currently kept in the plan, so Home and chat can reflect it.
     var onPlanChange: (Int) -> Void = { _ in }
+    /// Keep/skip decisions confirmed in chat, applied like a swipe (no follow-up sheet).
+    var chatDecisions: [BudgetChatDecision] = []
+    /// Incremented when chat asks to adopt the plan: opens the same review and Face ID step as the button.
+    var reviewRequest = 0
+    @State private var appliedChat: Set<UUID> = []
+    @State private var handledReview = 0
 
     enum Handling: Equatable { case lana, me }
     @State private var decisions: [String: Bool] = [:]   // idea id → kept
@@ -132,6 +145,9 @@ struct BudgetScreen: View {
                 onSelection(Set(kept.map(\.id)), useHistory)
                 onPlanChange(kept.reduce(0) { $0 + $1.savingsCents })
             }
+            .onAppear { applyChat() }
+            .onChange(of: chatDecisions) { _, _ in applyChat() }
+            .onChange(of: reviewRequest) { _, _ in applyChat() }
         }
     }
 
@@ -356,6 +372,20 @@ struct BudgetScreen: View {
             decisions[i.id] = keep; order.append(i.id); drag = .zero
             if keep { asking = i }
         }
+    }
+
+    /// Chat decisions can arrive before this screen was ever shown, so they are applied on appear as well.
+    private func applyChat() {
+        for d in chatDecisions where !appliedChat.contains(d.id) {
+            appliedChat.insert(d.id)
+            guard ideas.contains(where: { $0.id == d.ideaID }) else { continue }
+            withAnimation(.spring(duration: 0.3)) {
+                if decisions[d.ideaID] == nil { order.append(d.ideaID) }
+                decisions[d.ideaID] = d.keep
+                if let i = ideas.first(where: { $0.id == d.ideaID }) { category = i.category }
+            }
+        }
+        if reviewRequest > handledReview { handledReview = reviewRequest; reviewing = true }
     }
 
     private func undo() {

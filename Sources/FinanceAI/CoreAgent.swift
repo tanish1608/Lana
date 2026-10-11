@@ -6,9 +6,11 @@ public struct CoreToolOutput: Sendable {
     public let provenance: Provenance?
     public let cardID: String?
     public let proposedActionID: String?
-    public init(replyText: String, provenance: Provenance? = nil, cardID: String? = nil, proposedActionID: String? = nil) {
+    /// Chart of this result's own figures, for the in-app chat.
+    public let chart: ChatChart?
+    public init(replyText: String, provenance: Provenance? = nil, cardID: String? = nil, proposedActionID: String? = nil, chart: ChatChart? = nil) {
         self.replyText = replyText; self.provenance = provenance
-        self.cardID = cardID; self.proposedActionID = proposedActionID
+        self.cardID = cardID; self.proposedActionID = proposedActionID; self.chart = chart
     }
 }
 

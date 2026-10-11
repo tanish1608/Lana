@@ -28,6 +28,14 @@ The chat agent reads it through a third native tool, `ledger`, with five operati
 
 When the model omits dates the user wrote ("between 2026-09-01 and 2026-09-30", "2026-09", "September"), the host fills them from the message, as it does for dollar amounts, and every unfiltered answer states the span it covers. A real-model run first exposed the model calling `ledger` without dates and reporting an all-time total as September; with these two guards it reports $261.50 for Trader Joe's in September. Keewano remains the relay's swap-memory and time-receipt store; the ledger is not mirrored there.
 
+### Changes from chat and charts
+
+A fourth native tool, `act`, lets the model propose a change: keep or skip a budget idea, adopt the plan, mark a dinner request paid or sent, recategorize purchases, open a screen, or remove an imported or linked account. `ChatActionPlanner` (FWMFeatureUI) resolves the model's words against current state to exact IDs; no match or a tie returns a clarifying question instead of a guess. The reply carries a confirm card (`ChatAction`), and nothing changes until the user taps it. The root view then re-checks the card against current state and performs it once. Plan adoption opens Budget's own review and Face ID step rather than adopting from chat. Recategorizations are stored in the ledger and reapplied at launch; confirmed cards are journaled and appear in Approvals.
+
+Tool results can carry a `ChatChart` built from their own figures: category or merchant bars, monthly columns for a ledger search spanning months, and now-vs-plan bars for the budget. Swift Charts draws them under the reply. The per-turn prefetched snapshot has no chart, so only answers draw one.
+
+A real-model run showed that putting the long engine snapshot after the user's message made the model greet instead of acting. The snapshot now comes before "Current user message", the instructions reserve greetings for bare greetings, and recent activity is part of the snapshot. With that, the opt-in model tests pass repeatedly: keep the phone-plan swap (card for `s_phone`), move Target purchases to Groceries (recategorize card), a September category chart, Trader Joe's $261.50, activity recall, the $150 budget and the $220 PDF.
+
 Financial source results and provenance stay visible below model replies. A generated explanation is not an accounting engine result. If inference is unavailable, an offline greeting and supported deterministic finance reads remain available, with the fallback source labelled.
 
 ### Paired relay jobs
