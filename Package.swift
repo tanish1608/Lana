@@ -8,9 +8,10 @@ let package = Package(
         .library(name: "FinanceAI", targets: ["FinanceAI"]),
         .executable(name: "ai-diagnostics", targets: ["AIDiagnostics"])
     ],
+    dependencies: [.package(path: "Packages/FWMCore")],
     targets: [
-        .target(name: "FinanceAI"),
-        .executableTarget(name: "AIDiagnostics", dependencies: ["FinanceAI"]),
-        .testTarget(name: "FinanceAITests", dependencies: ["FinanceAI"])
+        .target(name: "FinanceAI", dependencies: [.product(name: "FWMCore", package: "FWMCore")]),
+        .executableTarget(name: "AIDiagnostics", dependencies: ["FinanceAI", .product(name: "FWMCore", package: "FWMCore")]),
+        .testTarget(name: "FinanceAITests", dependencies: ["FinanceAI", .product(name: "FWMCore", package: "FWMCore")])
     ]
 )
