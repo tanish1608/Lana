@@ -36,6 +36,7 @@
         req: {}, reminders: {}, clock: 0, disputed: {}
       },
       vault: { stage: "locked", revealed: {}, err: "", lockAt: 0 },
+      chat: { open: false, typing: false, msgs: [{ from: "lana", text: "Hi Ashwin. Ask me about your money, your plan or who owes you." }] },
       log: []
     };
   }
@@ -49,9 +50,17 @@
     split: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6"/></svg>',
     vault: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="4" y="10" width="16" height="11" rx="2.5"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>'
   };
-  const TABS = [["home", "Home"], ["budget", "Budget"], ["split", "Split"], ["vault", "Vault"]];
+  ICONS.vault = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="13" rx="3"/><path d="M3 10.5h18M7 15h3"/><path d="M6.5 6 8 3.5h8L17.5 6"/></svg>';
+  const SPARK = '<svg viewBox="0 0 24 24" width="26" height="26" fill="currentColor"><path d="M12 2.5c.5 4.6 2.9 7 7.5 7.5-4.6.5-7 2.9-7.5 7.5-.5-4.6-2.9-7-7.5-7.5 4.6-.5 7-2.9 7.5-7.5z"/><path d="M19 15.5c.2 1.8 1.1 2.7 2.9 2.9-1.8.2-2.7 1.1-2.9 2.9-.2-1.8-1.1-2.7-2.9-2.9 1.8-.2 2.7-1.1 2.9-2.9z" opacity=".7"/></svg>';
+  // Tab id stays "vault" for continuity with the native screens; the screen is now Accounts.
+  const TABS = [["home", "Home"], ["budget", "Budget"], ["split", "Split"], ["vault", "Accounts"]];
   const navTab = () => (S.tab === "money" ? "home" : S.tab);
-  function renderNav() { $("#nav").innerHTML = TABS.map(([id, l]) => `<button data-tab="${id}" ${navTab() === id ? 'aria-current="page"' : ""}>${ICONS[id]}${l}</button>`).join(""); }
+  function renderNav() {
+    const b = ([id, l]) => `<button class="dock-btn" data-tab="${id}" aria-label="${l}" ${navTab() === id ? 'aria-current="page"' : ""}>${ICONS[id]}<span>${l}</span></button>`;
+    $("#nav").innerHTML = `<div class="dock">${TABS.slice(0, 2).map(b).join("")}
+      <button class="orb ${S.chat.open ? "on" : ""}" data-chat aria-expanded="${S.chat.open}" aria-label="${S.chat.open ? "Close chat" : "Ask Lana"}">${S.chat.open ? '<span class="x">×</span>' : SPARK}</button>
+      ${TABS.slice(2).map(b).join("")}</div>`;
+  }
   function render() {
     renderNav();
     let v;
@@ -100,8 +109,7 @@
       { label: "Kept", v: f.retained_cash_cents, c: "var(--ok)" }
     ];
     const stays = f.to_savings_cents + f.to_investments_cents + f.retained_cash_cents;
-    const unpaid = owed.ok ? people().map((p) => owed.r.requests.find((q) => q.contact_id === p.contact_id)).filter(Boolean).filter((q) => reqState(q.contact_id) !== "paid_reported" && reqState(q.contact_id) !== "cancelled") : [];
-    const unpaidCents = sum(unpaid, (q) => q.amount_cents);
+    const { unpaid, unpaidCents } = owedSummary();
     return `<div class="home-top"><div><div class="muted small">Sunday, Oct 11</div><h1 style="margin:2px 0 0">Hi, ${esc(DS.user.display_name || "there")}</h1></div>
         <button class="msgbtn" data-messages>${MSG_ICON}Messages</button></div>
       <div class="hero card sky">
@@ -121,6 +129,11 @@
       </div>
       <button class="card msg-card" data-messages><div class="row"><span class="eyebrow">Latest in Messages</span><span class="chev">›</span></div>
         <div class="bubble lana" style="max-width:100%;margin-top:8px">You kept ${fmt(stays)} of ${fmt(f.net_income_cents)} in ${mon}. Want a plan to save $150 more?</div></button>`;
+  }
+  function owedSummary() {
+    const owed = fixtureSplit();
+    const unpaid = owed.ok ? people().map((p) => owed.r.requests.find((q) => q.contact_id === p.contact_id)).filter(Boolean).filter((q) => reqState(q.contact_id) !== "paid_reported" && reqState(q.contact_id) !== "cancelled") : [];
+    return { unpaid, unpaidCents: sum(unpaid, (q) => q.amount_cents) };
   }
   function messagesSheet() {
     sheet(`<h3>Lana lives in Messages</h3><p class="small muted" style="margin:6px 0 12px">Ask anything there. This app is for the details.</p>
@@ -501,43 +514,130 @@
       <div class="btns" style="margin-top:12px"><button class="btn ghost" data-close>Not now</button><button class="btn accent" data-rem-confirm="${id}">Approve reminder</button></div>`);
   }
 
-  // ======================= VAULT =======================
+  // ======================= CHAT =======================
+  // Preview replies are scripted from the same engine results the screens use. On iPhone the
+  // on-device model answers; nothing here calls a model.
+  const SUGGEST = ["Where did my money go?", "What’s my net worth?", "Who owes me?", "How do I save $150?", "Which accounts are connected?"];
+  function lanaReply(raw) {
+    const q = raw.toLowerCase(), has = (...w) => w.some((x) => q.includes(x));
+    const p = snapshotMonth(), v = mv(p), f = v.flow, mon = monthLabel(p).split(" ")[0];
+    const stays = f.to_savings_cents + f.to_investments_cents + f.retained_cash_cents;
+    const cat = v.categories.find((c) => q.includes(c.category.toLowerCase().split(" ")[0]));
+    if (cat) return { text: `${cat.category} was ${fmt(cat.total_cents)} in ${mon}, across ${cat.transaction_ids.length} ${cat.transaction_ids.length === 1 ? "payment" : "payments"}.`, actions: [["money", `Open ${mon}`]] };
+    if (has("owe", "split", "dinner", "venmo", "paid", "tanish", "aryan")) {
+      const { unpaid, unpaidCents } = owedSummary();
+      return unpaid.length
+        ? { text: `You’re owed ${fmt(unpaidCents, { cents: true })} for dinner: ${unpaid.map((r) => `${r.reviewed_name} ${fmt(r.amount_cents, { cents: true })}`).join(", ")}. Nothing is sent until you approve it.`, actions: [["split", "Review split"]] }
+        : { text: "Everyone has settled up for dinner.", actions: [["split", "Open split"]] };
+    }
+    if (has("save", "budget", "plan", "150", "cut")) {
+      const PL = budgetPlan(), top = swapsInPlay().filter((x) => S.budget.accepted[x.id]).sort((x, y) => swapSavings(y) - swapSavings(x)).slice(0, 2);
+      return { text: `Your plan saves ${fmt(PL.reduction)} a month with rent unchanged. Biggest wins: ${top.map((x) => `${x.title.toLowerCase()} (${fmt(swapSavings(x))})`).join(" and ")}.`, actions: [["budget", "Review plan"]] };
+    }
+    if (has("worth", "net", "assets", "debt")) return { text: `Your net worth is ${fmt(v.net_worth_cents)}: ${fmt(v.assets_cents)} you own minus ${fmt(v.liabilities_cents)} you owe, as of ${dateLabel(DS.as_of)}.`, actions: [["vault", "See accounts"]] };
+    if (has("account", "connect", "bank", "card", "loan", "balance")) return { text: `${v.accounts.length} accounts are connected across ${new Set(v.accounts.map((a) => a.institution)).size} institutions, all demo data synced ${dateLabel(DS.as_of)}.`, actions: [["vault", "Open accounts"]] };
+    if (has("where", "spend", "spent", "go", "month", "money", "income")) {
+      const big = v.categories[0];
+      return { text: `In ${mon} you kept ${fmt(stays)} of ${fmt(f.net_income_cents)}. ${big.category} was the biggest cost at ${fmt(big.total_cents)}.`, actions: [["money", `Open ${mon}`]] };
+    }
+    if (has("hi", "hey", "hello", "thanks")) return { text: "Hi! Try asking where your money went or who owes you." };
+    return { text: "In this preview I can answer about spending, net worth, your plan, the dinner split and connected accounts. On iPhone, the on-device model handles open questions." };
+  }
+  function chatHTML() {
+    const c = S.chat;
+    return `<div class="chat-head"><span class="lana-av">${SPARK}</span><div class="grow"><b>Lana</b><div class="tiny">Preview replies from your demo numbers</div></div>
+        <button class="chat-x" data-chat aria-label="Close chat">×</button></div>
+      <div class="chat-log" id="chatLog" aria-live="polite">
+        ${c.msgs.map((m) => `<div class="bubble ${m.from === "me" ? "me" : "lana"}">${esc(m.text)}${m.actions ? `<div class="bub-acts">${m.actions.map(([t, l]) => `<button data-tab="${t}">${esc(l)} ›</button>`).join("")}</div>` : ""}</div>`).join("")}
+        ${c.typing ? '<div class="bubble lana typing" aria-label="Lana is typing"><i></i><i></i><i></i></div>' : ""}
+      </div>
+      <div class="chat-sugs">${SUGGEST.map((t) => `<button data-ask="${esc(t)}">${esc(t)}</button>`).join("")}</div>
+      <form class="chat-in" id="chatForm" autocomplete="off"><input id="chatIn" placeholder="Ask about your money" aria-label="Message Lana" maxlength="200"><button type="submit" aria-label="Send">↑</button></form>`;
+  }
+  function renderChat() {
+    let el = $("#chat");
+    if (!el) { el = document.createElement("div"); el.id = "chat"; el.className = "chat"; el.setAttribute("role", "dialog"); el.setAttribute("aria-label", "Chat with Lana"); $("#phone").appendChild(el); }
+    const keep = $("#chatIn") ? $("#chatIn").value : "";
+    el.innerHTML = chatHTML(); el.classList.toggle("open", S.chat.open);
+    $("#chatIn").value = keep;
+    const log = $("#chatLog"); log.scrollTop = log.scrollHeight;
+  }
+  function toggleChat(open = !S.chat.open) {
+    S.chat.open = open; renderNav(); renderChat();
+    if (open) setTimeout(() => { const i = $("#chatIn"); if (i && matchMedia("(pointer:fine)").matches) i.focus(); }, 250);
+  }
+  function ask(text) {
+    text = text.trim(); if (!text || S.chat.typing) return;
+    S.chat.msgs.push({ from: "me", text }); S.chat.typing = true; renderChat();
+    setTimeout(() => { S.chat.typing = false; S.chat.msgs.push({ from: "lana", ...lanaReply(text) }); renderChat(); }, 650);
+  }
+
+  // ======================= ACCOUNTS (was Vault) =======================
+  const INST = { "Demo Bank": ["#0A84FF", "#5E5CE6"], "Demo Brokerage": ["#34C759", "#0E8F5A"], "Demo Card": ["#48484A", "#1C1C1E"], "Demo Loans": ["#FF9F0A", "#FF5E3A"] };
+  const mono = (inst, size = 40) => { const [a, b] = INST[inst] || ["#8E8E93", "#636366"]; return `<span class="mono" style="width:${size}px;height:${size}px;background:linear-gradient(145deg,${a},${b})">${esc(inst.replace("Demo ", "")[0])}</span>`; };
   let vaultTimer;
   function viewVault() {
-    const v = S.vault;
-    const privacy = `<h2>Privacy</h2><div class="card flat small">
+    const snap = mv(snapshotMonth()), accts = snap.accounts, insts = [...new Set(accts.map((a) => a.institution))], when = dateLabel(DS.as_of);
+    const groups = insts.map((inst) => {
+      const list = accts.filter((a) => a.institution === inst);
+      return `<div class="card inst">
+        <div class="inst-head">${mono(inst)}<div class="grow"><div class="t">${esc(inst)}</div><div class="s"><i class="live"></i>Connected · synced ${when}</div></div></div>
+        <div class="list">${list.map((a) => {
+          const d = a.opening_balance_cents != null ? a.balance_cents - a.opening_balance_cents : 0, liab = a.asset_or_liability === "liability";
+          return `<button class="item" data-acct="${a.account_id}"><div class="grow"><div class="t">${esc(KIND[a.kind] || a.kind)}</div><div class="s">${liab ? "You owe" : d ? `${fmt(d, { plus: true })} in September` : "No change in September"}</div></div><span class="a num" ${liab ? 'style="color:var(--ink-2)"' : ""}>${liab ? "−" : ""}${fmt(a.balance_cents)}</span><span class="chev">›</span></button>`;
+        }).join("")}</div></div>`;
+    }).join("");
+    const services = [
+      ["Messages", "Where you talk to Lana", "Simulated here"],
+      ["Venmo", "Request handoff only. Lana never holds your login.", "Handoff"],
+      ["Purchase history", "Past swap decisions for your plan", "Simulated here"]
+    ];
+    return `<div class="row" style="margin:6px 4px 2px"><h1 style="margin:0">Accounts</h1><button class="btn small ghost" data-connect>+ Add</button></div>
+      <p class="sub">${accts.length} accounts at ${insts.length} institutions · demo data</p>
+      <div class="card stack-card">
+        <div class="eyebrow">Net worth</div>
+        ${big(snap.net_worth_cents, "md")}
+        <div class="stack-bar">${accts.map((a) => `<span style="flex:${a.balance_cents};background:linear-gradient(145deg,${(INST[a.institution] || ["#8E8E93"])[0]},${(INST[a.institution] || ["", "#636366"])[1]})${a.asset_or_liability === "liability" ? ";opacity:.35" : ""}" title="${esc(a.institution)} ${esc(KIND[a.kind])}"></span>`).join("")}</div>
+        <div class="row small"><span><b class="num">${fmt(snap.assets_cents)}</b> <span class="muted">owned</span></span><span><b class="num">${fmt(snap.liabilities_cents)}</b> <span class="muted">owed (faded)</span></span></div>
+      </div>
+      ${groups}
+      <h2>Also connected</h2>
+      <div class="card list">${services.map(([n, d, st]) => `<div class="item"><span class="svc">${n[0]}</span><div class="grow"><div class="t">${n}</div><div class="s">${d}</div></div><span class="tag ${st === "Handoff" ? "" : "warn"}">${st}</span></div>`).join("")}</div>
+      <h2>Sign-in keys</h2>${keysBlock()}
+      <h2>Privacy</h2><div class="card flat small">
       <p style="margin:0 0 8px"><b>The model and financial reasoning run on your phone.</b></p>
       <p style="margin:0 0 8px">Messages you send Lana pass through a messaging provider, and connected services receive what they need to work.</p>
-      <p style="margin:0">Lana’s model sees connection names and what they’re allowed to do. It never sees passwords, tokens or verification codes.</p></div>`;
-    const activity = `<h2>Approvals</h2><div class="card list">${S.log.length ? S.log.map((l) => `<div class="item"><div class="grow"><div style="font-weight:550">${esc(l.text)}</div><div class="s">${esc(l.at)}</div></div><span class="tag ${l.kind === "approved" ? "acc" : ""}">${esc(l.kind)}</span></div>`).join("") : '<div class="empty small">Nothing approved yet.</div>'}</div>`;
-    const sim = `<div class="card flat" style="margin-top:12px"><div class="sim" style="margin:0">◆ Simulated. No Face ID or code check in this preview.</div></div>`;
-    const lockIcon = '<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><rect x="4" y="10" width="16" height="11" rx="2.5"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>';
+      <p style="margin:0">Lana’s model sees connection names and what they’re allowed to do. It never sees passwords, tokens or verification codes.</p></div>
+      <h2>Approvals</h2><div class="card list">${S.log.length ? S.log.map((l) => `<div class="item"><div class="grow"><div style="font-weight:550">${esc(l.text)}</div><div class="s">${esc(l.at)}</div></div><span class="tag ${l.kind === "approved" ? "acc" : ""}">${esc(l.kind)}</span></div>`).join("") : '<div class="empty small">Nothing approved yet.</div>'}</div>`;
+  }
+  // The credentials that keep these connections working, behind Face ID plus a code.
+  function keysBlock() {
+    const v = S.vault, sim = '<div class="sim">◆ Simulated. No Face ID or code check in this preview.</div>';
+    const lockIcon = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><rect x="4" y="10" width="16" height="11" rx="2.5"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>';
     if (v.stage === "locked" || v.stage === "bio") {
-      return `<div class="lock"><div class="ring">${lockIcon}</div><h1 style="margin:0">Vault is locked</h1></div>
-        ${v.err ? `<div class="card flat" style="border-color:var(--bad)"><span class="tag bad">Couldn’t unlock</span><p class="small" style="margin:6px 0 0">${esc(v.err)}</p></div>` : ""}
-        <button class="btn accent" data-bio ${v.stage === "bio" ? "disabled" : ""}>${v.stage === "bio" ? "Checking Face ID…" : "Unlock with Face ID"}</button>
-        <div style="text-align:center;margin-top:6px"><button class="small muted" data-bio-fail style="min-height:44px;text-decoration:underline">Show a failed attempt</button></div>
-        ${sim}${privacy}${activity}`;
+      return `<div class="card"><div class="row"><span class="keyic">${lockIcon}</span><div class="grow"><div class="t" style="font-weight:600">${P.vault.length} keys · Locked</div><div class="s small muted">Face ID, then your authenticator code</div></div>
+        <button class="btn small accent" data-bio ${v.stage === "bio" ? "disabled" : ""}>${v.stage === "bio" ? "Checking…" : "Unlock"}</button></div>
+        ${v.err ? `<p class="small" style="color:var(--bad);margin:10px 0 0">${esc(v.err)}</p>` : ""}
+        ${sim}<button class="small muted" data-bio-fail style="min-height:44px;text-decoration:underline">Show a failed attempt</button></div>`;
     }
     if (v.stage === "otp") {
-      return `<div class="lock"><div class="ring" style="font-size:30px">✓</div><h1 style="margin:0">One more step</h1><p class="sub" style="margin-top:6px">Face ID passed. Enter the 6-digit code from your authenticator app.</p></div>
+      return `<div class="card"><div class="t" style="font-weight:600;text-align:center">Face ID passed. Enter your 6-digit code.</div>
         <div class="otp">${Array.from({ length: 6 }, (_, i) => `<input inputmode="numeric" maxlength="1" aria-label="Digit ${i + 1}" data-otp="${i}">`).join("")}</div>
         ${v.err ? `<p class="small" style="color:var(--bad);text-align:center">${esc(v.err)}</p>` : ""}
-        <button class="btn accent" data-otp-go>Verify</button><button class="btn ghost" data-lock style="margin-top:8px">Cancel</button>${sim}`;
+        <div class="btns"><button class="btn ghost" data-lock>Cancel</button><button class="btn accent" data-otp-go>Verify</button></div>${sim}</div>`;
     }
     const left = Math.max(0, Math.ceil((v.lockAt - Date.now()) / 1000));
-    return `<div class="row" style="margin-top:8px"><h1 style="margin:0">Vault</h1><span class="pill ok">Unlocked · <span data-countdown class="num">${left}s</span></span></div>
-      <p class="sub" style="margin-top:6px">Locks after 60 seconds, or as soon as you leave the app.</p>
-      <div class="card list">${P.vault.map((s) => `<div class="item"><div class="grow"><div class="t">${esc(s.label)}</div><div class="s">${esc(s.scope)}</div><div class="secret" style="margin-top:4px">${v.revealed[s.id] ? esc(s.value) : "•••• •••• ••••"}</div></div><button class="btn small ghost" data-reveal="${s.id}">${v.revealed[s.id] ? "Hide" : "Show"}</button></div>`).join("")}</div>
-      <p class="note">All values are synthetic demo credentials.</p>
-      <button class="btn" data-lock>Lock now</button>${sim}${privacy}${activity}`;
+    return `<div class="card"><div class="row"><b>Unlocked</b><span class="pill ok">Locks in <span data-countdown class="num">${left}s</span></span></div>
+      <div class="list">${P.vault.map((s) => `<div class="item"><div class="grow"><div class="t">${esc(s.label)}</div><div class="s">${esc(s.scope)}</div><div class="secret" style="margin-top:4px">${v.revealed[s.id] ? esc(s.value) : "•••• •••• ••••"}</div></div><button class="btn small ghost" data-reveal="${s.id}">${v.revealed[s.id] ? "Hide" : "Show"}</button></div>`).join("")}</div>
+      <p class="note">Synthetic demo values. Locks after 60 seconds or when you leave the app.</p>
+      <button class="btn" data-lock>Lock now</button>${sim}</div>`;
   }
   function startVaultTimer() {
     clearInterval(vaultTimer);
     vaultTimer = setInterval(() => {
       if (S.vault.stage !== "unlocked") return clearInterval(vaultTimer);
       const left = Math.ceil((S.vault.lockAt - Date.now()) / 1000);
-      if (left <= 0) return lockVault("Vault locked after 60 seconds.");
+      if (left <= 0) return lockVault("Keys locked after 60 seconds.");
       const el = $("[data-countdown]"); if (el) el.textContent = left + "s";
     }, 500);
   }
@@ -561,6 +661,11 @@
     }
     if (t.matches("[data-otp]")) { t.value = t.value.replace(/\D/g, "").slice(0, 1); if (t.value) { const n = $(`[data-otp="${+t.dataset.otp + 1}"]`); if (n) n.focus(); } }
   });
+  document.addEventListener("submit", (e) => {
+    if (e.target.id !== "chatForm") return;
+    e.preventDefault(); const i = $("#chatIn"); const t = i.value; i.value = ""; ask(t);
+  });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape" && S && S.chat.open) toggleChat(false); });
   document.addEventListener("change", (e) => {
     const t = e.target;
     if (t.matches("[data-upload]") && t.files[0]) { const r = new FileReader(); r.onload = () => { S.split.upload = r.result; S.split.receipt = true; render(); }; r.readAsDataURL(t.files[0]); }
@@ -568,11 +673,14 @@
   document.addEventListener("click", (e) => {
     const t = e.target.closest("button,[data-close]"); if (!t || !S) return;
     const d = t.dataset;
-    if (d.tab) { closeSheet(); return go(d.tab); }
+    if (d.tab) { closeSheet(); if (S.chat.open) toggleChat(false); return go(d.tab); }
+    if ("chat" in d) return toggleChat();
+    if (d.ask) return ask(d.ask);
+    if ("connect" in d) return toast("Simulated. Linking a new account isn’t in this preview.");
     if (t.id === "demoPill") return demoSheet();
     if ("messages" in d) return messagesSheet();
     if ("close" in d) return closeSheet();
-    if ("reset" in d) { closeSheet(); clearInterval(vaultTimer); S = initialState(); toast("Demo reset"); top(); return render(); }
+    if ("reset" in d) { closeSheet(); clearInterval(vaultTimer); S = initialState(); toast("Demo reset"); top(); renderChat(); return render(); }
     if ("themeToggle" in d) { const r = document.documentElement; const dark = r.dataset.theme ? r.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches; r.dataset.theme = dark ? "light" : "dark"; return; }
     if (d.period) { S.money.period = d.period; return render(); }
     if (d.mview) { S.money.view = d.mview; return render(); }
@@ -634,7 +742,7 @@
       try { const r = await fetch(u, { cache: "no-store" }); if (r.ok) { DS = await r.json(); break; } } catch (_) {}
     }
     if (!DS) { main.innerHTML = '<div class="card" style="margin-top:40px"><span class="tag bad">Couldn’t load demo data</span><p class="small">Serve the repo root and open /preview/web/. See preview/README.md.</p></div>'; return; }
-    S = initialState(); render();
+    S = initialState(); render(); renderChat();
   }
   boot();
 })();
