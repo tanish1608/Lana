@@ -77,6 +77,15 @@ public final class DemoStore {
                                              datasetVersion: dataset.datasetVersion, dataMode: dataset.dataMode)
     }
 
+    /// Requests from the seed's split that aren't reported paid or cancelled, payer's friends in contact order
+    /// (the order the Split screen shows them).
+    func unpaidRequests(_ states: [String: RequestState]) -> [ReimbursementDraft] {
+        guard let requests = fixtureSplit()?.requests else { return [] }
+        let order = (dataset.contacts ?? []).map(\.contactId)
+        return requests.sorted { (order.firstIndex(of: $0.contactId) ?? .max) < (order.firstIndex(of: $1.contactId) ?? .max) }
+            .filter { let s = states[$0.contactId] ?? .draft; return s != .paidReported && s != .cancelled }
+    }
+
     static func weekday(_ iso: String) -> String {
         let f = ISO8601DateFormatter()
         f.formatOptions = [.withInternetDateTime]

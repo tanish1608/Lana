@@ -34,6 +34,7 @@ struct RingChart<Center: View>: View {
         return segments.map { s in
             let frac = CGFloat(s.cents) / t
             defer { off += frac }
+            if segments.count == 1 && frac >= 1 { return (0, 1, s.color) } // a full ring closes with no gap
             return (off + inset, max(off + inset, off + frac - inset), s.color)
         }
     }
@@ -43,8 +44,9 @@ struct RingChart<Center: View>: View {
             Circle().stroke(Theme.line, lineWidth: lineWidth)
             ForEach(Array(arcs.enumerated()), id: \.offset) { _, a in
                 Circle().trim(from: a.start, to: grown ? a.end : a.start)
-                    .stroke(a.color, style: StrokeStyle(lineWidth: lineWidth, lineCap: .round))
+                    .stroke(a.color.gradient, style: StrokeStyle(lineWidth: lineWidth, lineCap: .round))
                     .rotationEffect(.degrees(-90))
+                    .shadow(color: a.color.opacity(0.3), radius: 5, y: 3)
             }
             center
         }
@@ -68,6 +70,8 @@ struct PillPicker<T: Hashable>: View {
                     Text(o.label).font(.subheadline.weight(.semibold)).frame(maxWidth: .infinity, minHeight: 36)
                         .foregroundStyle(on ? Theme.pillOnText : Theme.ink)
                         .background(on ? Theme.ink : Theme.card, in: Capsule())
+                        .overlay(Capsule().strokeBorder(Theme.edge))
+                        .shadow(color: .black.opacity(on ? 0.18 : 0.04), radius: on ? 8 : 3, y: on ? 4 : 1)
                 }
                 .buttonStyle(.plain).accessibilityAddTraits(on ? .isSelected : [])
             }
@@ -105,7 +109,7 @@ struct Eyebrow: View {
 
 struct PressScaleStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
-        configuration.label.scaleEffect(configuration.isPressed ? 0.98 : 1)
+        configuration.label.scaleEffect(configuration.isPressed ? 0.97 : 1)
             .animation(.easeOut(duration: 0.12), value: configuration.isPressed)
     }
 }

@@ -41,6 +41,26 @@ enum Theme {
     static let sky2 = Color(light: 0xE7F0FA, dark: 0x1A2633)
     static let inkCard = Color(light: 0x111113, dark: 0x1C1C1E)
     static let pillOnText = Color(light: 0xFFFFFF, dark: 0x000000)
+    // Depth: a hairline edge that reads in dark mode (where shadows don't) and the one brand gradient.
+    #if canImport(UIKit)
+    static let edge = Color(uiColor: UIColor { $0.userInterfaceStyle == .dark ? UIColor(white: 1, alpha: 0.09) : UIColor(white: 0, alpha: 0.04) })
+    #else
+    static let edge = Color.primary.opacity(0.06)
+    #endif
+    static let skyDeep = Color(light: 0xB9DBF8, dark: 0x0C2540)
+    static let lanaGradient = LinearGradient(colors: [Color(light: 0x3B9BFF, dark: 0x3B9BFF), Color(light: 0x5E5CE6, dark: 0x5E5CE6)], startPoint: .topLeading, endPoint: .bottomTrailing)
+    /// Card surface: a slightly lighter top edge so cards read as lit from above.
+    static let cardHi = Color(light: 0xFFFFFF, dark: 0x26262A)
+    static let cardFill = LinearGradient(colors: [cardHi, card], startPoint: .top, endPoint: .bottom)
+    static let inkCardFill = LinearGradient(colors: [Color(light: 0x2C2C30, dark: 0x2C2C30), Color(light: 0x0B0B0D, dark: 0x0B0B0D)], startPoint: .top, endPoint: .bottom)
+    /// Screen background: the grouped background with a faint blue glow at the top.
+    static var backdrop: some View {
+        ZStack(alignment: .top) {
+            bg
+            RadialGradient(colors: [accent.opacity(0.09), .clear], center: UnitPoint(x: 0.5, y: 0), startRadius: 0, endRadius: 340).frame(height: 340)
+        }
+        .ignoresSafeArea()
+    }
 
     static func display(_ size: CGFloat) -> Font { .system(size: size, weight: .bold) }
 }
@@ -82,6 +102,22 @@ func usd(_ cents: Int, cents showCents: Bool = false, plus: Bool = false) -> Str
     return (neg ? "−" : (plus ? "+" : "")) + "$" + dollars + frac
 }
 
+/// Lifts a surface off the background: contact shadow, soft ambient shadow, hairline edge.
+struct Raised: ViewModifier {
+    var radius: CGFloat = 12
+    var tint: Color = .black
+    var strength: Double = 1
+    func body(content: Content) -> some View {
+        content
+            .overlay(RoundedRectangle(cornerRadius: radius, style: .continuous).strokeBorder(Theme.edge, lineWidth: 1))
+            .shadow(color: .black.opacity(0.05 * strength), radius: 1, y: 1)
+            .shadow(color: tint.opacity(0.10 * strength), radius: 16, y: 8)
+    }
+}
+extension View {
+    func raised(_ radius: CGFloat = 12, tint: Color = .black, strength: Double = 1) -> some View { modifier(Raised(radius: radius, tint: tint, strength: strength)) }
+}
+
 struct Card<Content: View>: View {
     var padding: CGFloat = 16
     @ViewBuilder var content: Content
@@ -89,7 +125,8 @@ struct Card<Content: View>: View {
         VStack(alignment: .leading, spacing: 10) { content }
             .padding(padding)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Theme.card, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .background(Theme.cardFill, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .raised(16)
     }
 }
 
@@ -161,7 +198,8 @@ struct PrimaryButtonStyle: ButtonStyle {
     var fill: Color = Theme.accent
     func makeBody(configuration: Configuration) -> some View {
         configuration.label.font(.body.weight(.semibold)).frame(maxWidth: .infinity, minHeight: 50)
-            .foregroundStyle(.white).background(fill, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .foregroundStyle(.white).background(fill.gradient, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .shadow(color: fill.opacity(0.28), radius: 10, y: 5)
             .scaleEffect(configuration.isPressed ? 0.96 : 1)
             .animation(.easeOut(duration: 0.12), value: configuration.isPressed)
     }
