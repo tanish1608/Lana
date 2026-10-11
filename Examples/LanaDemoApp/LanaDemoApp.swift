@@ -1,11 +1,17 @@
 import SwiftUI
 import FWMFeatureUI
 
-// Minimal iOS host for Ashwin's feature screens. Demo data only: LanaDemoRoot reads
-// fixtures/seed-v1.json from this checkout, so run it in the simulator on the Mac that built it.
 @main
 struct LanaDemoApp: App {
     var body: some Scene {
-        WindowGroup { LanaDemoRoot() }
+        WindowGroup {
+            if let url = Bundle.main.url(forResource: "seed-v1", withExtension: "json"),
+               let store = try? DemoStore(fixtureURL: url) {
+                LanaRootView(store: store, unlocker: NativeVaultUnlocker())
+            } else {
+                ContentUnavailableView("Demo data unavailable", systemImage: "exclamationmark.triangle",
+                    description: Text("The bundled seed-v1.json could not be loaded."))
+            }
+        }
     }
 }

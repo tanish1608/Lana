@@ -37,6 +37,11 @@ enum PreviewBudgetPlan {
 /// Journey 2: budget proposal with reviewable swaps. Adopting changes the budget only.
 struct BudgetScreen: View {
     let store: DemoStore
+    let unlocker: VaultUnlocking
+    @Environment(\.scenePhase) private var scenePhase
+    @State private var authorizing = false
+    @State private var approvalError: String?
+    var onSelection: (Set<String>, Bool) -> Void = { _, _ in }
     var onAdopt: (String) -> Void = { _ in }
     @State private var accepted = Set(PreviewBudgetPlan.swaps.map(\.id) + PreviewBudgetPlan.habits.map(\.id))
     @State private var useHistory = true
@@ -49,12 +54,8 @@ struct BudgetScreen: View {
 
     private struct Plan { var current: [CategoryTotal]; var target: [String: Int]; var reduction: Int; var flow: MoneyFlow }
     private func plan() -> Plan? {
-        guard case .success(let v) = store.moneyView(PreviewBudgetPlan.basePeriod) else { return nil }
-        var target = Dictionary(uniqueKeysWithValues: v.categories.map { ($0.category, $0.totalCents) })
-        for s in swaps where accepted.contains(s.id) { target[s.category, default: 0] -= s.savingsCents }
-        for h in PreviewBudgetPlan.habits where accepted.contains(h.id) { target[h.category, default: 0] -= h.savingsCents }
-        let reduction = v.flow.expensesCents - target.values.reduce(0, +)
-        return Plan(current: v.categories, target: target, reduction: reduction, flow: v.flow)
+        guard let p = try? BudgetProjection.make(dataset: store.dataset, period: PreviewBudgetPlan.basePeriod, accepted: accepted, useHistory: useHistory) else { return nil }
+        return Plan(current: p.current.categories, target: p.targets, reduction: p.savingsCents, flow: p.current.flow)
     }
 
     var body: some View {
@@ -72,6 +73,7 @@ struct BudgetScreen: View {
             .background { Theme.backdrop }
             .navigationTitle("Budget")
             .toolbar { DemoDataBadge() }
+            .onChange(of: signature) { _, _ in onSelection(accepted, useHistory) }
             .sheet(isPresented: $showWhy) { whySheet }
         }
     }
@@ -99,7 +101,7 @@ struct BudgetScreen: View {
         .background(Theme.cardFill, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
         .raised(24)
         if adoptedSignature != nil {
-            Label(changed ? "Edited since adopting. Review and adopt again." : "Adopted. Balances and purchases are unchanged.", systemImage: "checkmark.circle.fill")
+            Label(changed ? "Edited since adopting. Review and adopt again." : "Adopted for this session. Balances and purchases are unchanged.", systemImage: "checkmark.circle.fill")
                 .font(.subheadline).foregroundStyle(Theme.accent).padding(14).frame(maxWidth: .infinity, alignment: .leading)
                 .background(Theme.accentSoft, in: RoundedRectangle(cornerRadius: 16))
                 .id("adopted")
@@ -146,13 +148,26 @@ struct BudgetScreen: View {
             }
             Button("Why these suggestions?") { showWhy = true }.foregroundStyle(Theme.accent).fontWeight(.semibold)
         }
-        Button(adoptedSignature != nil && !changed ? "Plan adopted" : "Review & adopt plan") { reviewing = true }
-            .buttonStyle(PrimaryButtonStyle()).disabled(adoptedSignature != nil && !changed).padding(.top, 8)
+        if let approvalError { Text(approvalError).font(.footnote).foregroundStyle(Theme.bad) }
+        Button(authorizing ? "Authorizing…" : adoptedSignature != nil && !changed ? "Plan adopted" : "Review & adopt plan") { reviewing = true }
+            .buttonStyle(PrimaryButtonStyle()).disabled(authorizing || (adoptedSignature != nil && !changed)).padding(.top, 8)
             .confirmationDialog("Adopt budget for \(PreviewBudgetPlan.period)?", isPresented: $reviewing, titleVisibility: .visible) {
                 Button("Adopt plan · \(usd(p.reduction))/mo projected") {
                     guard adoptedSignature != signature else { return } // duplicate tap does nothing
-                    adoptedSignature = signature
-                    onAdopt("Budget for \(PreviewBudgetPlan.period) · \(usd(p.reduction))/mo projected")
+                    let reviewedSignature = signature
+                    authorizing = true; approvalError = nil
+                    Task {
+                        defer { authorizing = false }
+                        do {
+                            try await unlocker.authenticateDeviceOwner(reason: "Adopt the reviewed demo budget")
+                            guard reviewedSignature == signature, scenePhase == .active else {
+                                approvalError = "The plan changed or the app became inactive. Review it again."; return
+                            }
+                            guard adoptedSignature != reviewedSignature else { return }
+                            adoptedSignature = reviewedSignature
+                            onAdopt("Demo budget adopted for this session · \(usd(p.reduction))/mo projected")
+                        } catch { approvalError = error.localizedDescription }
+                    }
                 }
             } message: {
                 Text("This updates your budget only. It doesn’t move money, change account balances, buy products or switch your phone plan.")

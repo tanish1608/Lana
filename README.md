@@ -8,6 +8,12 @@ The product gives people time back by reducing the work of understanding their m
 
 **AI branch handoff:** [Concrete Swift integration and verification](docs/AI_INTEGRATION.md) describes the canonical agent, adapter protocols, local receipt/voice APIs, and approval gate.
 
+## Version 1
+
+`main` now contains **Lana 1.0**: Ashwin's native screens connected to Tanish's local AI and Aryan's engines, providers and relay. Open `Examples/LanaDemoApp/LanaDemoApp.xcodeproj`, select **LanaDemoApp**, choose your signing team and an eligible iPhone, then Run. Requires iOS 26+ with Apple Intelligence ready for conversational inference. The app bundles its fixture; a Mac checkout is not needed at runtime.
+
+Tap the centre orb for natural-language chat, PDF attachments, saved conversations and reviewed voice input. Split supports local receipt-image OCR followed by field/assignment review. Home, Budget and chat share the selected budget projection. Accounts provides real device authentication and optional HTTPS relay pairing. See [version 1 setup, verification and limits](docs/VERSION_1.md).
+
 ## What we are building
 
 The current shared implementation follows the SRS v2 contracts referenced by `FWMCore`. The v2 document is in the team chat, not checked into this repository. The earlier broad SRS describes the product vision; it does not override the interfaces already shared here.
@@ -54,20 +60,20 @@ The shared product plan uses **local inference, without a cloud LLM**. The relay
 
 ## Repository layout and status
 
-| Path | Responsibility | Status at documentation baseline |
+| Path | Responsibility | Version 1 status |
 |---|---|---|
-| `Packages/FWMCore/` | Shared records/contracts; money and split engines; provider adapters (fixture, bank CSV import); golden tests | Engines on `main`; adapters in PR #3 |
-| `fixtures/` | Canonical and edge inputs, generator | Drafted on `main`; Ashwin owns subsequent changes |
-| `ios/` | Integrated iPhone host and feature screens | Intended app location; not yet present at this baseline |
-| `relay/` | Dial inbox/outbox, job transport, reminders, Keewano | Aryan's lane; PR #1 |
-| `sparta/` | Sparta Worlds tests for the approved-action executor (phone-plan swap) | Aryan's lane; PR #2 |
+| `Packages/FWMCore/` | Shared records/contracts; money and split engines; provider adapters (fixture, bank CSV import); golden tests | Merged on `main`; fixture-backed app; CSV adapter available as a library |
+| `fixtures/` | Canonical and edge inputs, generator | Canonical seed plus expanded three-year world; Ashwin owns changes |
+| `Examples/LanaDemoApp/`, `Packages/FWMFeatureUI/` | Integrated iPhone host, screens and composition adapters | Version 1 entry point |
+| `relay/` | Dial inbox/outbox, job transport, reminders, Keewano | Merged; pairing and foreground worker wired in Accounts |
+| `sparta/` | Sparta Worlds tests for the approved-action executor (phone-plan swap) | Merged; sandbox executor and recorded evidence |
 | `docs/README.md` | Technical contracts and collaboration procedure | Shared documentation |
-| Root `Package.swift`, `Sources/FinanceAI/`, `Tests/FinanceAITests/` | Tanish's reusable local AI module | On `codex/on-device-ai`; integrated with `FWMCore` |
-| `Examples/AIPlayground/` | AI-only SwiftUI test harness | Development harness on AI branch; separate from final feature screens |
+| Root `Package.swift`, `Sources/FinanceAI/`, `Tests/FinanceAITests/` | Tanish's reusable local AI module | Merged and connected to feature screens |
+| `Examples/AIPlayground/` | AI-only SwiftUI test harness | Retained developer harness; use LanaDemoApp for the integrated product |
 
-The AI branch includes free-form Foundation Models chat with native finance/PDF tools, local conversation history, PDF text/scanned-page import, Vision OCR, local Speech transcription, confirmation orchestration, passcode-protected Keychain storage, and RFC-tested TOTP generation. Its harness uses the canonical v2 dataset and shared money/split engines. Foundation Models is the initial backend; **MLX is an option to evaluate, not an installed dependency**. A cloud routing prototype on that branch is unused and is not part of the agreed integrated architecture.
+The AI module includes free-form Foundation Models chat with native finance/PDF tools, local conversation history, PDF text/scanned-page import, Vision OCR, local Speech transcription, confirmation orchestration, passcode-protected Keychain storage, and RFC-tested TOTP generation. Its harness uses the canonical v2 dataset and shared money/split engines. Foundation Models is the initial backend; **MLX is an option to evaluate, not an installed dependency**. A cloud routing prototype on that branch is unused and is not part of the agreed integrated architecture.
 
-Update this baseline when components land. Distinguish implemented code, successful compilation, actual model inference, and physical-device verification.
+Update this status when components change. Distinguish implemented code, successful compilation, actual model inference, and physical-device verification.
 
 ## Run the checks
 
@@ -77,7 +83,7 @@ From the repository root:
 swift test --package-path Packages/FWMCore
 ```
 
-On the AI branch, also run:
+Also run:
 
 ```bash
 swift test
@@ -111,7 +117,7 @@ Read these from the engines. Do not duplicate financial constants in prompts or 
 - Bind human approval to action, user/conversation, payload, version, and expiry. Duplicate delivery must not execute twice.
 - Keep fixture, sandbox, live, and cached modes visible; identify mocked actions.
 - Keep secrets, recordings, personal receipts, and build artifacts out of Git.
-- Use focused feature-branch commits and reviewed PRs; preserve history with merge commits. Direct `main` edits are reserved for explicitly agreed shared setup such as these docs.
+- Use focused feature-branch commits and reviewed PRs; preserve history with merge commits. Direct `main` updates require explicit agreement, including shared setup and approved integration releases.
 
 Read [the technical guide](docs/README.md) before changing shared contracts, fixtures, build settings, or another owner's files.
 

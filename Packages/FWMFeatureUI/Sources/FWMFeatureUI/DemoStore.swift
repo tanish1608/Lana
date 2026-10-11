@@ -13,12 +13,13 @@ private struct SeedExtras: Decodable { var splitExample: SplitExample? }
 /// Fixture-backed source for the feature screens. Engines compute every number; this only loads inputs.
 /// A live build swaps in provider-backed datasets with the same `Dataset` shape.
 public final class DemoStore {
-    public let dataset: Dataset
+    public internal(set) var dataset: Dataset
+    var reviewedResult: SplitResult?
     let splitExample: SplitExample?
 
     public init(fixtureURL: URL) throws {
         let data = try Data(contentsOf: fixtureURL)
-        dataset = try FWMJSON.decoder.decode(Dataset.self, from: data)
+        dataset = try FixtureProvider(url: fixtureURL).fetch().0
         splitExample = (try? FWMJSON.decoder.decode(SeedExtras.self, from: data))?.splitExample
     }
 
@@ -72,6 +73,7 @@ public final class DemoStore {
 
     /// The seed's own split (`split_example` on the first receipt), for the Home summary.
     func fixtureSplit() -> SplitResult? {
+        if let reviewedResult { return reviewedResult }
         guard let r = dataset.receipts?.first, let ex = splitExample else { return nil }
         return try? SplitEngine.prepareSplit(receipt: r, assignments: ex.assignments, payerId: ex.payerId, contacts: dataset.contacts ?? [],
                                              datasetVersion: dataset.datasetVersion, dataMode: dataset.dataMode)

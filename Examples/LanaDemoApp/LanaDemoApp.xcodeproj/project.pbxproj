@@ -7,71 +7,84 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		A10000000000000000000001 /* LanaDemoApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000002 /* LanaDemoApp.swift */; };
-		A10000000000000000000003 /* FWMFeatureUI in Frameworks */ = {isa = PBXBuildFile; productRef = A10000000000000000000004 /* FWMFeatureUI */; };
+		114828BD89DDB8C21179E417 /* LanaDemoApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1316DCC856E87963F33DD1E0 /* LanaDemoApp.swift */; };
+		9D05E0C4EF86D3DB13C15A25 /* seed-v1.json in Resources */ = {isa = PBXBuildFile; fileRef = 16025FBAB15F263E4EBBBCA3 /* seed-v1.json */; };
+		DE70ED76B841CB17E15818CD /* FWMFeatureUI in Frameworks */ = {isa = PBXBuildFile; productRef = B9978616F7AB9BD080A2E991 /* FWMFeatureUI */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		A10000000000000000000002 /* LanaDemoApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LanaDemoApp.swift; sourceTree = "<group>"; };
-		A10000000000000000000005 /* LanaDemoApp.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = LanaDemoApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		A10000000000000000000006 /* FWMFeatureUI */ = {isa = PBXFileReference; lastKnownFileType = folder; name = FWMFeatureUI; path = ../../Packages/FWMFeatureUI; sourceTree = SOURCE_ROOT; };
+		1316DCC856E87963F33DD1E0 /* LanaDemoApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LanaDemoApp.swift; sourceTree = "<group>"; };
+		16025FBAB15F263E4EBBBCA3 /* seed-v1.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "seed-v1.json"; sourceTree = "<group>"; };
+		DEB674B41B6291587AE33B1D /* LanaDemoApp.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = LanaDemoApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		EF7129711BF3EA3CE5C7B9D0 /* FWMFeatureUI */ = {isa = PBXFileReference; lastKnownFileType = folder; name = FWMFeatureUI; path = ../../Packages/FWMFeatureUI; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
-		A10000000000000000000007 /* Frameworks */ = {
+		14E223DD5107ADD8206FD583 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				A10000000000000000000003 /* FWMFeatureUI in Frameworks */,
+				DE70ED76B841CB17E15818CD /* FWMFeatureUI in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		A10000000000000000000008 = {
+		55E37885921DFF338F2CA7BB /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				A10000000000000000000009 /* LanaDemoApp */,
-				A1000000000000000000000A /* Packages */,
-				A1000000000000000000000B /* Products */,
+				DEB674B41B6291587AE33B1D /* LanaDemoApp.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		70C4A4755D04B5D068BB5504 /* Packages */ = {
+			isa = PBXGroup;
+			children = (
+				EF7129711BF3EA3CE5C7B9D0 /* FWMFeatureUI */,
+			);
+			name = Packages;
+			sourceTree = "<group>";
+		};
+		73063AF7962986C2FCCE2DBD /* fixtures */ = {
+			isa = PBXGroup;
+			children = (
+				16025FBAB15F263E4EBBBCA3 /* seed-v1.json */,
+			);
+			name = fixtures;
+			path = ../../fixtures;
+			sourceTree = "<group>";
+		};
+		CA17829BC54B6C02E367FE68 = {
+			isa = PBXGroup;
+			children = (
+				73063AF7962986C2FCCE2DBD /* fixtures */,
+				EB35EE9D7C0E3206AAB2A130 /* LanaDemoApp */,
+				70C4A4755D04B5D068BB5504 /* Packages */,
+				55E37885921DFF338F2CA7BB /* Products */,
 			);
 			sourceTree = "<group>";
 		};
-		A10000000000000000000009 /* LanaDemoApp */ = {
+		EB35EE9D7C0E3206AAB2A130 /* LanaDemoApp */ = {
 			isa = PBXGroup;
 			children = (
-				A10000000000000000000002 /* LanaDemoApp.swift */,
+				1316DCC856E87963F33DD1E0 /* LanaDemoApp.swift */,
 			);
 			name = LanaDemoApp;
 			path = .;
 			sourceTree = "<group>";
 		};
-		A1000000000000000000000A /* Packages */ = {
-			isa = PBXGroup;
-			children = (
-				A10000000000000000000006 /* FWMFeatureUI */,
-			);
-			name = Packages;
-			sourceTree = "<group>";
-		};
-		A1000000000000000000000B /* Products */ = {
-			isa = PBXGroup;
-			children = (
-				A10000000000000000000005 /* LanaDemoApp.app */,
-			);
-			name = Products;
-			sourceTree = "<group>";
-		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		A1000000000000000000000C /* LanaDemoApp */ = {
+		56C4765260EA04EC37A25FF5 /* LanaDemoApp */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = A1000000000000000000000D /* Build configuration list for PBXNativeTarget "LanaDemoApp" */;
+			buildConfigurationList = C150741CDD3D520225927A03 /* Build configuration list for PBXNativeTarget "LanaDemoApp" */;
 			buildPhases = (
-				A1000000000000000000000E /* Sources */,
-				A10000000000000000000007 /* Frameworks */,
+				456CBED385278D30F49C69B1 /* Sources */,
+				D05E7E3EEB5C8616B89F8330 /* Resources */,
+				14E223DD5107ADD8206FD583 /* Frameworks */,
 			);
 			buildRules = (
 			);
@@ -79,16 +92,16 @@
 			);
 			name = LanaDemoApp;
 			packageProductDependencies = (
-				A10000000000000000000004 /* FWMFeatureUI */,
+				B9978616F7AB9BD080A2E991 /* FWMFeatureUI */,
 			);
 			productName = LanaDemoApp;
-			productReference = A10000000000000000000005 /* LanaDemoApp.app */;
+			productReference = DEB674B41B6291587AE33B1D /* LanaDemoApp.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
-		A1000000000000000000000F /* Project object */ = {
+		E735AB2794FFF779618F7394 /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = YES;
@@ -96,57 +109,105 @@
 				TargetAttributes = {
 				};
 			};
-			buildConfigurationList = A10000000000000000000010 /* Build configuration list for PBXProject "LanaDemoApp" */;
+			buildConfigurationList = 3D6059FDFFC64E12D4CD9C03 /* Build configuration list for PBXProject "LanaDemoApp" */;
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
 				Base,
 				en,
 			);
-			mainGroup = A10000000000000000000008;
+			mainGroup = CA17829BC54B6C02E367FE68;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
-				A10000000000000000000011 /* XCLocalSwiftPackageReference "../../Packages/FWMFeatureUI" */,
+				546FCFD37D19E79C62D84DFD /* XCLocalSwiftPackageReference "../../Packages/FWMFeatureUI" */,
 			);
 			preferredProjectObjectVersion = 77;
-			productRefGroup = A1000000000000000000000B /* Products */;
+			productRefGroup = 55E37885921DFF338F2CA7BB /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				A1000000000000000000000C /* LanaDemoApp */,
+				56C4765260EA04EC37A25FF5 /* LanaDemoApp */,
 			);
 		};
 /* End PBXProject section */
 
+/* Begin PBXResourcesBuildPhase section */
+		D05E7E3EEB5C8616B89F8330 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				9D05E0C4EF86D3DB13C15A25 /* seed-v1.json in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
 /* Begin PBXSourcesBuildPhase section */
-		A1000000000000000000000E /* Sources */ = {
+		456CBED385278D30F49C69B1 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				A10000000000000000000001 /* LanaDemoApp.swift in Sources */,
+				114828BD89DDB8C21179E417 /* LanaDemoApp.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin XCBuildConfiguration section */
-		A10000000000000000000012 /* Debug */ = {
+		20D6D426FBCB71B58719CA34 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
 				CLANG_ENABLE_MODULES = YES;
 				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_NO_COMMON_BLOCKS = YES;
 				GCC_OPTIMIZATION_LEVEL = 0;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					"$(inherited)",
 					"DEBUG=1",
 				);
-				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
@@ -156,18 +217,54 @@
 			};
 			name = Debug;
 		};
-		A10000000000000000000013 /* Release */ = {
+		551DEFA698964D9C406F6AFB /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
 				CLANG_ENABLE_MODULES = YES;
 				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
 				GCC_NO_COMMON_BLOCKS = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
 				SWIFT_COMPILATION_MODE = wholemodule;
@@ -176,40 +273,52 @@
 			};
 			name = Release;
 		};
-		A10000000000000000000014 /* Debug */ = {
+		578B92215F16BD0A4013EBA8 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = Lana;
+				INFOPLIST_KEY_NSFaceIDUsageDescription = "Unlock credentials and authorize reviewed actions.";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Record a message for on-device transcription.";
+				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "Transcribe your voice on this device.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
+				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = io.speedhacks.LanaDemoApp;
 				SDKROOT = iphoneos;
-				SWIFT_VERSION = 5.0;
+				SWIFT_VERSION = 6.0;
 				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Debug;
 		};
-		A10000000000000000000015 /* Release */ = {
+		F5E537057810E4855678436E /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = Lana;
+				INFOPLIST_KEY_NSFaceIDUsageDescription = "Unlock credentials and authorize reviewed actions.";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Record a message for on-device transcription.";
+				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "Transcribe your voice on this device.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
+				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = io.speedhacks.LanaDemoApp;
 				SDKROOT = iphoneos;
-				SWIFT_VERSION = 5.0;
+				SWIFT_VERSION = 6.0;
 				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Release;
@@ -217,20 +326,20 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		A1000000000000000000000D /* Build configuration list for PBXNativeTarget "LanaDemoApp" */ = {
+		3D6059FDFFC64E12D4CD9C03 /* Build configuration list for PBXProject "LanaDemoApp" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				A10000000000000000000014 /* Debug */,
-				A10000000000000000000015 /* Release */,
+				20D6D426FBCB71B58719CA34 /* Debug */,
+				551DEFA698964D9C406F6AFB /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;
 		};
-		A10000000000000000000010 /* Build configuration list for PBXProject "LanaDemoApp" */ = {
+		C150741CDD3D520225927A03 /* Build configuration list for PBXNativeTarget "LanaDemoApp" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				A10000000000000000000012 /* Debug */,
-				A10000000000000000000013 /* Release */,
+				578B92215F16BD0A4013EBA8 /* Debug */,
+				F5E537057810E4855678436E /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;
@@ -238,18 +347,18 @@
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
-		A10000000000000000000011 /* XCLocalSwiftPackageReference "../../Packages/FWMFeatureUI" */ = {
+		546FCFD37D19E79C62D84DFD /* XCLocalSwiftPackageReference "../../Packages/FWMFeatureUI" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = ../../Packages/FWMFeatureUI;
 		};
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		A10000000000000000000004 /* FWMFeatureUI */ = {
+		B9978616F7AB9BD080A2E991 /* FWMFeatureUI */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = FWMFeatureUI;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
-	rootObject = A1000000000000000000000F /* Project object */;
+	rootObject = E735AB2794FFF779618F7394 /* Project object */;
 }

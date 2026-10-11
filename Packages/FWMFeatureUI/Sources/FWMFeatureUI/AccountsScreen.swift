@@ -3,13 +3,16 @@ import FWMCore
 
 /// Native security boundary the vault UI talks to. Tanish's FinanceAI module (SecureVault,
 /// DeviceOwnerAuthenticator, TOTP) provides the real implementation on codex/on-device-ai.
-public protocol VaultUnlocking {
+public protocol VaultUnlocking: Sendable {
     /// Device-owner check (Face ID / passcode).
     func authenticateDeviceOwner(reason: String) async throws
     /// Separate second factor. Throws on a wrong, expired or replayed code.
     func verifySecondFactor(code: String) async throws
+    var requiresSecondFactor: Bool { get }
     var isSimulated: Bool { get }
 }
+
+public extension VaultUnlocking { var requiresSecondFactor: Bool { true } }
 
 public struct VaultFailure: Error, LocalizedError {
     public let message: String
@@ -42,6 +45,10 @@ struct AccountsScreen: View {
     let store: DemoStore
     let unlocker: VaultUnlocking
     let log: [String]
+    let relay: LanaRelayConnection
+    var isActive = true
+    @State private var authOperation: UUID?
+    @State private var messaging = false
     enum Stage { case locked, checking, secondFactor, verifying, unlocked }
     @State private var stage = Stage.locked
     @State private var error: String?
@@ -67,8 +74,14 @@ struct AccountsScreen: View {
                         case .unlocked: unlocked
                         }
                         if unlocker.isSimulated { SimulatedNote("Simulated. No Face ID or code check.") }
+                        else { Text("Protected by device authentication. These are synthetic demo keys; provider MFA is not configured.").font(.caption).foregroundStyle(Theme.ink3) }
                     }
                     .id("keys")
+                    SectionLabel("Messaging")
+                    Card {
+                        Text(relay.status).font(.footnote).foregroundStyle(Theme.ink2)
+                        Button("Configure messaging relay") { messaging = true }.buttonStyle(GhostButtonStyle())
+                    }
                     SectionLabel("Privacy")
                     Card {
                         Text("The model and financial reasoning run on your phone.").fontWeight(.semibold)
@@ -100,7 +113,9 @@ struct AccountsScreen: View {
                         .padding(.top, 8).transition(.move(edge: .top).combined(with: .opacity))
                 }
             }
-            .onChange(of: scenePhase) { _, phase in if phase != .active { lock() } }
+            .sheet(isPresented: $messaging) { RelaySettings(connection: relay) }
+            .onChange(of: isActive) { _, active in if !active { lock() } }
+            .onChange(of: scenePhase) { _, phase in if phase == .background || (phase != .active && stage != .checking) { lock() } }
             .onReceive(timer) { t in now = t; if stage == .unlocked && t >= lockAt { lock(); error = "Vault locked after 60 seconds." } }
         }
     }
@@ -115,9 +130,13 @@ struct AccountsScreen: View {
             if let error { Label(error, systemImage: "exclamationmark.triangle").font(.footnote).foregroundStyle(Theme.bad) }
             Button(stage == .checking ? "Checking Face ID…" : "Unlock with Face ID") {
                 stage = .checking; error = nil
+                let operation = UUID(); authOperation = operation
                 Task {
-                    do { try await unlocker.authenticateDeviceOwner(reason: "Unlock your vault"); stage = .secondFactor }
-                    catch { stage = .locked; self.error = error.localizedDescription }
+                    do { try await unlocker.authenticateDeviceOwner(reason: "Unlock your vault")
+                        guard authOperation == operation, scenePhase == .active, isActive else { return }
+                        stage = unlocker.requiresSecondFactor ? .secondFactor : .unlocked
+                        lockAt = Date().addingTimeInterval(60) }
+                    catch { if authOperation == operation { stage = .locked; self.error = error.localizedDescription } }
                 }
             }
             .buttonStyle(PrimaryButtonStyle()).disabled(stage == .checking)
@@ -281,5 +300,5 @@ struct AccountsScreen: View {
         .privacySensitive()
     }
 
-    private func lock() { stage = .locked; revealed = []; code = ""; lockAt = .distantFuture }
+    private func lock() { authOperation = nil; stage = .locked; revealed = []; code = ""; lockAt = .distantFuture }
 }

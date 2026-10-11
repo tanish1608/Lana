@@ -56,7 +56,7 @@ public struct ChatDocument: Codable, Sendable, Identifiable {
 public struct ConversationArchive: Codable, Sendable, Identifiable {
     public let id: UUID
     public let userID: String
-    public let datasetVersion: String
+    public var datasetVersion: String
     public var updatedAt: Date
     public var messages: [ConversationMessage]
     public var documents: [ChatDocument]
@@ -110,7 +110,7 @@ public enum ConversationContext {
             let content = stale ? "An earlier financial result belongs to an old dataset. Retrieve fresh data." : String(message.text.prefix(450))
             return "\(message.role.rawValue): \(content)"
         }.joined(separator: "\n")
-        let facts = archive.datasetVersion == scope.datasetVersion ? archive.messages.flatMap(\.evidence).suffix(2)
+        let facts = archive.datasetVersion == scope.datasetVersion ? archive.messages.flatMap(\.evidence).filter { $0.provenance.datasetVersion == scope.datasetVersion }.suffix(2)
             .map { "\($0.provenance.resultId): \($0.text.prefix(800))" }.joined(separator: "\n") : ""
         let documents = archive.documents.suffix(3).map {
             "\($0.name) (\($0.pages.count) pages). Excerpt: \($0.excerpts(query: request, limit: 700))"

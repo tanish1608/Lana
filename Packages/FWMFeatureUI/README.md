@@ -1,17 +1,15 @@
 # FWMFeatureUI
 
-Ashwin's SwiftUI feature screens: Home, Money (pushed from Home), Budget, Split and Accounts (connected accounts plus the access keys behind Face ID), with an in-app Lana chat, composed in `LanaRootView`. Screens read `FWMCore` results (`MoneyEngine`, `SplitEngine`) from a `DemoStore` loaded with `fixtures/seed-v1.json`. No engines, model, relay or provider code lives here.
+Ashwin's Home, Money, Budget, Split and Accounts screens, connected to FinanceAI and FWMCore for Lana version 1. The centre orb opens free-form local chat with PDF input, saved history and reviewed voice. Shared money/split arithmetic remains in FWMCore; the demo catalog projection is shared between Budget, Home and chat through AIIntegration.swift.
+
+Requires Swift 6.2+, iOS 26+/macOS 26+. Open `Examples/LanaDemoApp/LanaDemoApp.xcodeproj` for the integrated iPhone app; it bundles seed-v1.json. Host composition: `LanaRootView(store: try DemoStore(fixtureURL: bundledURL), unlocker: NativeVaultUnlocker())`.
 
 ```bash
-swift test --package-path Packages/FWMFeatureUI          # fixture wiring + budget stand-in checks
-swift run  --package-path Packages/FWMFeatureUI LanaMac  # quick look in a Mac window
-open Packages/FWMFeatureUI/Package.swift                 # Xcode: LanaRootView.swift has a #Preview
+swift test --package-path Packages/FWMFeatureUI
+FWM_TEST_MODEL=1 swift test --package-path Packages/FWMFeatureUI --filter IntegrationTests/testActualIntegratedModelAnswersBudgetAndPDF
+swift run --package-path Packages/FWMFeatureUI LanaMac
 ```
 
-Host integration: `LanaRootView(store: try DemoStore(fixtureURL: bundledSeedURL), unlocker: <native VaultUnlocking>)`.
+Real local operations: model inference, PDF extraction, receipt OCR with manual field reconciliation, speech transcription, device authentication, Keychain relay pairing and foreground job processing. Demo boundaries: fixture account connections, catalog-based budget suggestions, in-session budget adoption/receipt/request state, synthetic vault values, simulated Venmo handoff and split reminders. Provider MFA is not invented for synthetic keys. CSV import adapters and Sparta executor are merged libraries/tooling; their execution is not exposed as real financial actions in these screens.
 
-Stand-ins, all labeled in the UI:
-- `PreviewBudgetPlan` (BudgetScreen.swift) until the swap catalog and budget engine land.
-- `SimulatedVaultUnlocker` until the host passes an implementation backed by Tanish's SecureVault / DeviceOwnerAuthenticator / TOTP.
-- Sample transcript and a staged low-confidence tip read (SplitScreen.swift).
-- Messages delivery, reminder sends and Venmo handoff are recorded as states only.
+See [version 1](../../docs/VERSION_1.md) for the complete handoff.

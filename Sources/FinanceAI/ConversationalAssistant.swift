@@ -102,7 +102,13 @@ public struct ConversationalAssistant: Sendable {
         let toolSession = ChatToolSession(context: context, tools: tools)
         // A small local model may answer without choosing an optional tool. Supply
         // the current deterministic snapshot so even those answers have real data.
-        let snapshot = try await toolSession.query(.init(operation: .money, period: nil, savings: nil))
+        var snapshot = try await toolSession.query(.init(operation: .money, period: nil, savings: nil))
+        if context.scope.budgetID != nil {
+            snapshot += "\nSelected budget projection:\n" + (try await toolSession.query(.init(operation: .swaps, period: nil, savings: nil)))
+        }
+        if context.reviewedSplit != nil {
+            snapshot += "\nReviewed receipt split:\n" + (try await toolSession.query(.init(operation: .split, period: nil, savings: nil)))
+        }
         let session = LanguageModelSession(tools: [ChatFinanceTool(session: toolSession), ChatDocumentTool(documents: archive.documents)], instructions: """
             You are a friendly conversational assistant who can also help with money and PDFs.
             Answer the current message directly. For 'Hi', greet briefly and ask what's
@@ -111,7 +117,10 @@ public struct ConversationalAssistant: Sendable {
             uploaded documents, and use recent conversation to understand follow-ups.
             You may discuss general topics; do not force people into a topic menu.
             Use the supplied engine snapshot and finance tools for the user's actual amounts.
-            Data is a fixture, not a live bank.
+            Financial data mode is provided with each source; fixture means demo data, not a live bank.
+            A selected budget projection exists before adoption. Projected budget savings
+            are different from the account's savings transfers. Answer projected savings
+            from the budget source even if the plan has not been adopted.
             For questions about the user's income, expenses, cash flow, or net worth,
             call finance with operation money before answering unless prior engine
             evidence or the current snapshot already answers the question. Return an answer with the actual

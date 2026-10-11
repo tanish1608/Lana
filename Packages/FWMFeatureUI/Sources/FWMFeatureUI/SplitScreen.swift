@@ -1,5 +1,6 @@
 import SwiftUI
 import FWMCore
+import FinanceAI
 
 /// Request lifecycle shown to the user. Payment states are what the user reports; there is no settlement feed.
 enum RequestState: String, CaseIterable {
@@ -25,9 +26,20 @@ private enum SplitDemo {
 /// Journey 3: receipt + voice → reviewed receipt → assignments → exact shares (SplitEngine) → requests → follow-ups.
 struct SplitScreen: View {
     let store: DemoStore
+    var isActive = true
+    @Environment(\.scenePhase) private var scenePhase
+    var onReview: (Receipt, [String: [String]], String, SplitResult) -> Void = { _, _, _, _ in }
+    var onInvalidate: () -> Void = {}
     var onAction: (String) -> Void = { _ in }
 
     @State private var step = 0
+    @State private var importedReceipt: Receipt?
+    @State private var importSheet = false
+    @State private var transcript = ""
+    @State private var transcriptStatus: String?
+    #if os(iOS)
+    @State private var voice = LocalVoiceInput()
+    #endif
     @State private var haveReceipt = false
     @State private var haveVoice = false
     @State private var tipText = String(format: "%.2f", Double(SplitDemo.misreadTipCents) / 100)
@@ -41,9 +53,9 @@ struct SplitScreen: View {
     @FocusState private var tipFocused: Bool
 
     private static let steps = ["Inputs", "Check", "Assign", "Shares", "Requests", "Follow-ups"]
-    private var receipt: Receipt? { store.dataset.receipts?.first }
+    private var receipt: Receipt? { importedReceipt ?? store.dataset.receipts?.first }
     private var payerId: String { store.splitExample?.payerId ?? "c_ashwin" }
-    private var tipCents: Int? { Decimal(string: tipText).map { NSDecimalNumber(decimal: $0 * 100).intValue } }
+    private var tipCents: Int? { try? ReceiptReviewAmounts.cents(tipText) }
 
     private var participants: [Contact] {
         let ids = Set([payerId] + (store.splitExample?.assignments.values.flatMap { $0 } ?? []))
@@ -61,7 +73,7 @@ struct SplitScreen: View {
         })
         do {
             return .success(try SplitEngine.prepareSplit(receipt: r, assignments: assignments, payerId: payerId, contacts: store.dataset.contacts ?? [],
-                                                         datasetVersion: store.dataset.datasetVersion, dataMode: store.dataset.dataMode))
+                                                         datasetVersion: store.dataset.datasetVersion, dataMode: r.receiptId.hasPrefix("local-") ? .cached : store.dataset.dataMode))
         } catch let e as ToolError { return .failure(e) } catch { return .failure(ToolError(.invalidArguments, error.localizedDescription)) }
     }
 
@@ -94,19 +106,49 @@ struct SplitScreen: View {
             #endif
             .toolbar { DemoDataBadge() }
             .onAppear { if owners.isEmpty { resetOwners() } }
+            .onChange(of: owners) { _, _ in onInvalidate() }
+            .onChange(of: tipText) { _, _ in onInvalidate() }
+            .sheet(isPresented: $importSheet) {
+                if let template = receipt {
+                    ReceiptImportSheet(template: template) { r in
+                        importedReceipt = r; haveReceipt = true
+                        tipText = String(format: "%.2f", Double(r.tipCents) / 100)
+                        resetOwners(); states = [:]; reminders = []; disputed = []; step = 1
+                        onInvalidate()
+                    }
+                }
+            }
+            #if os(iOS)
+            .onDisappear { voice.cancel() }
+            .onChange(of: isActive) { _, active in if !active { voice.cancel() } }
+            .onChange(of: scenePhase) { _, phase in if phase != .active { voice.cancel() } }
+            #endif
             .sheet(item: $reviewing) { q in reviewSheet(q) }
             .sheet(item: $remindTarget) { q in reminderSheet(q) }
         }
     }
 
     private func resetOwners() {
+        if let importedReceipt {
+            owners = Dictionary(uniqueKeysWithValues: importedReceipt.items.map { ($0.itemId, "") })
+            return
+        }
         owners = (store.splitExample?.assignments ?? [:]).mapValues { $0.count > 1 ? "shared" : ($0.first ?? "") }
     }
 
     private func nav(_ label: String, enabled: Bool = true) -> some View {
         HStack {
             if step > 0 { Button("Back") { step -= 1 }.buttonStyle(GhostButtonStyle()) }
-            Button(label) { step += 1 }.buttonStyle(PrimaryButtonStyle()).disabled(!enabled).opacity(enabled ? 1 : 0.4)
+            Button(label) {
+                if step == 2, case .success(let value) = result(), var reviewed = receipt {
+                    reviewed.tipCents = tipCents ?? -1
+                    let assignments = Dictionary(uniqueKeysWithValues: reviewed.items.map { item in
+                        (item.itemId, owners[item.itemId] == "shared" ? participants.map(\.contactId) : [owners[item.itemId] ?? ""])
+                    })
+                    onReview(reviewed, assignments, payerId, value)
+                }
+                step += 1
+            }.buttonStyle(PrimaryButtonStyle()).disabled(!enabled).opacity(enabled ? 1 : 0.4)
         }
         .padding(.top, 8).padding(.bottom, 12)
         .id("nav")
@@ -119,15 +161,26 @@ struct SplitScreen: View {
         Card {
             HStack { Text("Receipt").font(.headline); Spacer(); Tag(text: haveReceipt ? "Received" : "Waiting", tone: haveReceipt ? Theme.accent : Theme.ink2, fill: haveReceipt ? Theme.accentSoft : Theme.line) }
             if haveReceipt, let r = receipt { Text("\(r.merchant ?? "Receipt") · \(r.date ?? "")").font(.caption).foregroundStyle(Theme.ink3) }
-            Button("Use sample receipt") { haveReceipt = true }.buttonStyle(GhostButtonStyle())
+            Button("Import receipt image") { importSheet = true }.buttonStyle(GhostButtonStyle())
+            Button("Use sample receipt") { importedReceipt = nil; haveReceipt = true; resetOwners(); tipText = String(format: "%.2f", Double(SplitDemo.misreadTipCents) / 100); onInvalidate() }.buttonStyle(GhostButtonStyle())
         }
         Card {
             HStack { Text("Voice note").font(.headline); Spacer(); Tag(text: haveVoice ? "Transcribed" : "Waiting", tone: haveVoice ? Theme.accent : Theme.ink2, fill: haveVoice ? Theme.accentSoft : Theme.line) }
             if haveVoice {
-                Text("“\(SplitDemo.transcript)”")
-                SimulatedNote("Sample · on-device on iPhone")
+                TextField("Review transcript", text: $transcript, axis: .vertical).lineLimit(2...6)
             }
-            Button("Use sample voice note") { haveVoice = true }.buttonStyle(GhostButtonStyle())
+            #if os(iOS)
+            Button(voice.recording ? "Stop & transcribe" : "Record voice note") {
+                Task {
+                    if voice.recording {
+                        if let text = await voice.finish() { transcript = text; haveVoice = true }
+                    } else { await voice.start() }
+                    transcriptStatus = voice.status
+                }
+            }.buttonStyle(GhostButtonStyle()).disabled(voice.busy)
+            #endif
+            if let transcriptStatus { Text(transcriptStatus).font(.caption).foregroundStyle(Theme.ink3) }
+            Button("Use sample voice note") { haveVoice = true; transcript = SplitDemo.transcript; transcriptStatus = "Sample transcript. Review assignments yourself below." }.buttonStyle(GhostButtonStyle())
         }
         Card(padding: 14) {
             HStack { Text("Messages delivery").font(.subheadline); Spacer()
@@ -307,7 +360,7 @@ struct SplitScreen: View {
                     Button("Approve & hand off") {
                         if state(q.contactId) != .handedOff { // duplicate tap guard
                             states[q.contactId] = .handedOff
-                            onAction("Request for \(q.reviewedName) · \(usd(q.amountCents, cents: true)) handed off to Venmo")
+                            onAction("Simulated Venmo handoff for \(q.reviewedName) · \(usd(q.amountCents, cents: true)); nothing sent")
                         }
                         reviewing = nil
                     }
@@ -340,7 +393,7 @@ struct SplitScreen: View {
                         if s == .paidReported { Tag(text: "Paid (you said)", tone: Theme.accent, fill: Theme.accentSoft) }
                         if disputed.contains(id) { Tag(text: "Disputed", tone: Theme.bad) }
                     } else if reminders.contains(id) {
-                        Tag(text: tomorrow ? "Reminder sent Oct 12, 10:00 AM" : "Reminder set · tomorrow 10:00 AM", tone: Theme.accent, fill: Theme.accentSoft)
+                        Tag(text: tomorrow ? "Simulated reminder · Oct 12, 10:00 AM" : "Demo reminder set · tomorrow 10:00 AM", tone: Theme.accent, fill: Theme.accentSoft)
                     } else {
                         Tag(text: "Unpaid", tone: Theme.warn, fill: Theme.warnSoft)
                     }

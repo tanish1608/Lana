@@ -1,9 +1,12 @@
 import SwiftUI
+import FWMCore
 
 /// Entry point the iOS host embeds. Sections: Home, Budget, Split, Accounts. Money is pushed from Home.
 /// A floating glass dock replaces the system tab bar; its centre orb toggles the Lana chat from anywhere.
 public struct LanaRootView: View {
     let store: DemoStore
+    @Environment(\.scenePhase) private var scenePhase
+    @State private var relay: LanaRelayConnection
     let unlocker: VaultUnlocking
     @State private var log: [String] = []
     @State private var tab = LanaTab.home
@@ -11,27 +14,39 @@ public struct LanaRootView: View {
     @State private var budgetAdopted = false
     @State private var homePath = NavigationPath()
     @State private var showChat = false
-    @State private var chat: [ChatMessage] = []
+    @State private var chat: LanaChatController
 
     public init(store: DemoStore, unlocker: VaultUnlocking = SimulatedVaultUnlocker()) {
         self.store = store
         self.unlocker = unlocker
+        let chat = LanaChatController(dataset: store.dataset)
+        _chat = State(initialValue: chat)
+        _relay = State(initialValue: LanaRelayConnection(chat: chat))
     }
 
     public var body: some View {
         // All four stay alive so each keeps its place and state while you move around.
         ZStack {
-            section(.home) { HomeScreen(store: store, tab: $tab, requestStates: requestStates, budgetAdopted: budgetAdopted, path: $homePath, openChat: { setChat(true) }) }
-            section(.budget) { BudgetScreen(store: store, onAdopt: { log.insert($0, at: 0); budgetAdopted = true }) }
-            section(.split) { SplitScreen(store: store, onAction: { log.insert($0, at: 0) }, states: $requestStates) }
-            section(.accounts) { AccountsScreen(store: store, unlocker: unlocker, log: log) }
+            section(.home) { HomeScreen(store: store, tab: $tab, requestStates: requestStates, budgetAdopted: budgetAdopted, budgetSavingsCents: (try? BudgetProjection.make(dataset: chat.dataset, period: "2026-09", accepted: chat.accepted, useHistory: chat.useHistory))?.savingsCents ?? 0, path: $homePath, openChat: { setChat(true) }) }
+            section(.budget) { BudgetScreen(store: store, unlocker: unlocker, onSelection: { chat.updateBudget(accepted: $0, useHistory: $1)
+                store.dataset = chat.dataset
+                if var split = store.reviewedResult { split.provenance.datasetVersion = chat.dataset.datasetVersion; store.reviewedResult = split }
+                budgetAdopted = false }, onAdopt: { log.insert($0, at: 0); budgetAdopted = true; chat.budgetAdopted = true }) }
+            section(.split) { SplitScreen(store: store, isActive: tab == .split, onReview: { receipt, assignments, payer, result in
+                chat.review(receipt: receipt, assignments: assignments, payerID: payer)
+                store.dataset = chat.dataset
+                store.reviewedResult = try? SplitEngine.prepareSplit(receipt: receipt, assignments: assignments, payerId: payer,
+                    contacts: store.dataset.contacts ?? [], datasetVersion: store.dataset.datasetVersion, dataMode: receipt.receiptId.hasPrefix("local-") ? .cached : store.dataset.dataMode)
+                log.insert("Reviewed split · \(result.outstandingCents) cents outstanding; nothing sent", at: 0)
+            }, onInvalidate: { chat.reviewedSplit = nil; store.reviewedResult = nil }, onAction: { log.insert($0, at: 0) }, states: $requestStates) }
+            section(.accounts) { AccountsScreen(store: store, unlocker: unlocker, log: log, relay: relay, isActive: tab == .accounts) }
         }
         .overlay {
             if showChat {
                 GeometryReader { g in
                     ZStack(alignment: .bottom) {
                         Color.black.opacity(0.28).ignoresSafeArea().onTapGesture { setChat(false) }.accessibilityHidden(true)
-                        ChatPanel(store: store, requestStates: requestStates, messages: $chat, onJump: jump, onClose: { setChat(false) })
+                        ChatPanel(controller: chat, onJump: jump, onClose: { setChat(false) })
                             .frame(height: min(g.size.height - 8, max(320, g.size.height * 0.78)))
                             .padding(.horizontal, 10).padding(.bottom, 2)
                     }
@@ -42,8 +57,12 @@ public struct LanaRootView: View {
         // The dock is added after the chat overlay so it stays lit and tappable while chat is open.
         .safeAreaInset(edge: .bottom, spacing: 0) { LanaDock(tab: $tab, chatOpen: showChat, toggleChat: { setChat(!showChat) }) }
         .tint(Theme.accent)
-        .onAppear { if chat.isEmpty { chat = [ChatMessage(mine: false, text: "Hi \(store.dataset.user.displayName ?? "there"). Ask me anything about your money.")] } }
+        .task(id: scenePhase) { await relay.setForeground(scenePhase == .active) }
+        .task { await chat.restore() }
+        .onChange(of: requestStates) { _, states in chat.requestStates = Dictionary(uniqueKeysWithValues: states.map { (name($0.key), $0.value.label) }) }
     }
+
+    private func name(_ id: String) -> String { store.dataset.contacts?.first { $0.contactId == id }?.reviewedName ?? id }
 
     private func setChat(_ open: Bool) { withAnimation(.spring(duration: 0.35, bounce: 0.2)) { showChat = open } }
 
@@ -51,7 +70,7 @@ public struct LanaRootView: View {
         content().opacity(tab == t ? 1 : 0).allowsHitTesting(tab == t).accessibilityHidden(tab != t)
     }
 
-    private func jump(_ j: ChatMessage.Jump) {
+    private func jump(_ j: LanaChatJump) {
         setChat(false)
         switch j {
         case .money: tab = .home; homePath = NavigationPath([HomeRoute.money])

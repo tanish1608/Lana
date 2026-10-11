@@ -1,164 +1,148 @@
 import SwiftUI
-import FWMCore
+import UniformTypeIdentifiers
+import FinanceAI
 
-struct ChatMessage: Identifiable, Equatable {
-    enum Jump: Equatable { case money, budget, split, accounts }
-    struct Action: Equatable { let jump: Jump; let label: String }
-    let id = UUID()
-    let mine: Bool
-    let text: String
-    var actions: [Action] = []
-}
-
-/// Talk to Lana inside the app: a floating card above the dock. Replies in this build are deterministic,
-/// built from MoneyEngine / SplitEngine results and the plan stand-in (same rules as `lanaReply()` in
-/// preview/web/app.js). No model is called; the on-device model plugs in behind `reply(to:)`.
 struct ChatPanel: View {
-    let store: DemoStore
-    let requestStates: [String: RequestState]
-    @Binding var messages: [ChatMessage]
-    var onJump: (ChatMessage.Jump) -> Void
+    @Bindable var controller: LanaChatController
+    var onJump: (LanaChatJump) -> Void
     var onClose: () -> Void
     @State private var draft = ""
-    @State private var typing = false
+    @State private var importing = false
+    @State private var history = false
     @FocusState private var focused: Bool
-
-    private static let suggestions = ["Where did my money go?", "What’s my net worth?", "Who owes me?", "How do I save $150?", "Which accounts are connected?"]
-
+    @Environment(\.scenePhase) private var scenePhase
+    #if os(iOS)
+    @State private var voice = LocalVoiceInput()
+    #endif
+    private static let suggestions = ["Where did my money go?", "What’s my net worth?", "How do I save $150?", "Which accounts are connected?"]
     var body: some View {
         VStack(spacing: 0) {
             HStack(spacing: 10) {
                 LanaOrb(size: 36)
                 VStack(alignment: .leading, spacing: 1) {
                     Text("Lana").font(.headline)
-                    Text("Preview replies from your demo numbers").font(.caption.weight(.semibold)).foregroundStyle(Theme.warn).lineLimit(1).minimumScaleFactor(0.8)
+                    Text(OnDeviceRouter.status == .ready ? "On-device AI · demo financial data" : "Local model unavailable · basic answers")
+                        .font(.caption).foregroundStyle(Theme.ink3).lineLimit(1)
                 }
                 Spacer()
-                Button(action: onClose) {
-                    Image(systemName: "xmark").font(.footnote.weight(.bold)).foregroundStyle(Theme.ink2)
-                        .frame(width: 32, height: 32).background(Theme.line, in: Circle()).frame(width: 44, height: 44)
-                }
-                .accessibilityLabel("Close chat")
-            }
-            .padding(.leading, 16).padding(.trailing, 8).padding(.top, 10).padding(.bottom, 6)
+                Button { history = true } label: { Image(systemName: "clock.arrow.circlepath").frame(width: 32, height: 44) }
+                    .accessibilityLabel("Conversation history").disabled(controller.busy)
+                Button { Task { await controller.newChat() } } label: { Image(systemName: "square.and.pencil").frame(width: 32, height: 44) }
+                    .accessibilityLabel("New conversation").disabled(controller.busy)
+                Button(action: onClose) { Image(systemName: "xmark").frame(width: 32, height: 44) }.accessibilityLabel("Close chat")
+            }.padding(.horizontal, 14).padding(.top, 8)
             Divider().opacity(0.5)
+            if let status = controller.status { Text(status).font(.caption).foregroundStyle(Theme.warn).padding(.horizontal, 14).padding(.top, 4) }
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack {
+                    ForEach(controller.archive?.documents ?? []) { document in
+                        HStack {
+                            Label(document.name, systemImage: "doc.richtext").lineLimit(1)
+                            Button { Task { await controller.removeDocument(document.id) } } label: { Image(systemName: "xmark.circle") }
+                                .accessibilityLabel("Remove \(document.name)").disabled(controller.busy)
+                        }.font(.caption).padding(8).background(Theme.accentSoft, in: Capsule())
+                    }
+                }.padding(.horizontal, 14)
+            }
             ScrollViewReader { proxy in
                 ScrollView {
-                    VStack(spacing: 8) {
-                        ForEach(messages) { bubble($0) }
-                        if typing { HStack { TypingDots(); Spacer() } }
+                    LazyVStack(spacing: 8) {
+                        if controller.messages.isEmpty {
+                            Text("Hi! What’s on your mind? Talk naturally, or attach a PDF.")
+                                .foregroundStyle(Theme.ink2).padding(.vertical, 24)
+                        }
+                        ForEach(controller.messages) { m in
+                            HStack(alignment: .bottom) {
+                                if m.role == .user { Spacer(minLength: 40) }
+                                VStack(alignment: .leading, spacing: 6) {
+                                    Text(LocalizedStringKey(m.text)).font(.subheadline).textSelection(.enabled)
+                                    if let source = m.source { Text(source == "onDevice" ? "On-device AI" : "Basic local answer").font(.caption2).opacity(0.65) }
+                                    if !m.evidence.isEmpty {
+                                        DisclosureGroup("Financial sources") {
+                                            ForEach(m.evidence) { e in
+                                                Text(e.text).font(.caption).textSelection(.enabled)
+                                                Text("\(e.provenance.dataMode.rawValue) · \(e.provenance.resultId)").font(.caption2)
+                                            }
+                                        }.font(.caption)
+                                    }
+                                }.padding(.horizontal, 13).padding(.vertical, 9)
+                                    .foregroundStyle(m.role == .user ? .white : Theme.ink)
+                                    .background(m.role == .user ? AnyShapeStyle(Theme.accent.gradient) : AnyShapeStyle(Theme.bubbleIn), in: RoundedRectangle(cornerRadius: 18))
+                                if m.role != .user { Spacer(minLength: 30) }
+                            }.id(m.id)
+                        }
+                        if controller.busy { HStack { TypingDots(); Spacer() } }
                         Color.clear.frame(height: 1).id("end")
-                    }
-                    .padding(.horizontal, 14).padding(.top, 12)
-                }
-                .onChange(of: messages.count) { _, _ in withAnimation { proxy.scrollTo("end", anchor: .bottom) } }
-                .onChange(of: typing) { _, _ in withAnimation { proxy.scrollTo("end", anchor: .bottom) } }
-                .onAppear { proxy.scrollTo("end", anchor: .bottom) }
+                    }.padding(.horizontal, 14).padding(.top, 12)
+                }.onChange(of: controller.messages.count) { _, _ in withAnimation { proxy.scrollTo("end", anchor: .bottom) } }
+                    .onChange(of: controller.busy) { _, _ in withAnimation { proxy.scrollTo("end", anchor: .bottom) } }
+                    .onAppear { proxy.scrollTo("end", anchor: .bottom) }
             }
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 8) {
                     ForEach(Self.suggestions, id: \.self) { s in
                         Button(s) { send(s) }.font(.footnote.weight(.semibold)).padding(.horizontal, 12).frame(minHeight: 36)
-                            .foregroundStyle(Theme.accent).background(Theme.accentSoft, in: Capsule())
+                            .foregroundStyle(Theme.accent).background(Theme.accentSoft, in: Capsule()).disabled(controller.busy)
                     }
-                }
-                .padding(.horizontal, 14).padding(.vertical, 8)
+                    Button("Review budget") { onJump(.budget) }.font(.footnote)
+                    Button("Review split") { onJump(.split) }.font(.footnote)
+                }.padding(.horizontal, 14).padding(.vertical, 8)
             }
-            HStack(spacing: 8) {
-                TextField("Ask about your money", text: $draft).focused($focused).submitLabel(.send).onSubmit { send(draft) }
-                    .padding(.horizontal, 16).frame(minHeight: 44).background(Theme.bg, in: Capsule())
-                    .overlay(Capsule().strokeBorder(Theme.edge))
-                    .accessibilityLabel("Message Lana")
+            HStack(spacing: 6) {
+                Button { importing = true } label: { Image(systemName: "paperclip").frame(width: 32, height: 44) }.accessibilityLabel("Attach PDF").disabled(controller.busy)
+                #if os(iOS)
+                Button {
+                    Task {
+                        if voice.recording {
+                            if let text = await voice.finish() { draft = text }
+                        } else { await voice.start() }
+                        controller.status = voice.status
+                    }
+                } label: { Image(systemName: voice.recording ? "stop.circle.fill" : "mic").foregroundStyle(voice.recording ? Theme.bad : Theme.accent).frame(width: 32, height: 44) }
+                    .accessibilityLabel(voice.recording ? "Stop and transcribe" : "Record message")
+                    .disabled(controller.busy || voice.busy)
+                #endif
+                TextField("Message Lana", text: $draft, axis: .vertical).lineLimit(1...3).focused($focused).submitLabel(.send).onSubmit { send(draft) }
+                    .padding(.horizontal, 12).frame(minHeight: 44).background(Theme.bg, in: RoundedRectangle(cornerRadius: 22))
                 Button { send(draft) } label: {
                     Image(systemName: "arrow.up").font(.body.weight(.bold)).foregroundStyle(.white)
                         .frame(width: 44, height: 44).background(Theme.lanaGradient, in: Circle())
-                }
-                .disabled(draft.trimmingCharacters(in: .whitespaces).isEmpty).accessibilityLabel("Send")
-            }
-            .padding(.horizontal, 14).padding(.bottom, 14)
+                }.disabled(controller.busy || draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty).accessibilityLabel("Send")
+            }.padding(.horizontal, 10).padding(.bottom, 14)
         }
-        .background(Theme.cardFill, in: RoundedRectangle(cornerRadius: 28, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 28, style: .continuous).strokeBorder(Theme.edge))
-        .compositingGroup()
-        .shadow(color: .black.opacity(0.10), radius: 3, y: 2)
+        .background(Theme.cardFill, in: RoundedRectangle(cornerRadius: 28))
+        .overlay(RoundedRectangle(cornerRadius: 28).strokeBorder(Theme.edge))
         .shadow(color: .black.opacity(0.28), radius: 36, y: 18)
-        .accessibilityAddTraits(.isModal)
-    }
-
-    private func bubble(_ m: ChatMessage) -> some View {
-        HStack(alignment: .bottom) {
-            if m.mine { Spacer(minLength: 50) }
-            VStack(alignment: .leading, spacing: 8) {
-                Text(m.text).font(.subheadline)
-                ForEach(m.actions, id: \.label) { a in
-                    Button { onJump(a.jump) } label: {
-                        Label(a.label, systemImage: "chevron.right").labelStyle(TrailingIcon()).font(.footnote.weight(.semibold))
-                            .padding(.horizontal, 12).frame(minHeight: 34).foregroundStyle(.white).background(Theme.accent.gradient, in: Capsule())
-                    }
-                }
+        .buttonStyle(.plain)
+        .task { await controller.restore() }
+        .fileImporter(isPresented: $importing, allowedContentTypes: [.pdf]) { result in
+            switch result {
+            case .success(let url): Task { await controller.importPDF(url) }
+            case .failure(let error): controller.status = error.localizedDescription
             }
-            .padding(.horizontal, 13).padding(.vertical, 9)
-            .foregroundStyle(m.mine ? .white : Theme.ink)
-            .background(m.mine ? AnyShapeStyle(Theme.accent.gradient) : AnyShapeStyle(Theme.bubbleIn), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-            if !m.mine { Spacer(minLength: 40) }
         }
+        .sheet(isPresented: $history) {
+            NavigationStack {
+                List(controller.savedChats) { chat in
+                    Button { controller.select(chat); history = false } label: {
+                        VStack(alignment: .leading) { Text(chat.title); Text(chat.updatedAt, style: .date).font(.caption) }
+                    }
+                }.navigationTitle("Conversations").toolbar { Button("Done") { history = false } }
+            }
+        }
+        #if os(iOS)
+        .onDisappear { voice.cancel() }
+        .onChange(of: scenePhase) { _, phase in if phase != .active { voice.cancel() } }
+        #endif
     }
-
     private func send(_ raw: String) {
-        let text = raw.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !text.isEmpty, !typing else { return }
+        guard !controller.busy, !raw.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
         draft = ""
-        messages.append(ChatMessage(mine: true, text: text))
-        typing = true
-        Task {
-            try? await Task.sleep(nanoseconds: 650_000_000)
-            messages.append(Self.reply(to: text, store: store, requestStates: requestStates))
-            typing = false
-        }
-    }
-
-    /// Deterministic intent match, first rule wins. Every number comes from the engines, never from this file.
-    static func reply(to text: String, store: DemoStore, requestStates: [String: RequestState]) -> ChatMessage {
-        let q = text.lowercased()
-        func has(_ words: String...) -> Bool { words.contains { q.contains($0) } }
-        func say(_ t: String, _ a: ChatMessage.Action...) -> ChatMessage { ChatMessage(mine: false, text: t, actions: a) }
-        guard case .success(let v) = store.moneyView(store.snapshotPeriod) else { return say("I couldn’t load your money just now.") }
-        let f = v.flow, month = DemoStore.monthName(store.snapshotPeriod).components(separatedBy: " ").first ?? ""
-        let stays = f.toSavingsCents + f.toInvestmentsCents + f.retainedCashCents
-
-        if let c = v.categories.first(where: { q.contains($0.category.lowercased().components(separatedBy: " ").first ?? "\u{0}") }) {
-            let n = c.transactionIds.count
-            return say("\(c.category) was \(usd(c.totalCents)) in \(month), across \(n) \(n == 1 ? "payment" : "payments").", .init(jump: .money, label: "Open \(month)"))
-        }
-        if has("owe", "split", "dinner", "venmo", "paid", "tanish", "aryan") {
-            let unpaid = store.unpaidRequests(requestStates)
-            guard !unpaid.isEmpty else { return say("Everyone has settled up for dinner.", .init(jump: .split, label: "Open split")) }
-            let parts = unpaid.map { "\($0.reviewedName) \(usd($0.amountCents, cents: true))" }.joined(separator: ", ")
-            return say("You’re owed \(usd(unpaid.reduce(0) { $0 + $1.amountCents }, cents: true)) for dinner: \(parts). Nothing is sent until you approve it.", .init(jump: .split, label: "Review split"))
-        }
-        if has("save", "budget", "plan", "150", "cut") {
-            let total = PreviewBudgetPlan.swaps.reduce(0) { $0 + $1.savingsCents } + PreviewBudgetPlan.habits.reduce(0) { $0 + $1.savingsCents }
-            let top = PreviewBudgetPlan.swaps.sorted { $0.savingsCents > $1.savingsCents }.prefix(2).map { "\($0.title.lowercased()) (\(usd($0.savingsCents)))" }
-            return say("Your plan saves \(usd(total)) a month with rent unchanged. Biggest wins: \(top.joined(separator: " and ")).", .init(jump: .budget, label: "Review plan"))
-        }
-        if has("worth", "net", "assets", "debt") {
-            return say("Your net worth is \(usd(v.netWorthCents)): \(usd(v.assetsCents)) you own minus \(usd(v.liabilitiesCents)) you owe, as of \(DemoStore.day(store.dataset.asOf)).", .init(jump: .accounts, label: "See accounts"))
-        }
-        if has("account", "connect", "bank", "card", "loan", "balance") {
-            return say("\(v.accounts.count) accounts are connected across \(Set(v.accounts.map(\.institution)).count) institutions, all demo data synced \(DemoStore.day(store.dataset.asOf)).", .init(jump: .accounts, label: "Open accounts"))
-        }
-        if has("where", "spend", "spent", "go", "month", "money", "income") {
-            let big = v.categories.first
-            return say("In \(month) you kept \(usd(stays)) of \(usd(f.netIncomeCents)). \(big?.category ?? "Rent") was the biggest cost at \(usd(big?.totalCents ?? 0)).", .init(jump: .money, label: "Open \(month)"))
-        }
-        if has("hi", "hey", "hello", "thanks") { return say("Hi! Try asking where your money went or who owes you.") }
-        return say("In this preview I can answer about spending, net worth, your plan, the dinner split and connected accounts. On iPhone, the on-device model handles open questions.")
+        Task { await controller.send(raw) }
     }
 }
 
-private struct TrailingIcon: LabelStyle {
-    func makeBody(configuration: Configuration) -> some View { HStack(spacing: 4) { configuration.title; configuration.icon.font(.caption2.weight(.bold)) } }
-}
+enum LanaChatJump { case money, budget, split, accounts }
 
 /// Lana's mark: the one gradient in the app, on the dock orb and the chat header.
 struct LanaOrb: View {

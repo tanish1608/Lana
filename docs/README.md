@@ -62,7 +62,7 @@ Preserve all `Provenance` fields: `result_id`, `dataset_version`, `data_mode`, `
 
 `AgentResult`: `job_id`, `reply_text`, optional `card_id`, `proposed_action_id`, `provenance`. Financial responses preserve the actual engine provenance. Use event/job IDs to deduplicate and trace requests without logging raw financial content or secrets.
 
-Current `FWMCore` does not define relay endpoints, pairing/authentication, retry/ack policy, or attachment expiry. Aryan and Tanish publish these before wiring network calls. Do not invent app endpoint names that force the relay to follow later.
+`FWMCore.RelayClient` and [relay/README.md](../relay/README.md) define pairing, endpoints, approvals, leases, retry/deduplication and foreground semantics. The iOS host uses that client and stores the pairing in Keychain.
 
 ## Canonical tools
 
@@ -111,6 +111,10 @@ Do not create another public wire envelope/error enum in a feature folder. Inter
 - Reserve an action before awaiting authentication or networking. Durable mutation adapters persist idempotency keys and reconcile uncertain results rather than retrying blindly.
 - A model proposal never cancels, transfers, commits, or sends by itself. Label simulated actions.
 
+## Integrated version 1
+
+The iPhone entry point is `Examples/LanaDemoApp/LanaDemoApp.xcodeproj` (scheme `LanaDemoApp`). `FWMFeatureUI` composes `FinanceAI` and `FWMCore`; the root AI package remains independent of the UI. See [version 1](VERSION_1.md) for setup, merged branches, verification and remaining demo boundaries.
+
 ## Setup and verification
 
 ```bash
@@ -122,7 +126,7 @@ git switch -c codex/your-scope
 swift test --package-path Packages/FWMCore
 ```
 
-The AI branch adds:
+The AI module adds:
 
 ```bash
 swift test
@@ -157,7 +161,7 @@ September golden cents: income `480000`, expenses `315000`, savings `65000`, inv
 - `main` is the integration branch. New lanes start from its current remote version.
 - Tanish's existing branch: `codex/on-device-ai`. Suggested new branches: `codex/relay-adapters`, `codex/feature-ui-budget`. Continue actual existing branch names when applicable.
 - Keep focused commits. Push your own lane and use PRs for feature integration. Preserve history with merge commits by default; do not rewrite another person's/shared branch.
-- Direct `main` changes are only for explicitly agreed shared setup, such as these docs.
+- Direct `main` updates require explicit agreement for shared setup or an integration release; version 1 was explicitly requested by Tanish.
 - Commit reviewed work before updating a branch; never discard uncommitted changes to clear a conflict.
 
 ```bash
@@ -194,10 +198,10 @@ Do not resolve conflicts by choosing all of `--ours` or `--theirs`. Inspect both
 
 ## Current handoffs and open contracts
 
-At this baseline, `main` contains money/split engines, contracts, fixtures, and tests. Budget/swaps, relay, and integrated feature screens remain their owners' lanes.
+`main` version 1 includes all current lane branches. Feature UI adapters share the demo budget projection with chat; receipt review supplies trusted split context; optional relay pairing uses the current screen selection through a foreground worker. The fixture catalog remains a demo, and outbound split actions remain visibly simulated.
 
 Tanish's AI module and standalone harness initially used pre-v2 DTOs and a cancellation scenario. Final integration consumes `FWMCore.ToolCall`, carries `Provenance` into `AgentResult`, binds relay identity to scope, and uses canonical fixtures. The cloud prototype stays unused; the integrated product is local-only.
 
-Before networking: publish pairing/authentication, endpoints, acknowledgement/retry policy, attachment expiry, and foreground behavior. Before mutations: agree on action storage, payload/state versions, token issuance, idempotency, and provider challenge handling. Record concrete contracts here when their owners land them.
+Networking contracts are published in [relay/README.md](../relay/README.md). Before mutations: agree on action storage, payload/state versions, token issuance, idempotency, and provider challenge handling. Record concrete contracts here when their owners land them.
 
 **Relay networking (proposed by Aryan, needs Tanish's review):** [relay/README.md](../relay/README.md#phone--relay-contract) covers pairing/auth, endpoints, ack/retry (90 s lease, idempotent results, `delivery_unknown` on send timeout), attachment proxying, the foreground nudge, and the approval signature for reminders.

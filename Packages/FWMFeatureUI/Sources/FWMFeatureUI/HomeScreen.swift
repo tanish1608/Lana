@@ -9,6 +9,7 @@ struct HomeScreen: View {
     @Binding var tab: LanaTab
     let requestStates: [String: RequestState]
     let budgetAdopted: Bool
+    var budgetSavingsCents: Int = PreviewBudgetPlan.goalCents
     @Binding var path: NavigationPath
     var openChat: () -> Void
 
@@ -144,7 +145,7 @@ struct HomeScreen: View {
 
     private var duo: some View {
         let owed = unpaid
-        let plan = PreviewBudgetPlan.swaps.reduce(0) { $0 + $1.savingsCents } + PreviewBudgetPlan.habits.reduce(0) { $0 + $1.savingsCents }
+        let plan = budgetSavingsCents
         return HStack(spacing: 12) {
             Button { tab = .split } label: {
                 duoCard(fill: Theme.inkCardFill, ink: .white, glow: .black) {
