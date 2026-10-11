@@ -1,5 +1,6 @@
 import XCTest
 import FWMCore
+import FinanceAI
 @testable import FWMFeatureUI
 
 // Accounts screen: real institution names and logos for the seed, and statement import through BankCSVProvider.
@@ -101,5 +102,65 @@ final class AccountsTests: XCTestCase {
         XCTAssertTrue(found.replyText.contains("imported"), found.replyText)
         let activity = try await ledger.query(.init(operation: .activity), scope: second.scope)
         XCTAssertTrue(activity.replyText.contains("Budget plan has 3 kept ideas"))
+    }
+}
+
+/// Keychain stand-in for tests; the app uses KeychainVault (device-only, user presence).
+actor MemoryVault: SecretStoring {
+    var items: [String: Data] = [:]
+    func store(_ secret: Data, for key: VaultKey) async throws { items[key.userID + "/" + key.name] = secret }
+    func read(_ key: VaultKey, reason: String) async throws -> Data {
+        guard let d = items[key.userID + "/" + key.name] else { throw VaultFailure("No credential is stored for this service.") }
+        return d
+    }
+    func remove(_ key: VaultKey) async throws { items[key.userID + "/" + key.name] = nil }
+}
+
+final class ConnectionTests: XCTestCase {
+    @MainActor
+    func testSimpleFINConnectionIsSavedRefreshedAndRemoved() async throws {
+        let s = try XCTUnwrap(DemoStore.repoSeed())
+        let dir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        let chat = LanaChatController(dataset: s.dataset, directory: dir)
+        let vault = MemoryVault(); chat.vault = vault
+        // Accounts as the connect screen hands them over.
+        let payload = #"{"connections":[{"conn_id":"C","name":"Chase"}],"accounts":[{"id":"a","name":"Checking","conn_id":"C","currency":"USD","balance":"10.00","balance-date":1791763200,"transactions":[{"id":"t","posted":1791705600,"amount":"-1.00","description":"Coffee"}]}]}"#
+        let n = SimpleFIN.normalize(try JSONDecoder().decode(SimpleFIN.AccountSet.self, from: Data(payload.utf8)), user: s.dataset.user, asOf: "x")
+        for a in n.accounts { chat.addAccount(a, transactions: n.transactions) }
+        let note = await chat.saveSimpleFIN(accessURL: SimpleFIN.demoAccessURL, label: "Chase via SimpleFIN", accountIDs: n.accounts.map(\.accountId))
+        XCTAssertNil(note)
+        XCTAssertEqual(chat.connections.map(\.label), ["Chase via SimpleFIN"])
+        let stored = await vault.items
+        XCTAssertEqual(stored.count, 1)
+        XCTAssertEqual(stored.values.first.map { String(decoding: $0, as: UTF8.self) }, SimpleFIN.demoAccessURL.absoluteString)
+
+        // After relaunch the connection is listed again (credential still in the Keychain).
+        let relaunched = LanaChatController(dataset: s.dataset, directory: dir); relaunched.vault = vault
+        await relaunched.restore()
+        XCTAssertEqual(relaunched.connections.map(\.accountIDs), [n.accounts.map(\.accountId)])
+        XCTAssertTrue(relaunched.dataset.accounts.contains { $0.accountId == n.accounts[0].accountId })
+
+        await relaunched.removeConnection(relaunched.connections[0])
+        XCTAssertTrue(relaunched.connections.isEmpty)
+        XCTAssertFalse(relaunched.dataset.accounts.contains { $0.accountId == n.accounts[0].accountId })
+        let left = await vault.items
+        XCTAssertTrue(left.isEmpty)
+    }
+
+    /// Refresh against SimpleFIN's public demo server. Opt in: FWM_LIVE_SIMPLEFIN=1.
+    @MainActor
+    func testLiveRefreshFromSimpleFINDemo() async throws {
+        guard ProcessInfo.processInfo.environment["FWM_LIVE_SIMPLEFIN"] == "1" else { throw XCTSkip("Opt in with FWM_LIVE_SIMPLEFIN=1") }
+        let s = try XCTUnwrap(DemoStore.repoSeed())
+        let chat = LanaChatController(dataset: s.dataset, directory: FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString))
+        chat.vault = MemoryVault()
+        let set = try await SimpleFIN.fetch(accessURL: SimpleFIN.demoAccessURL, since: Date().addingTimeInterval(-90 * 86_400))
+        let n = SimpleFIN.normalize(set, user: s.dataset.user, asOf: "x")
+        let first = try XCTUnwrap(n.accounts.first)
+        chat.addAccount(first, transactions: [])
+        _ = await chat.saveSimpleFIN(accessURL: SimpleFIN.demoAccessURL, label: "SimpleFIN Demo via SimpleFIN", accountIDs: [first.accountId])
+        let message = try await chat.refresh(chat.connections[0])
+        XCTAssertTrue(message.hasPrefix("Refreshed"), message)
+        XCTAssertEqual(chat.dataset.transactions.filter { $0.accountId == first.accountId }.count, n.transactions.filter { $0.accountId == first.accountId }.count)
     }
 }

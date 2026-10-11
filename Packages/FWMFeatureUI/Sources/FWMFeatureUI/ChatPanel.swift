@@ -25,7 +25,7 @@ struct ChatPanel: View {
                 LanaMark(size: 34)
                 VStack(alignment: .leading, spacing: 1) {
                     Text("Lana").font(.headline)
-                    Text(OnDeviceRouter.status == .ready ? "On-device AI · demo financial data" : "Local model unavailable · basic answers")
+                    Text(OnDeviceRouter.status == .ready ? "On-device AI · your data stays on this iPhone" : "Local model unavailable · basic answers")
                         .font(.caption).foregroundStyle(Theme.ink3).lineLimit(1)
                 }
                 Spacer()

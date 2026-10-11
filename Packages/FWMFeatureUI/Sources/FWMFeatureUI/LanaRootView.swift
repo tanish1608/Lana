@@ -51,11 +51,13 @@ public struct LanaRootView: View {
                 record("split_reviewed", "Reviewed split · \(result.outstandingCents) cents outstanding; nothing sent",
                        details: ["receipt_id": receipt.receiptId, "total_cents": String(receipt.totalCents), "payer_id": payer])
             }, onInvalidate: { chat.reviewedSplit = nil; store.reviewedResult = nil }, onAction: { record("split_action", $0) }, dinnerRequest: dinnerRequest, states: $requestStates) }
-            section(.accounts) { AccountsScreen(store: store, dataset: chat.dataset, unlocker: unlocker, log: log, relay: relay, isActive: tab == .accounts,
+            section(.accounts) { AccountsScreen(store: store, dataset: chat.dataset, unlocker: unlocker, log: log, relay: relay, chat: chat, isActive: tab == .accounts,
                 onLink: { account, txns in
                     chat.addAccount(account, transactions: txns); syncStore()
                     record("account_imported", "Imported \(account.institution) \(AccountDisplay(account).subtitle) · \(txns.count) transactions, on this iPhone",
                            details: ["account_id": account.accountId, "institution": account.institution, "kind": account.kind])
+                }, onConnect: { url, label, ids in
+                    Task { if let note = await chat.saveSimpleFIN(accessURL: url, label: label, accountIDs: ids) { chat.status = note } }
                 }, onRemove: { id in
                     let removed = chat.dataset.accounts.first { $0.accountId == id }
                     chat.removeImportedAccount(id); syncStore()

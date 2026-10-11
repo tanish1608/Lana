@@ -18,6 +18,10 @@ final class LanaChatController {
     var budgetAdopted = false
     /// Dinner requests as the Receipts screen shows them, so chat can propose marking one paid or sent.
     var requestRoster: [ChatRequestRow] = []
+    /// Saved provider connections (descriptions only; credentials are in the Keychain).
+    var connections: [LocalLedger.Connection] = []
+    /// Keychain items need a device passcode and user presence; tests swap this out.
+    var vault: (any SecretStoring)? = try? KeychainVault(service: "io.speedhacks.LanaDemoApp")
     var scope: CoreScope {
         CoreScope(userID: dataset.user.userId, conversationID: archive?.id.uuidString ?? "app",
             period: "2026-09", datasetVersion: dataset.datasetVersion, preferencesVersion: dataset.user.preferencesVersion,
@@ -122,6 +126,61 @@ final class LanaChatController {
               let a = archive?.messages[m].actions?.firstIndex(where: { $0.id == id }) else { return }
         change(&archive!.messages[m].actions![a])
     }
+    // MARK: SimpleFIN connections
+
+    /// Remembers a SimpleFIN link so it can be refreshed: the access URL goes to the Keychain (Face ID to read), the
+    /// description to the ledger. Returns a note when the credential couldn't be saved (refresh then needs a new token).
+    func saveSimpleFIN(accessURL: URL, label: String, accountIDs: [String]) async -> String? {
+        let connection = LocalLedger.Connection(id: "sfin-" + UUID().uuidString.prefix(8).lowercased(), kind: "simplefin", label: label,
+                                                accountIDs: accountIDs, refreshedAt: Date())
+        var note: String?
+        do { try await vault?.store(Data(accessURL.absoluteString.utf8), for: VaultKey(userID: dataset.user.userId, name: connection.id)) }
+        catch { note = "Linked, but the connection couldn't be saved for refresh: \(error.localizedDescription)" }
+        let user = dataset.user.userId
+        ledgerWrite { try await $0.saveConnection(connection, userID: user) }
+        await ledgerSettled()
+        connections = (try? await ledger?.connections(userID: user)) ?? connections
+        return note
+    }
+
+    /// Reads the access URL (Face ID), fetches 90 days from SimpleFIN and replaces the linked accounts' records.
+    func refresh(_ connection: LocalLedger.Connection) async throws -> String {
+        guard let vault else { throw ToolError(.providerUnavailable, "Secure storage isn't available on this device.") }
+        let data = try await vault.read(VaultKey(userID: dataset.user.userId, name: connection.id), reason: "Refresh \(connection.label)")
+        guard let url = URL(string: String(decoding: data, as: UTF8.self)) else { throw ToolError(.invalidArguments, "The saved connection is unreadable. Link the bank again.") }
+        let set = try await SimpleFIN.fetch(accessURL: url, since: Date().addingTimeInterval(-90 * 86_400))
+        let fresh = SimpleFIN.normalize(set, user: dataset.user, asOf: StatementImportView.now())
+        let ids = Set(connection.accountIDs)
+        let before = dataset.transactions.filter { ids.contains($0.accountId) }.count
+        for account in fresh.accounts where ids.contains(account.accountId) {
+            if let i = dataset.accounts.firstIndex(where: { $0.accountId == account.accountId }) { dataset.accounts[i] = account } else { dataset.accounts.append(account) }
+            dataset.transactions.removeAll { $0.accountId == account.accountId }
+            dataset.transactions += fresh.transactions.filter { $0.accountId == account.accountId }
+        }
+        invalidateEvidence()
+        mirrorDataset()
+        let updated = LocalLedger.Connection(id: connection.id, kind: connection.kind, label: connection.label, accountIDs: connection.accountIDs,
+                                             createdAt: connection.createdAt, refreshedAt: Date())
+        let user = dataset.user.userId
+        ledgerWrite { try await $0.saveConnection(updated, userID: user) }
+        await ledgerSettled()
+        connections = (try? await ledger?.connections(userID: user)) ?? connections
+        let after = dataset.transactions.filter { ids.contains($0.accountId) }.count
+        journal("connection_refreshed", "Refreshed \(connection.label) · \(after) transactions (\(after - before >= 0 ? "+" : "")\(after - before))")
+        return "Refreshed \(connection.label): \(after) transactions in the last 90 days."
+    }
+
+    /// Forgets a connection: Keychain credential, ledger entry and its accounts.
+    func removeConnection(_ connection: LocalLedger.Connection) async {
+        try? await vault?.remove(VaultKey(userID: dataset.user.userId, name: connection.id))
+        for id in connection.accountIDs { removeImportedAccount(id) }
+        let user = dataset.user.userId
+        ledgerWrite { try await $0.removeConnection(id: connection.id, userID: user) }
+        await ledgerSettled()
+        connections = (try? await ledger?.connections(userID: user)) ?? []
+        journal("account_removed", "Disconnected \(connection.label) and removed its accounts")
+    }
+
     private func invalidateEvidence() {
         dataset.datasetVersion = "session-" + UUID().uuidString
         archive?.datasetVersion = dataset.datasetVersion
@@ -151,6 +210,7 @@ final class LanaChatController {
             invalidateEvidence()
         }
         mirrorDataset()
+        connections = (try? await ledger?.connections(userID: dataset.user.userId)) ?? []
         do {
             savedChats = try await store.load(userID: scope.userID)
             if let latest = savedChats.first { archive = latest }

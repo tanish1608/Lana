@@ -1,5 +1,6 @@
 import SwiftUI
 import FWMCore
+import FinanceAI
 
 /// Native security boundary the vault UI talks to. Tanish's FinanceAI module (SecureVault,
 /// DeviceOwnerAuthenticator, TOTP) provides the real implementation on codex/on-device-ai.
@@ -30,17 +31,8 @@ public struct SimulatedVaultUnlocker: VaultUnlocking {
     }
 }
 
-struct VaultEntry: Identifiable { let id: String, label: String, scope: String, value: String }
-
-/// Synthetic credentials for the demo. Never real secrets.
-private let demoEntries = [
-    VaultEntry(id: "v1", label: "Messaging line token", scope: "Send and receive messages", value: "demo_dial_7Q2x-9fLm-aa41"),
-    VaultEntry(id: "v2", label: "Bank sandbox connection", scope: "Read balances and transactions", value: "demo_sbx_acc_55e1c0"),
-    VaultEntry(id: "v3", label: "Preference history key", scope: "Read past swap decisions", value: "demo_kw_3b9d-11ce"),
-    VaultEntry(id: "v4", label: "Payment handle", scope: "Prefill request drafts", value: "@ashwin-demo"),
-]
-
-/// Everything Lana is connected to: financial accounts first, then the access keys behind Face ID.
+/// Everything Lana is connected to, behind Face ID: balances and accounts, saved connections, privacy, approvals.
+/// The page locks when you leave the tab, when the app goes to the background, and after five minutes.
 struct AccountsScreen: View {
     let store: DemoStore
     /// The current session dataset (fixture plus any accounts imported on this phone).
@@ -48,8 +40,10 @@ struct AccountsScreen: View {
     let unlocker: VaultUnlocking
     let log: [String]
     let relay: LanaRelayConnection
+    let chat: LanaChatController
     var isActive = true
     var onLink: (Account, [FWMCore.Transaction]) -> Void = { _, _ in }
+    var onConnect: (URL, String, [String]) -> Void = { _, _, _ in }
     var onRemove: (String) -> Void = { _ in }
     @State private var authOperation: UUID?
     @State private var messaging = false
@@ -57,90 +51,159 @@ struct AccountsScreen: View {
     @State private var stage = Stage.locked
     @State private var error: String?
     @State private var code = ""
-    @State private var revealed: Set<String> = []
     @State private var lockAt = Date.distantFuture
     @Environment(\.scenePhase) private var scenePhase
     private let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
     @State private var now = Date()
     @State private var linking = false
+    @State private var working: String?
+    @State private var connectionNote: String?
+    private static let unlockedFor: TimeInterval = 300
+    #if DEBUG
+    /// Xcode previews and screenshot renders only; release builds always start locked.
+    var previewUnlocked = false
+    #endif
 
     var body: some View {
         NavigationStack {
-            ScrollViewReader { proxy in
             ScrollView {
                 VStack(alignment: .leading, spacing: 12) {
-                    connected
-                    SectionLabel("Sign-in keys")
-                    Card {
-                        switch stage {
-                        case .locked, .checking: locked
-                        case .secondFactor, .verifying: secondFactor
-                        case .unlocked: unlocked
+                    switch stage {
+                    case .unlocked:
+                        connected
+                        SectionLabel("Saved connections")
+                        connections
+                        SectionLabel("Privacy")
+                        Card {
+                            Text("The model and financial reasoning run on your phone.").fontWeight(.semibold)
+                            Text("Banks and messaging receive only what they need to work.")
+                            Text("The model never sees passwords, tokens or codes.")
                         }
-                        if unlocker.isSimulated { SimulatedNote("Simulated. No Face ID or code check.") }
-                        else { Text("Protected by device authentication. These are synthetic demo keys; provider MFA is not configured.").font(.caption).foregroundStyle(Theme.ink3) }
-                    }
-                    .id("keys")
-                    SectionLabel("Messaging")
-                    Card {
-                        Text(relay.status).font(.footnote).foregroundStyle(Theme.ink2)
-                        Button("Configure messaging relay") { messaging = true }.buttonStyle(GhostButtonStyle())
-                    }
-                    SectionLabel("Privacy")
-                    Card {
-                        Text("The model and financial reasoning run on your phone.").fontWeight(.semibold)
-                        Text("Messages and connected services receive what they need to work.")
-                        Text("The model never sees passwords, tokens or codes.")
-                    }
-                    .font(.subheadline)
-                    SectionLabel("Approvals")
-                    Card {
-                        if log.isEmpty { Text("Nothing approved yet.").foregroundStyle(Theme.ink3) }
-                        ForEach(Array(log.enumerated()), id: \.offset) { _, l in Text(l).font(.subheadline) }
+                        .font(.subheadline)
+                        SectionLabel("Approvals")
+                        Card {
+                            if log.isEmpty { Text("Nothing approved yet.").foregroundStyle(Theme.ink3) }
+                            ForEach(Array(log.enumerated()), id: \.offset) { _, l in Text(l).font(.subheadline) }
+                        }
+                    case .secondFactor, .verifying: Card { secondFactor }.padding(.top, 40)
+                    case .locked, .checking: locked
                     }
                 }
                 .padding(.horizontal, 16).padding(.bottom, 24)
-            }
-            .onChange(of: stage) { _, _ in withAnimation { proxy.scrollTo("keys", anchor: .center) } } // keep the keys card in view
             }
             .scrollIndicators(.hidden).background { Theme.backdrop }
             .navigationTitle("Accounts")
             .navigationDestination(for: String.self) { id in AccountDetailView(dataset: dataset, period: store.snapshotPeriod, accountID: id, onRemove: onRemove) }
             .toolbar {
-                Button { linking = true } label: {
-                    Label("Add account", systemImage: "plus").labelStyle(.titleAndIcon).font(.subheadline.weight(.semibold))
+                if stage == .unlocked {
+                    Button { linking = true } label: {
+                        Label("Add account", systemImage: "plus").labelStyle(.titleAndIcon).font(.subheadline.weight(.semibold))
+                    }
+                    Button { lock() } label: { Image(systemName: "lock.fill") }.accessibilityLabel("Lock accounts")
                 }
             }
-            .sheet(isPresented: $linking) { LinkAccountSheet(user: dataset.user, onLink: onLink) }
+            .sheet(isPresented: $linking) { LinkAccountSheet(user: dataset.user, onLink: onLink, onConnect: onConnect) }
             .sheet(isPresented: $messaging) { RelaySettings(connection: relay) }
             .onChange(of: isActive) { _, active in if !active { lock() } }
             .onChange(of: scenePhase) { _, phase in if phase == .background || (phase != .active && stage != .checking) { lock() } }
-            .onReceive(timer) { t in now = t; if stage == .unlocked && t >= lockAt { lock(); error = "Vault locked after 60 seconds." } }
+            .onReceive(timer) { t in now = t; if stage == .unlocked && t >= lockAt { lock(); error = "Locked after 5 minutes." } }
+            #if DEBUG
+            .onAppear { if previewUnlocked { stage = .unlocked; lockAt = Date().addingTimeInterval(Self.unlockedFor) } }
+            #endif
         }
     }
 
+    /// Shown until device-owner authentication succeeds: no balances, institutions or connections are rendered.
     private var locked: some View {
-        VStack(spacing: 14) {
-            HStack(spacing: 12) {
-                Image(systemName: "lock.fill").font(.title3).foregroundStyle(Theme.accent).frame(width: 44, height: 44).background(Theme.accentSoft, in: Circle())
-                VStack(alignment: .leading, spacing: 2) { Text("\(demoEntries.count) keys · Locked").font(.headline); Text("Tokens Lana uses to reach your services").font(.footnote).foregroundStyle(Theme.ink2) }
-                Spacer()
+        VStack(spacing: 18) {
+            Image(systemName: "faceid").font(.system(size: 56, weight: .light)).foregroundStyle(Theme.accent)
+                .frame(width: 110, height: 110).background(Theme.cardFill, in: Circle()).raised(55).padding(.top, 70)
+            VStack(spacing: 6) {
+                Text("Accounts are locked").font(Theme.display(26))
+                Text("Balances, linked banks and saved connections need Face ID.").foregroundStyle(Theme.ink2).multilineTextAlignment(.center)
             }
             if let error { Label(error, systemImage: "exclamationmark.triangle").font(.footnote).foregroundStyle(Theme.bad) }
-            Button(stage == .checking ? "Checking Face ID…" : "Unlock with Face ID") {
-                stage = .checking; error = nil
-                let operation = UUID(); authOperation = operation
-                Task {
-                    do { try await unlocker.authenticateDeviceOwner(reason: "Unlock your vault")
-                        guard authOperation == operation, scenePhase == .active, isActive else { return }
-                        stage = unlocker.requiresSecondFactor ? .secondFactor : .unlocked
-                        lockAt = Date().addingTimeInterval(60) }
-                    catch { if authOperation == operation { stage = .locked; self.error = error.localizedDescription } }
-                }
-            }
-            .buttonStyle(PrimaryButtonStyle()).disabled(stage == .checking)
+            Button(stage == .checking ? "Checking Face ID…" : "Unlock with Face ID") { unlock() }
+                .buttonStyle(PrimaryButtonStyle()).disabled(stage == .checking)
+            if unlocker.isSimulated { SimulatedNote("Preview build: no Face ID on this device.") }
         }
         .frame(maxWidth: .infinity)
+    }
+
+    private func unlock() {
+        stage = .checking; error = nil
+        let operation = UUID(); authOperation = operation
+        Task {
+            do {
+                try await unlocker.authenticateDeviceOwner(reason: "Unlock your accounts")
+                guard authOperation == operation, scenePhase == .active, isActive else { return }
+                stage = unlocker.requiresSecondFactor ? .secondFactor : .unlocked
+                lockAt = Date().addingTimeInterval(Self.unlockedFor)
+            } catch { if authOperation == operation { stage = .locked; self.error = error.localizedDescription } }
+        }
+    }
+
+    /// What Lana actually keeps: the messaging relay pairing and SimpleFIN bank links. Credentials stay in the
+    /// Keychain and are never displayed; refreshing reads one with Face ID.
+    @ViewBuilder private var connections: some View {
+        VStack(spacing: 0) {
+            HStack(spacing: 12) {
+                symbolMark("message.fill", .green)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Messaging relay").fontWeight(.semibold)
+                    Text(relay.connected ? "Paired · answers texts and calls while Lana is open" : "Not paired").font(.caption).foregroundStyle(Theme.ink2)
+                }
+                Spacer()
+                Button(relay.connected ? "Manage" : "Pair") { messaging = true }.font(.footnote.weight(.semibold)).foregroundStyle(Theme.accent)
+            }
+            .padding(.horizontal, 14).padding(.vertical, 11)
+            ForEach(chat.connections) { c in
+                Divider().padding(.leading, 62)
+                HStack(spacing: 12) {
+                    InstitutionLogo(name: c.label.components(separatedBy: " via ").first ?? c.label, size: 36)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(c.label).fontWeight(.semibold).lineLimit(1)
+                        Text("\(c.accountIDs.count) account\(c.accountIDs.count == 1 ? "" : "s") · " + (c.refreshedAt.map { "refreshed \($0.formatted(.relative(presentation: .named)))" } ?? "not refreshed"))
+                            .font(.caption).foregroundStyle(Theme.ink2)
+                    }
+                    Spacer()
+                    if working == c.id { ProgressView().controlSize(.small) }
+                    else {
+                        Menu {
+                            Button("Refresh", systemImage: "arrow.clockwise") { run(c.id) { try await chat.refresh(c) } }
+                            Button("Disconnect", systemImage: "minus.circle", role: .destructive) { run(c.id) { await chat.removeConnection(c); return "Disconnected \(c.label)." } }
+                        } label: { Image(systemName: "ellipsis.circle").font(.title3).foregroundStyle(Theme.accent) }
+                    }
+                }
+                .padding(.horizontal, 14).padding(.vertical, 11)
+            }
+            if chat.connections.isEmpty {
+                Divider().padding(.leading, 62)
+                Button { linking = true } label: {
+                    HStack(spacing: 12) {
+                        Image(systemName: "link").font(.headline).foregroundStyle(Theme.accent).frame(width: 36, height: 36)
+                            .background(Theme.accentSoft, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+                        Text("Link a bank with SimpleFIN").fontWeight(.semibold).foregroundStyle(Theme.accent)
+                        Spacer()
+                    }
+                    .padding(.horizontal, 14).padding(.vertical, 11).contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .background(Theme.cardFill, in: RoundedRectangle(cornerRadius: 20, style: .continuous)).raised(20)
+        if let connectionNote { Text(connectionNote).font(.caption).foregroundStyle(Theme.ink2).padding(.horizontal, 4) }
+        Text("Credentials are kept in this iPhone's Keychain, need Face ID to use, and are never shown or given to the model.")
+            .font(.caption).foregroundStyle(Theme.ink3).padding(.horizontal, 4)
+    }
+
+    private func run(_ id: String, _ work: @escaping @MainActor () async throws -> String) {
+        working = id; connectionNote = nil
+        Task { @MainActor in
+            defer { working = nil }
+            do { connectionNote = try await work(); lockAt = Date().addingTimeInterval(Self.unlockedFor) }
+            catch { connectionNote = (error as? ToolError)?.userMessage ?? error.localizedDescription }
+        }
     }
 
     // MARK: connected accounts
@@ -172,7 +235,7 @@ struct AccountsScreen: View {
                 .accessibilityElement().accessibilityLabel(all.map { "\(AccountDisplay($0).title) \(usd($0.balanceCents))" }.joined(separator: ", "))
                 HStack { Text(usd(v.assetsCents)).bold() + Text(" assets"); Spacer(); Text(usd(v.liabilitiesCents)).bold() + Text(" debt") }
                     .font(.footnote).monospacedDigit().foregroundStyle(Theme.ink2)
-                Text(imported ? "Sample data plus statements imported on this iPhone" : "Sample data · balances as of \(DemoStore.day(dataset.asOf))")
+                Text(imported ? "Sample data plus accounts you added on this iPhone" : "Sample data · balances as of \(DemoStore.day(dataset.asOf))")
                     .font(.caption).foregroundStyle(Theme.ink3)
             }
             .padding(18).frame(maxWidth: .infinity, alignment: .leading)
@@ -197,7 +260,7 @@ struct AccountsScreen: View {
                 }
             }
 
-            SectionLabel("Connections")
+            SectionLabel("Institutions")
             VStack(spacing: 0) {
                 ForEach(Array(institutions(all).enumerated()), id: \.element) { n, inst in
                     let accounts = all.filter { $0.institution == inst }
@@ -231,13 +294,11 @@ struct AccountsScreen: View {
             }
             .background(Theme.cardFill, in: RoundedRectangle(cornerRadius: 20, style: .continuous)).raised(20)
         }
-        SectionLabel("Also connected")
+        SectionLabel("Also used")
         Card {
-            service(AnyView(symbolMark("message.fill", .green)), "Messages", "Talk to Lana by text", "Simulated here")
+            service(AnyView(InstitutionLogo(name: "Venmo", size: 36)), "Venmo", "Lana drafts requests; you send them in Venmo.", "Drafts")
             Divider()
-            service(AnyView(InstitutionLogo(name: "Venmo", size: 36)), "Venmo", "Request handoff. Lana never holds your login.", "Handoff")
-            Divider()
-            service(AnyView(symbolMark("bag.fill", .orange)), "Purchase history", "Past swap decisions", "Simulated here")
+            service(AnyView(symbolMark("bag.fill", .orange)), "Swap history", "Past swap decisions shape budget ideas.", "Sample history")
         }
     }
 
@@ -264,7 +325,7 @@ struct AccountsScreen: View {
     private func change(_ a: AccountBalance) -> String {
         if a.assetOrLiability == .liability { return "Owed" }
         let month = DemoStore.monthName(store.snapshotPeriod, short: true)
-        guard let open = dataset.accounts.first(where: { $0.accountId == a.accountId })?.openingBalanceCents else { return "Imported" }
+        guard let open = dataset.accounts.first(where: { $0.accountId == a.accountId })?.openingBalanceCents else { return AccountDisplay(a).isLinked ? "Linked" : "Imported" }
         let d = a.balanceCents - open
         return d == 0 ? "No change in \(month)" : "\(usd(d, plus: true)) in \(month)"
     }
@@ -279,7 +340,7 @@ struct AccountsScreen: View {
             mark
             VStack(alignment: .leading, spacing: 1) { Text(title).fontWeight(.semibold); Text(sub).font(.caption).foregroundStyle(Theme.ink2) }
             Spacer()
-            Tag(text: tag, tone: tag == "Handoff" ? Theme.accent : Theme.warn, fill: tag == "Handoff" ? Theme.accentSoft : Theme.warnSoft)
+            Tag(text: tag, tone: tag == "Drafts" ? Theme.accent : Theme.ink2, fill: tag == "Drafts" ? Theme.accentSoft : Theme.line)
         }
     }
 
@@ -297,7 +358,7 @@ struct AccountsScreen: View {
             Button(stage == .verifying ? "Verifying…" : "Verify") {
                 stage = .verifying; error = nil
                 Task {
-                    do { try await unlocker.verifySecondFactor(code: code); stage = .unlocked; lockAt = Date().addingTimeInterval(60); code = "" }
+                    do { try await unlocker.verifySecondFactor(code: code); stage = .unlocked; lockAt = Date().addingTimeInterval(Self.unlockedFor); code = "" }
                     catch { stage = .secondFactor; self.error = error.localizedDescription }
                 }
             }
@@ -307,32 +368,5 @@ struct AccountsScreen: View {
         .frame(maxWidth: .infinity)
     }
 
-    private var unlocked: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack { Text("Unlocked").font(.headline); Spacer()
-                Tag(text: "Locks in \(max(0, Int(lockAt.timeIntervalSince(now))))s", tone: Theme.accent, fill: Theme.accentSoft) }
-            VStack(alignment: .leading, spacing: 10) {
-                ForEach(demoEntries) { e in
-                    HStack {
-                        VStack(alignment: .leading, spacing: 3) {
-                            Text(e.label).fontWeight(.semibold)
-                            Text(e.scope).font(.caption).foregroundStyle(Theme.ink3)
-                            Text(revealed.contains(e.id) ? e.value : "•••• •••• ••••").font(.system(.footnote, design: .monospaced))
-                        }
-                        Spacer()
-                        Button(revealed.contains(e.id) ? "Hide" : "Show") {
-                            if revealed.contains(e.id) { revealed.remove(e.id) } else { revealed.insert(e.id) }
-                            lockAt = Date().addingTimeInterval(60)
-                        }
-                        .buttonStyle(GhostButtonStyle())
-                    }
-                }
-            }
-            Text("Synthetic demo credentials.").font(.caption).foregroundStyle(Theme.ink3).padding(.horizontal, 4)
-            Button("Lock now") { lock() }.buttonStyle(PrimaryButtonStyle())
-        }
-        .privacySensitive()
-    }
-
-    private func lock() { authOperation = nil; stage = .locked; revealed = []; code = ""; lockAt = .distantFuture }
+    private func lock() { authOperation = nil; stage = .locked; code = ""; lockAt = .distantFuture; linking = false }
 }

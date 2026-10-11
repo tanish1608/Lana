@@ -6,11 +6,13 @@ import FWMCore
 struct SimpleFINConnectView: View {
     let institution: Institution?
     let user: UserPrefs
-    var onAdd: ([Account], [FWMCore.Transaction]) -> Void
+    /// Chosen accounts and their transactions, plus the access URL and a label so the connection can be saved for refresh.
+    var onAdd: ([Account], [FWMCore.Transaction], URL, String) -> Void
     @State private var token = ""
     @State private var loading = false
     @State private var error: String?
     @State private var result: (source: String, data: SimpleFIN.Normalized)?
+    @State private var accessURL: URL?
     @State private var chosen: Set<String> = []
     @State private var task: Task<Void, Never>?
 
@@ -95,7 +97,8 @@ struct SimpleFINConnectView: View {
         ForEach(r.data.warnings.prefix(3), id: \.self) { Label($0, systemImage: "exclamationmark.circle").font(.caption).foregroundStyle(Theme.warn) }
         Button("Add \(chosen.count) account\(chosen.count == 1 ? "" : "s")") {
             let accounts = r.data.accounts.filter { chosen.contains($0.accountId) }
-            onAdd(accounts, r.data.transactions.filter { chosen.contains($0.accountId) })
+            guard let accessURL else { return }
+            onAdd(accounts, r.data.transactions.filter { chosen.contains($0.accountId) }, accessURL, Set(accounts.map(\.institution)).sorted().joined(separator: ", ") + " via SimpleFIN")
         }
         .buttonStyle(PrimaryButtonStyle()).disabled(chosen.isEmpty).padding(.top, 6)
         Button("Start over") { result = nil; chosen = [] }.buttonStyle(GhostButtonStyle())
@@ -109,6 +112,7 @@ struct SimpleFINConnectView: View {
             defer { loading = false }
             do {
                 let url = try await access()
+                accessURL = url
                 let set = try await SimpleFIN.fetch(accessURL: url, since: Date().addingTimeInterval(-90 * 86_400))
                 try Task.checkCancellation()
                 let data = SimpleFIN.normalize(set, user: user, asOf: StatementImportView.now())

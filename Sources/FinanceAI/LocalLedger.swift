@@ -105,6 +105,9 @@ public actor LocalLedger: LedgerQuerying {
               seq INTEGER PRIMARY KEY AUTOINCREMENT, user_id TEXT NOT NULL, kind TEXT NOT NULL, summary TEXT NOT NULL,
               occurred_at REAL NOT NULL, details TEXT NOT NULL);
             CREATE INDEX IF NOT EXISTS events_by_user ON events (user_id, seq);
+            CREATE TABLE IF NOT EXISTS connections (
+              user_id TEXT NOT NULL, id TEXT NOT NULL, kind TEXT NOT NULL, label TEXT NOT NULL, account_ids TEXT NOT NULL,
+              created_at REAL NOT NULL, refreshed_at REAL, PRIMARY KEY (user_id, id));
             CREATE TABLE IF NOT EXISTS category_overrides (
               user_id TEXT NOT NULL, transaction_id TEXT NOT NULL, category TEXT NOT NULL, PRIMARY KEY (user_id, transaction_id));
             """)
@@ -163,6 +166,37 @@ public actor LocalLedger: LedgerQuerying {
             }
             return (a, txns)
         }
+    }
+
+    // MARK: saved connections
+
+    /// A provider connection's public description. Its credential lives in the Keychain under `id`, never here.
+    public struct Connection: Sendable, Equatable, Identifiable {
+        public var id: String
+        public var kind: String
+        public var label: String
+        public var accountIDs: [String]
+        public var createdAt: Date
+        public var refreshedAt: Date?
+        public init(id: String, kind: String, label: String, accountIDs: [String], createdAt: Date = Date(), refreshedAt: Date? = nil) {
+            self.id = id; self.kind = kind; self.label = label; self.accountIDs = accountIDs; self.createdAt = createdAt; self.refreshedAt = refreshedAt
+        }
+    }
+
+    public func saveConnection(_ c: Connection, userID: String) throws {
+        try run("INSERT OR REPLACE INTO connections VALUES (?, ?, ?, ?, ?, ?, ?)", [.text(userID), .text(c.id), .text(c.kind), .text(c.label),
+            .text(c.accountIDs.joined(separator: ",")), .double(c.createdAt.timeIntervalSince1970), c.refreshedAt.map { .double($0.timeIntervalSince1970) } ?? .null])
+    }
+
+    public func connections(userID: String) throws -> [Connection] {
+        try rows("SELECT id, kind, label, account_ids, created_at, refreshed_at FROM connections WHERE user_id = ? ORDER BY created_at", [.text(userID)]).map { r in
+            Connection(id: r.text(0), kind: r.text(1), label: r.text(2), accountIDs: r.text(3).split(separator: ",").map(String.init),
+                       createdAt: Date(timeIntervalSince1970: r.double(4)), refreshedAt: r.optionalText(5) == nil ? nil : Date(timeIntervalSince1970: r.double(5)))
+        }
+    }
+
+    public func removeConnection(id: String, userID: String) throws {
+        try run("DELETE FROM connections WHERE user_id = ? AND id = ?", [.text(userID), .text(id)])
     }
 
     // MARK: user edits

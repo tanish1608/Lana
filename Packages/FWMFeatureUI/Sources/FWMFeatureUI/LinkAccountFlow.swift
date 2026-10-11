@@ -52,6 +52,8 @@ struct StatementImport {
 struct LinkAccountSheet: View {
     let user: UserPrefs
     var onLink: (Account, [FWMCore.Transaction]) -> Void
+    /// A SimpleFIN link to remember for refresh: access URL, label, account IDs.
+    var onConnect: (URL, String, [String]) -> Void = { _, _, _ in }
     @Environment(\.dismiss) private var dismiss
     @State private var path: [Step] = []
     @State private var linked: (accounts: [Account], count: Int)?
@@ -72,8 +74,9 @@ struct LinkAccountSheet: View {
                             }
                         }
                     case .simplefin(let id):
-                        SimpleFINConnectView(institution: id.flatMap(Institution.id), user: user) { accounts, txns in
+                        SimpleFINConnectView(institution: id.flatMap(Institution.id), user: user) { accounts, txns, url, label in
                             for a in accounts { onLink(a, txns.filter { $0.accountId == a.accountId }) }
+                            onConnect(url, label, accounts.map(\.accountId))
                             linked = (accounts, txns.count); path.append(.done)
                         }
                     case .done: done
