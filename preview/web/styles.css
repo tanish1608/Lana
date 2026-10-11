@@ -344,7 +344,7 @@ main{position:relative}
 .topbar{background:linear-gradient(180deg,var(--fade),transparent);backdrop-filter:none;-webkit-backdrop-filter:none}
 /* glass cards with a lit gradient edge */
 .card:not(.flat):not(.sky):not(.ink-card){background:var(--glass);backdrop-filter:saturate(170%) blur(22px);-webkit-backdrop-filter:saturate(170%) blur(22px)}
-.card:not(.flat),.swap,.dock,.chat{position:relative}
+.card:not(.flat),.swap,.dock{position:relative}
 .card:not(.flat)::before,.swap::before,.dock::before,.chat::before{content:"";position:absolute;inset:0;border-radius:inherit;padding:1px;pointer-events:none;background:linear-gradient(160deg,var(--glass-edge-a),var(--glass-edge-b) 45%,transparent 70%,var(--glass-edge-b));-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;z-index:2}
 .swap{background:var(--glass);backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px)}
 .card.flat{background:var(--glass)}
@@ -364,3 +364,13 @@ main{padding-bottom:150px}
 .dock-btn{min-width:46px;padding:0 8px}
 .dock-btn[aria-current="page"]{padding:0 12px 0 10px}
 .orb{margin:-24px 6px 0}
+/* more see-through cards; no backdrop blur inside the scroller (the aurora is already soft) */
+:root{--glass:rgba(255,255,255,.40)}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--glass:rgba(40,40,48,.32)}}
+:root[data-theme="dark"]{--glass:rgba(40,40,48,.32)}
+.card:not(.flat):not(.sky):not(.ink-card),.swap{backdrop-filter:none;-webkit-backdrop-filter:none}
+.card.sky{background:linear-gradient(150deg,color-mix(in oklab,var(--sky-a) 70%,transparent),color-mix(in oklab,var(--sky-b) 62%,transparent))}
+.sky2{background:linear-gradient(160deg,var(--glass),color-mix(in oklab,var(--sky2) 55%,transparent))!important}
+.ink-card{background:linear-gradient(160deg,rgba(44,44,48,.82),rgba(11,11,13,.9))!important}
+.tile{background:color-mix(in oklab,var(--bg) 50%,transparent)}
+@media (min-width:600px){.phone{height:min(880px,calc(100dvh - 48px));min-height:600px}}
