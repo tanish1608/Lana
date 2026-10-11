@@ -123,5 +123,10 @@ final class IntegrationTests: XCTestCase {
         XCTAssertEqual(saved[0].messages.map(\.role), [.user, .assistant, .user, .assistant])
         let listed = await chat.savedChats.map(\.id)
         XCTAssertEqual(listed, [saved[0].id], "History shows it without a relaunch")
+        // The agent's activity journal knows about relay turns too.
+        await chat.ledgerSettled()
+        let ledger = await chat.ledger
+        let activity = try await XCTUnwrap(ledger).events(userID: ds.user.userId, kinds: ["relay_call", "relay_text"])
+        XCTAssertEqual(activity.map(\.summary).sorted(), ["Phone call answered on this iPhone: How did September go?", "Phone call answered on this iPhone: What can I swap to save money?"])
     }
 }

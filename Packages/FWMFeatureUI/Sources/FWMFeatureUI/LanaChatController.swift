@@ -175,6 +175,8 @@ final class LanaChatController {
             try await store.save(thread)
             savedChats = try await store.load(userID: thread.userID)
             if archive?.id == thread.id { archive = thread }
+            journal(call ? "relay_call" : "relay_text", "\(call ? "Phone call" : "Text") answered on this iPhone: \(String((envelope.text ?? "Photo").prefix(120)))",
+                    details: ["job_id": job.jobId, "conversation_id": envelope.conversationId])
         } catch { status = "A relay conversation couldn't be saved: \(error.localizedDescription)" }
     }
     private func persist() async {
