@@ -81,3 +81,17 @@ private actor ChatTestTools: CoreToolExecuting {
     #expect(valid.contains("$4,800.00"))
     #expect(await session.results().first?.provenance.resultId == "r")
 }
+
+@Test func relayThreadsKeepOneArchivePerConversation() throws {
+    let call = ConversationArchive(relayConversation: "call_cmv4e5y8z", userID: "user_ashwin", datasetVersion: "seed-v1")
+    #expect(call.id == ConversationArchive(relayConversation: "call_cmv4e5y8z", userID: "user_ashwin", datasetVersion: "seed-v1").id)
+    #expect(call.id != ConversationArchive(relayConversation: "conv_5873ac521f86", userID: "user_ashwin", datasetVersion: "seed-v1").id)
+    #expect(call.channel == "Call")
+    var text = ConversationArchive(relayConversation: "conv_5873ac521f86", userID: "user_ashwin", datasetVersion: "seed-v1")
+    text.messages.append(.init(role: .user, text: "How did September go?"))
+    #expect(text.title == "Text · How did September go?")
+    // Chats saved before relay threads existed still load.
+    let old = try JSONEncoder().encode(ConversationArchive(userID: "user_ashwin", datasetVersion: "seed-v1"))
+    let decoded = try JSONDecoder().decode(ConversationArchive.self, from: old)
+    #expect(decoded.channel == nil)
+}

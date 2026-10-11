@@ -2,7 +2,6 @@
 // say next. Each caller turn becomes a phone job, so the paired iPhone writes the answer, as it does for texts.
 import type { Server, IncomingMessage } from 'node:http';
 import type { Duplex } from 'node:stream';
-import { createHash } from 'node:crypto';
 import WebSocket from 'ws';
 import { parseDialMessage, serializeServerMessage, verifyDialSignature } from '@getdial/sdk';
 import { db, now, id } from './store.ts';
@@ -63,7 +62,6 @@ export function attachVoice(server: Server, deps: Deps) {
 
 function onCall(ws: WebSocket, callId: string, deps: Deps) {
   let user: string | undefined;
-  let caller = '';
   let latest = -1; // a newer response_required supersedes the one in flight
   const say = (responseId: number, content: string, complete = true, endCall = false) => {
     if (responseId !== latest || ws.readyState !== WebSocket.OPEN) return;
@@ -84,7 +82,6 @@ function onCall(ws: WebSocket, callId: string, deps: Deps) {
     if (msg.type === 'ping_pong') {
       ws.send(serializeServerMessage({ type: 'ping_pong', timestamp: msg.timestamp }));
     } else if (msg.type === 'call_connected') {
-      caller = msg.from;
       user = deps.pairedUser(msg.from);
       console.log(`[voice] call ${callId} from ${msg.from} ${user ? `as ${user}` : '(unpaired)'}`);
     } else if (msg.type === 'response_required') {
@@ -100,7 +97,7 @@ function onCall(ws: WebSocket, callId: string, deps: Deps) {
       const seen = db.prepare('SELECT 1 FROM jobs WHERE event_id = ?').get(`evt_${callId}_${turn}`);
       const envelope = {
         event_id: seen ? `evt_${callId}_${turn}_${Date.now()}` : `evt_${callId}_${turn}`,
-        conversation_id: `conv_${createHash('sha256').update(caller).digest('hex').slice(0, 12)}`,
+        conversation_id: `call_${callId}`, // one call, one chat in the app's History
         paired_user_id: user,
         // The v1 app decodes only imessage, sms and app, so a call turn travels as sms; reply_to marks it as a call.
         channel: 'sms',
