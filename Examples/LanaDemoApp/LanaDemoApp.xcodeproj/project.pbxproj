@@ -10,6 +10,7 @@
 		114828BD89DDB8C21179E417 /* LanaDemoApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1316DCC856E87963F33DD1E0 /* LanaDemoApp.swift */; };
 		9D05E0C4EF86D3DB13C15A25 /* seed-v1.json in Resources */ = {isa = PBXBuildFile; fileRef = 16025FBAB15F263E4EBBBCA3 /* seed-v1.json */; };
 		DE70ED76B841CB17E15818CD /* FWMFeatureUI in Frameworks */ = {isa = PBXBuildFile; productRef = B9978616F7AB9BD080A2E991 /* FWMFeatureUI */; };
+		AA11000000000000000000A2 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AA11000000000000000000A1 /* Assets.xcassets */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -17,6 +18,7 @@
 		16025FBAB15F263E4EBBBCA3 /* seed-v1.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "seed-v1.json"; sourceTree = "<group>"; };
 		DEB674B41B6291587AE33B1D /* LanaDemoApp.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = LanaDemoApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		EF7129711BF3EA3CE5C7B9D0 /* FWMFeatureUI */ = {isa = PBXFileReference; lastKnownFileType = folder; name = FWMFeatureUI; path = ../../Packages/FWMFeatureUI; sourceTree = SOURCE_ROOT; };
+		AA11000000000000000000A1 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -69,6 +71,7 @@
 		EB35EE9D7C0E3206AAB2A130 /* LanaDemoApp */ = {
 			isa = PBXGroup;
 			children = (
+				AA11000000000000000000A1 /* Assets.xcassets */,
 				1316DCC856E87963F33DD1E0 /* LanaDemoApp.swift */,
 			);
 			name = LanaDemoApp;
@@ -137,6 +140,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				9D05E0C4EF86D3DB13C15A25 /* seed-v1.json in Resources */,
+				AA11000000000000000000A2 /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

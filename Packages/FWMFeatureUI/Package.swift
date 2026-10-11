@@ -9,7 +9,9 @@ let package = Package(
     products: [.library(name: "FWMFeatureUI", targets: ["FWMFeatureUI"])],
     dependencies: [.package(path: "../FWMCore"), .package(name: "FinanceAI", path: "../..")],
     targets: [
-        .target(name: "FWMFeatureUI", dependencies: [.product(name: "FWMCore", package: "FWMCore"), .product(name: "FinanceAI", package: "FinanceAI")]),
+        // Resources: Lana logo marks and the institution logos (App Store icons) for the Accounts screen.
+        .target(name: "FWMFeatureUI", dependencies: [.product(name: "FWMCore", package: "FWMCore"), .product(name: "FinanceAI", package: "FinanceAI")],
+                resources: [.process("Resources")]),
         // `swift run LanaMac` opens the screens in a Mac window for a quick look without an Xcode project.
         .executableTarget(name: "LanaMac", dependencies: ["FWMFeatureUI"]),
         .testTarget(name: "FWMFeatureUITests", dependencies: ["FWMFeatureUI"]),

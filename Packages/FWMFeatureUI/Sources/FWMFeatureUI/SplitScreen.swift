@@ -18,7 +18,7 @@ enum RequestState: String, CaseIterable {
 }
 
 // Demo inputs not in the fixture: a staged low-confidence tip read and a sample transcript.
-private enum SplitDemo {
+enum SplitDemo {
     static let transcript = "I paid for dinner with Tanish and Aryan. Split the appetizer evenly and divide tax and tip proportionally."
     static let misreadTipCents = 1_630, misreadConfidence = 0.58
 }
@@ -84,6 +84,7 @@ struct SplitScreen: View {
                 VStack(alignment: .leading, spacing: 12) {
                     HStack(spacing: 4) { ForEach(0..<Self.steps.count, id: \.self) { i in Capsule().fill(i <= step ? Theme.accent : Theme.line).frame(height: 4) } }
                         .id("top")
+                    AskChip(SplitDemo.transcript, kind: .split, store: store)
                     Text("Step \(step + 1) of \(Self.steps.count) · \(Self.steps[step])").font(.caption).foregroundStyle(Theme.ink3)
                     switch step {
                     case 0: inputs
@@ -99,7 +100,7 @@ struct SplitScreen: View {
             .onChange(of: haveReceipt && haveVoice) { _, ready in if ready { withAnimation { proxy.scrollTo("nav", anchor: .bottom) } } }
             .onChange(of: step) { _, _ in proxy.scrollTo("top", anchor: .top) }
             }
-            .background { Theme.backdrop }
+            .scrollIndicators(.hidden).background { Theme.backdrop }
             .navigationTitle("Split")
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline) // each step has its own heading

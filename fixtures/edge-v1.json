@@ -17,7 +17,7 @@
  "accounts": [
   {
    "account_id": "acct_checking",
-   "institution": "Demo Bank",
+   "institution": "Chase",
    "kind": "checking",
    "asset_or_liability": "asset",
    "opening_balance_cents": 100000,
@@ -28,7 +28,7 @@
   },
   {
    "account_id": "acct_card",
-   "institution": "Demo Card",
+   "institution": "Capital One",
    "kind": "credit_card",
    "asset_or_liability": "liability",
    "opening_balance_cents": 20000,
@@ -39,7 +39,7 @@
   },
   {
    "account_id": "acct_savings",
-   "institution": "Demo Bank",
+   "institution": "Chase",
    "kind": "savings",
    "asset_or_liability": "asset",
    "opening_balance_cents": 0,

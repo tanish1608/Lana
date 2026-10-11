@@ -79,19 +79,6 @@ struct PillPicker<T: Hashable>: View {
     }
 }
 
-/// The question this screen answers, as it was asked in Messages.
-struct AskChip: View {
-    let question: String
-    init(_ question: String) { self.question = question }
-    var body: some View {
-        Label(question, systemImage: "message.fill").font(.footnote.weight(.medium)).lineLimit(1)
-            .padding(.horizontal, 12).padding(.vertical, 8)
-            .foregroundStyle(Theme.accent).background(Theme.accentSoft, in: Capsule())
-            .overlay(Capsule().strokeBorder(LinearGradient(colors: [Theme.accent.opacity(0.45), Theme.auraViolet.opacity(0.35)], startPoint: .leading, endPoint: .trailing), lineWidth: 1))
-            .accessibilityLabel("Asked in Messages: \(question)")
-    }
-}
-
 /// One-line reconciliation, shown only when the numbers actually add up.
 struct CheckLine: View {
     let text: String
@@ -112,5 +99,36 @@ struct PressScaleStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label.scaleEffect(configuration.isPressed ? 0.97 : 1)
             .animation(.easeOut(duration: 0.12), value: configuration.isPressed)
+    }
+}
+
+/// A PNG bundled with the package (Resources/).
+private func brandImage(_ name: String) -> Image? {
+    #if canImport(UIKit)
+    UIImage(named: name, in: .module, with: nil).map { Image(uiImage: $0) }
+    #else
+    Bundle.module.image(forResource: name).map { Image(nsImage: $0) }
+    #endif
+}
+
+/// The Lana mark (Resources/LanaMark.png).
+struct LanaMark: View {
+    var size: CGFloat = 30
+    var body: some View {
+        Group { if let i = brandImage("LanaMark") { i.resizable().interpolation(.high) } }
+            .scaledToFit().frame(width: size, height: size).accessibilityHidden(true)
+    }
+}
+
+/// Mark plus wordmark, for the top of Home. The wordmark is a template: navy on light, white on dark.
+struct LanaLogo: View {
+    var body: some View {
+        HStack(spacing: 7) {
+            LanaMark(size: 30)
+            if let w = brandImage("LanaWordmark") {
+                w.renderingMode(.template).resizable().interpolation(.high).scaledToFit().frame(height: 24).foregroundStyle(Theme.logoInk)
+            }
+        }
+        .accessibilityElement().accessibilityLabel("Lana").accessibilityAddTraits(.isHeader)
     }
 }

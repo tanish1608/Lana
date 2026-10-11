@@ -8,12 +8,12 @@
   "demo_clock": "2026-10-11T21:00:00-07:00",
   "files": [
     {
-      "bytes": 18179,
+      "bytes": 18168,
       "consumer": "FWMCore canonical regression / original demo",
       "path": "canonical_demo/dataset.json",
       "scenario_id": "canonical_demo",
       "schema": "world.schema.json",
-      "sha256": "ed8d2aaa82f652c72e6c47e0fcbb18c1fd2a2af457c19926e7e57b33a24025fd",
+      "sha256": "544c60518d8a3a07e8f3ccb0ee1e5ee33eec15bd7dcf18d95404471284b7933d",
       "synthetic": true
     },
     {
@@ -22,7 +22,7 @@
       "path": "canonical_demo/manifest.json",
       "scenario_id": "canonical_demo",
       "schema": "world.schema.json",
-      "sha256": "2f0fc0d4b30893b71eca6e253dd13f7faaa64cefe7e87d26379f4f7526b08381",
+      "sha256": "fdcb3871bea976ed9f4ad0aa07d022105704714cdedeb2974d9e7acb29dd9947",
       "synthetic": true
     },
     {
@@ -161,12 +161,12 @@
       "synthetic": true
     },
     {
-      "bytes": 17225,
+      "bytes": 17219,
       "consumer": "Claude UI / Aryan adapters / Tanish fixture tools",
       "path": "edge-cases.json",
       "scenario_id": "shared",
       "schema": "world.schema.json",
-      "sha256": "a1ddc111eef9ecbb12935b93568acf95221eb9ec4401708b59c4f0e058dc417d",
+      "sha256": "737a14ab2667ad486bbf967be055daab4e979d60bc299c4d296c4a54f3ae68cf",
       "synthetic": true
     },
     {

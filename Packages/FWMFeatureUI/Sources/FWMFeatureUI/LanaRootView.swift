@@ -12,6 +12,7 @@ public struct LanaRootView: View {
     @State private var tab = LanaTab.home
     @State private var requestStates: [String: RequestState] = [:]
     @State private var budgetAdopted = false
+    @State private var plannedCents = 0
     @State private var homePath = NavigationPath()
     @State private var showChat = false
     @State private var chat: LanaChatController
@@ -27,11 +28,12 @@ public struct LanaRootView: View {
     public var body: some View {
         // Native tab containment keeps each navigation stack's toolbar scoped to its section.
         LanaSectionHost(selection: $tab) {
-            section(.home) { HomeScreen(store: store, tab: $tab, requestStates: requestStates, budgetAdopted: budgetAdopted, budgetSavingsCents: (try? BudgetProjection.make(dataset: chat.dataset, period: "2026-09", accepted: chat.accepted, useHistory: chat.useHistory))?.savingsCents ?? 0, path: $homePath, openChat: { setChat(true) }) }
+            section(.home) { HomeScreen(store: store, tab: $tab, requestStates: requestStates, budgetAdopted: budgetAdopted, plannedCents: plannedCents, path: $homePath, openChat: { setChat(true) }) }
             section(.budget) { BudgetScreen(store: store, unlocker: unlocker, onSelection: { chat.updateBudget(accepted: $0, useHistory: $1)
                 store.dataset = chat.dataset
                 if var split = store.reviewedResult { split.provenance.datasetVersion = chat.dataset.datasetVersion; store.reviewedResult = split }
-                budgetAdopted = false }, onAdopt: { log.insert($0, at: 0); budgetAdopted = true; chat.budgetAdopted = true }) }
+                budgetAdopted = false }, onAdopt: { log.insert($0, at: 0); budgetAdopted = true; chat.budgetAdopted = true },
+                onApprove: { log.insert($0, at: 0) }, onPlanChange: { plannedCents = $0 }) }
             section(.split) { SplitScreen(store: store, isActive: tab == .split, onReview: { receipt, assignments, payer, result in
                 chat.review(receipt: receipt, assignments: assignments, payerID: payer)
                 store.dataset = chat.dataset
@@ -39,7 +41,11 @@ public struct LanaRootView: View {
                     contacts: store.dataset.contacts ?? [], datasetVersion: store.dataset.datasetVersion, dataMode: receipt.receiptId.hasPrefix("local-") ? .cached : store.dataset.dataMode)
                 log.insert("Reviewed split · \(result.outstandingCents) cents outstanding; nothing sent", at: 0)
             }, onInvalidate: { chat.reviewedSplit = nil; store.reviewedResult = nil }, onAction: { log.insert($0, at: 0) }, states: $requestStates) }
-            section(.accounts) { AccountsScreen(store: store, unlocker: unlocker, log: log, relay: relay, isActive: tab == .accounts) }
+            section(.accounts) { AccountsScreen(store: store, dataset: chat.dataset, unlocker: unlocker, log: log, relay: relay, isActive: tab == .accounts,
+                onLink: { account, txns in
+                    chat.addAccount(account, transactions: txns); syncStore()
+                    log.insert("Imported \(account.institution) \(AccountDisplay(account).subtitle) · \(txns.count) transactions, on this iPhone", at: 0)
+                }, onRemove: { chat.removeImportedAccount($0); syncStore() }) }
         }
         .overlay {
             if showChat {
@@ -62,13 +68,20 @@ public struct LanaRootView: View {
         .onChange(of: requestStates) { _, states in chat.requestStates = Dictionary(uniqueKeysWithValues: states.map { (name($0.key), $0.value.label) }) }
     }
 
+    /// Screens that read the store see the session dataset; a reviewed split follows its new version.
+    private func syncStore() {
+        store.dataset = chat.dataset
+        if var split = store.reviewedResult { split.provenance.datasetVersion = chat.dataset.datasetVersion; store.reviewedResult = split }
+    }
+
     private func name(_ id: String) -> String { store.dataset.contacts?.first { $0.contactId == id }?.reviewedName ?? id }
 
     private func setChat(_ open: Bool) { withAnimation(.spring(duration: 0.35, bounce: 0.2)) { showChat = open } }
 
     private func section<V: View>(_ t: LanaTab, @ViewBuilder _ content: () -> V) -> some View {
         #if os(iOS)
-        content().tag(t)
+        // Hidden per tab: on the TabView itself the system bar still draws an empty glass capsule under the dock.
+        content().toolbar(.hidden, for: .tabBar).tag(t)
         #else
         content().opacity(tab == t ? 1 : 0).allowsHitTesting(tab == t).accessibilityHidden(tab != t)
         #endif
@@ -119,11 +132,12 @@ struct LanaDock: View {
         .overlay(alignment: .top) {
             Button(action: toggleChat) {
                 LanaOrb(size: 62, symbol: chatOpen ? "xmark" : "sparkles")
-                    .padding(4).background(.ultraThinMaterial, in: Circle()).overlay(Circle().strokeBorder(Theme.glassEdge, lineWidth: 1))
+                    .padding(4).background(Theme.base, in: Circle())
                     .shadow(color: Color(red: 0.37, green: 0.36, blue: 0.9).opacity(0.5), radius: 14, y: 8)
             }
             .buttonStyle(PressScaleStyle())
             .offset(y: -26)
+            .zIndex(5) // always above the capsule's edge, sheen and shadow
             .accessibilityLabel(chatOpen ? "Close chat with Lana" : "Chat with Lana")
         }
         .frame(maxWidth: .infinity).padding(.top, 34).padding(.bottom, 8)

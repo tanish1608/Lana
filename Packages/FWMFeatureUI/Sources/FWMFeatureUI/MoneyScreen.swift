@@ -26,7 +26,7 @@ struct MoneyScreen: View {
             }
             .padding(.horizontal, 16).padding(.bottom, 24)
         }
-        .background { Theme.backdrop }
+        .scrollIndicators(.hidden).background { Theme.backdrop }
         .navigationTitle("Money")
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
@@ -53,7 +53,7 @@ struct MoneyScreen: View {
         let f = v.flow
         let stays = f.toSavingsCents + f.toInvestmentsCents + f.retainedCashCents
         let month = DemoStore.monthName(period).components(separatedBy: " ").first ?? period
-        AskChip("Where did my money go in \(month)?")
+        AskChip("Where did my money go in \(month)?", kind: .money, store: store)
         VStack(alignment: .leading, spacing: 4) {
             Eyebrow("Stayed with you · \(month)")
             HeroAmount(cents: stays)
@@ -201,7 +201,7 @@ struct TransactionList: View {
             }
             Section { HStack { Text("Total").bold(); Spacer(); Text(usd(total, cents: true)).bold().monospacedDigit() } }
         }
-        .scrollContentBackground(.hidden).background { Theme.backdrop }
+        .scrollContentBackground(.hidden).scrollIndicators(.hidden).background { Theme.backdrop }
         .navigationTitle(title)
     }
 }

@@ -13,7 +13,7 @@ targets:
     platform: iOS
     sources:
       - path: .
-        excludes: ["project.yml", "LanaDemoApp.xcodeproj"]
+        excludes: ["project.yml", "LanaDemoApp.xcodeproj"]  # Assets.xcassets (AppIcon) is picked up from this folder
       - path: ../../fixtures/seed-v1.json
         buildPhase: resources
     dependencies:
