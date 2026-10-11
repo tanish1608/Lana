@@ -1,6 +1,7 @@
 // FWM relay. Messaging in and out (Dial), a durable job queue the foreground phone pulls from (PLAT-02),
 // approved reminder dispatch (SPLIT-08), and narrow sponsor adapters. It never calls a cloud LLM.
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
+import { readFileSync } from 'node:fs';
 import { createHash, createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
 import { db, now, id, demoNow, advanceClock } from './store.ts';
 import { dial, FROM, send, startStream, catchUp, verifyWebhook, type InboundMessage } from './dial.ts';
@@ -125,6 +126,12 @@ function claimNext(user: string) {
 }
 
 const routes: [string, RegExp, (req: IncomingMessage, res: ServerResponse, m: RegExpMatchArray, dev: any) => Promise<void> | void, boolean][] = [
+  // Phone stopwatch for timing chores by hand and with Lana. Pairs with the relay code, then logs to /v1/timings.
+  ['GET', /^\/timer$/, (_q, res) => {
+    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+    res.end(readFileSync(new URL('../public/timer.html', import.meta.url)));
+  }, false],
+
   ['GET', /^\/health$/, (_q, res) => json(res, 200, { ok: true, dial: !!dial, from: FROM || null, demo_now: new Date(demoNow()).toISOString() }), false],
 
   ['POST', /^\/v1\/pair$/, async (req, res) => {
@@ -263,6 +270,11 @@ const routes: [string, RegExp, (req: IncomingMessage, res: ServerResponse, m: Re
 ];
 
 createServer(async (req, res) => {
+  // Browser clients (Ashwin's web preview, the stopwatch) use bearer tokens, not cookies, so any origin is fine.
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type, ngrok-skip-browser-warning');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  if (req.method === 'OPTIONS') { res.writeHead(204); res.end(); return; }
   try {
     const path = new URL(req.url!, 'http://x').pathname;
     for (const [method, re, handler, auth] of routes) {

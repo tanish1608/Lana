@@ -114,3 +114,13 @@ test('time receipt averages measured runs per chore and reports minutes saved', 
   assert.equal(r.body.data_mode, 'local');
   assert.equal(r.body.rows.find((x: any) => x.workflow === 'month_review').saved_seconds, null);
 });
+
+test('browser clients get CORS headers and the stopwatch page loads', async () => {
+  const pre = await fetch(`${BASE}/v1/time-receipt`, { method: 'OPTIONS', headers: { Origin: 'http://localhost:5173', 'Access-Control-Request-Headers': 'authorization' } });
+  assert.equal(pre.status, 204);
+  assert.equal(pre.headers.get('access-control-allow-origin'), '*');
+  assert.match(pre.headers.get('access-control-allow-headers') || '', /Authorization/);
+  const page = await fetch(`${BASE}/timer`);
+  assert.equal(page.status, 200);
+  assert.match(await page.text(), /Lana stopwatch/);
+});

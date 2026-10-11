@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lana stopwatch</title>
+<style>
+  :root { --bg: #fafaf9; --fg: #1c1917; --muted: #78716c; --line: #e7e5e4; --accent: #15803d; --stop: #b91c1c; --card: #ffffff; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #0c0a09; --fg: #f5f5f4; --muted: #a8a29e; --line: #292524; --accent: #22c55e; --stop: #ef4444; --card: #1c1917; } }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--fg); font: 16px/1.4 -apple-system, system-ui, sans-serif; }
+  main { max-width: 440px; margin: 0 auto; padding: 20px 16px 40px; }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  p { color: var(--muted); margin: 0 0 16px; font-size: 14px; }
+  .row { display: flex; gap: 8px; margin-bottom: 12px; }
+  select, input, button { font: inherit; border-radius: 10px; border: 1px solid var(--line); background: var(--card); color: var(--fg); padding: 10px 12px; }
+  select, input { flex: 1; min-width: 0; }
+  #clock { font: 600 56px/1 ui-monospace, SFMono-Regular, monospace; text-align: center; margin: 24px 0; font-variant-numeric: tabular-nums; }
+  #go { width: 100%; padding: 18px; font-size: 20px; font-weight: 600; border: 0; color: #fff; background: var(--accent); }
+  #go.running { background: var(--stop); }
+  #status { min-height: 20px; font-size: 14px; color: var(--muted); margin: 10px 0 20px; text-align: center; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; font-variant-numeric: tabular-nums; }
+  th, td { text-align: right; padding: 8px 4px; border-bottom: 1px solid var(--line); }
+  th:first-child, td:first-child { text-align: left; }
+  tfoot td { font-weight: 600; border-bottom: 0; }
+  #pair { display: none; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Lana stopwatch</h1>
+  <p>Time each chore done by hand and with Lana. Every run goes to Keewano and feeds the time receipt.</p>
+  <div class="row" id="pair">
+    <input id="code" inputmode="numeric" placeholder="Relay pairing code">
+    <button id="pairBtn">Pair</button>
+  </div>
+  <div class="row">
+    <select id="workflow">
+      <option value="bill_split">Split the dinner bill</option>
+      <option value="month_review">Where did my money go</option>
+      <option value="budget_swaps">Save $150 with swaps</option>
+    </select>
+    <select id="mode">
+      <option value="manual">By hand</option>
+      <option value="lana">With Lana</option>
+    </select>
+  </div>
+  <div id="clock">0:00.0</div>
+  <button id="go">Start</button>
+  <div id="status"></div>
+  <table>
+    <thead><tr><th>Chore</th><th>By hand</th><th>Lana</th><th>Saved</th></tr></thead>
+    <tbody id="rows"></tbody>
+    <tfoot><tr><td>Total saved</td><td></td><td></td><td id="total">0:00</td></tr></tfoot>
+  </table>
+</main>
+<script>
+  const NAMES = { bill_split: 'Dinner split', month_review: 'Money review', budget_swaps: 'Budget swaps' };
+  const $ = (id) => document.getElementById(id);
+  const store = { get(k) { try { return localStorage.getItem(k); } catch { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch {} } };
+  let token = store.get('lana_device_token');
+  let started = 0, tick = 0;
+
+  const fmt = (s) => s == null ? '–' : `${Math.floor(s / 60)}:${String(Math.round(s % 60)).padStart(2, '0')}`;
+  const api = (path, opts = {}) => fetch(path, { ...opts, headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': '1', ...(token ? { Authorization: `Bearer ${token}` } : {}) } })
+    .then(async (r) => { const b = await r.json().catch(() => ({})); if (!r.ok) throw new Error(b.error?.user_message || `HTTP ${r.status}`); return b; });
+
+  function showPair(on) { $('pair').style.display = on ? 'flex' : 'none'; }
+  async function receipt() {
+    if (!token) return;
+    try {
+      const r = await api('/v1/time-receipt');
+      $('rows').innerHTML = r.rows.map((x) => `<tr><td>${NAMES[x.workflow]}</td><td>${fmt(x.manual_seconds)}</td><td>${fmt(x.lana_seconds)}</td><td>${fmt(x.saved_seconds)}</td></tr>`).join('');
+      $('total').textContent = fmt(r.total_saved_seconds);
+      $('status').textContent = r.data_mode === 'live' ? 'From Keewano' : 'Saved on the relay. Keewano is still indexing.';
+    } catch (e) {
+      if (/pair/i.test(e.message)) { token = null; showPair(true); }
+      $('status').textContent = e.message;
+    }
+  }
+
+  $('pairBtn').onclick = async () => {
+    try {
+      const r = await api('/v1/pair', { method: 'POST', body: JSON.stringify({ code: $('code').value.trim() }) });
+      token = r.device_token; store.set('lana_device_token', token); showPair(false); receipt();
+    } catch (e) { $('status').textContent = e.message; }
+  };
+
+  $('go').onclick = async () => {
+    if (!token) { showPair(true); $('status').textContent = 'Pair first.'; return; }
+    if (!started) {
+      started = performance.now();
+      $('go').textContent = 'Stop'; $('go').classList.add('running');
+      tick = setInterval(() => { const s = (performance.now() - started) / 1000; $('clock').textContent = `${Math.floor(s / 60)}:${(s % 60).toFixed(1).padStart(4, '0')}`; }, 100);
+      return;
+    }
+    clearInterval(tick);
+    const seconds = Math.max(1, Math.round((performance.now() - started) / 1000));
+    started = 0; $('go').textContent = 'Start'; $('go').classList.remove('running');
+    try {
+      await api('/v1/timings', { method: 'POST', body: JSON.stringify({ workflow: $('workflow').value, mode: $('mode').value, seconds }) });
+      $('status').textContent = `Logged ${fmt(seconds)} for ${NAMES[$('workflow').value]}, ${$('mode').value === 'lana' ? 'with Lana' : 'by hand'}.`;
+      receipt();
+    } catch (e) { $('status').textContent = `Not logged: ${e.message}`; }
+  };
+
+  showPair(!token);
+  receipt();
+</script>
+</body>
+</html>
