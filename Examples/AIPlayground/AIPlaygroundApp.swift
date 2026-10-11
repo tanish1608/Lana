@@ -2,6 +2,7 @@ import SwiftUI
 import PhotosUI
 import Observation
 import FinanceAI
+import FWMCore
 
 @main
 struct AIPlaygroundApp: App {
@@ -27,19 +28,17 @@ private struct ChatMessage: Identifiable {
 
 @Observable @MainActor
 private final class ChatController {
-    var messages: [ChatMessage] = [.init(text: "Ask about your forecast, find subscriptions, then cancel StreamPlus to see the model change. All financial data and actions in this lab are simulated.", isUser: false)]
-    var pending: PendingConfirmation?
+    var messages: [ChatMessage] = [.init(text: "Ask where your money went, or split the reviewed dinner receipt. This lab uses the canonical seed-v1 fixture and FWMCore engines. Budget/swap and provider adapters connect through the team's interfaces; no requests are sent from this lab.", isUser: false)]
     var busy = false
-    var audit: [ActionAuditEntry] = []
-    private let agent: FinanceAgent
+    var resultIDs: [String] = []
+    private var agent: CoreAgent?
+    private var scope: CoreScope?
     init() {
-        #if targetEnvironment(simulator)
-        let authenticator: any ActionAuthenticating = SimulatorAuthentication()
-        #else
-        let authenticator: any ActionAuthenticating = DeviceOwnerAuthenticator()
-        #endif
-        agent = FinanceAgent(context: .init(userID: "demo-alex"), router: OnDeviceRouter(),
-                             tools: DemoTools(), authenticator: authenticator)
+        do {
+            let environment = try DemoEnvironment.agent()
+            agent = environment.0
+            scope = environment.1
+        } catch { messages.append(.init(text: (error as? ToolError)?.userMessage ?? error.localizedDescription, isUser: false)) }
     }
     func send(_ text: String) async {
         guard !busy, !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
@@ -47,29 +46,16 @@ private final class ChatController {
         defer { busy = false }
         messages.append(.init(text: text, isUser: true))
         do {
-            if text.trimmingCharacters(in: .whitespacesAndNewlines).uppercased() == "YES", let pending {
-                let result = try await agent.confirm(actionID: pending.id, userText: text)
-                self.pending = nil
-                messages.append(.init(text: result.summary, isUser: false, source: "Confirmed fixture action"))
-            } else {
-                let result = try await agent.receive(text)
-                if let confirmation = result.confirmation { pending = confirmation }
-                messages.append(.init(text: result.text, isUser: false,
-                                      source: [result.source.rawValue, result.notice].compactMap { $0 }.joined(separator: " · ")))
-            }
+            guard let agent, let scope else { throw ToolError(.providerUnavailable, "The fixture could not load.") }
+            let envelope = try DemoEnvironment.message(text, scope: scope)
+            let response = try await agent.process(envelope, jobID: UUID().uuidString)
+            let provenance = response.result.provenance
+            if let id = provenance?.resultId, !resultIDs.contains(id) { resultIDs.append(id) }
+            messages.append(.init(text: response.result.replyText, isUser: false,
+                source: [response.source.rawValue, response.notice, provenance?.resultId].compactMap { $0 }.joined(separator: " · ")))
         } catch {
-            messages.append(.init(text: error.localizedDescription, isUser: false))
+            messages.append(.init(text: (error as? ToolError)?.userMessage ?? error.localizedDescription, isUser: false))
         }
-        audit = await agent.auditLog()
-    }
-    func decline() async {
-        guard let pending, !busy else { return }
-        do {
-            try await agent.decline(actionID: pending.id)
-            self.pending = nil
-            messages.append(.init(text: "Action declined. No state changed.", isUser: false))
-            audit = await agent.auditLog()
-        } catch { messages.append(.init(text: error.localizedDescription, isUser: false)) }
     }
 }
 
@@ -82,9 +68,7 @@ private struct ChatLab: View {
                 VStack(alignment: .leading, spacing: 5) {
                     Label(OnDeviceRouter.status.description, systemImage: "iphone.gen3.radiowaves.left.and.right")
                         .font(.caption).foregroundStyle(.secondary)
-                    #if targetEnvironment(simulator)
-                    Text("Simulator: device authentication is simulated.").font(.caption2).foregroundStyle(.orange)
-                    #endif
+                    Text("Canonical fixture • read-only engine tools").font(.caption2).foregroundStyle(.secondary)
                 }.frame(maxWidth: .infinity, alignment: .leading).padding()
                 ScrollViewReader { proxy in
                     ScrollView {
@@ -107,16 +91,6 @@ private struct ChatLab: View {
                         if let id = controller.messages.last?.id { withAnimation { proxy.scrollTo(id, anchor: .bottom) } }
                     }
                 }
-                if let pending = controller.pending {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text(pending.proposal.confirmationSummary).font(.subheadline.weight(.semibold))
-                        Text("Approval expires in five minutes. No real service is contacted.").font(.caption).foregroundStyle(.secondary)
-                        HStack {
-                            Button("YES, confirm") { Task { await controller.send("YES") } }.buttonStyle(.borderedProminent)
-                            Button("Decline") { Task { await controller.decline() } }.buttonStyle(.bordered)
-                        }.disabled(controller.busy)
-                    }.padding().frame(maxWidth: .infinity, alignment: .leading).background(.teal.opacity(0.08))
-                }
                 HStack {
                     TextField("Ask about your finances", text: $text, axis: .vertical).lineLimit(1...4)
                         .textFieldStyle(.roundedBorder).onSubmit { submit() }
@@ -127,15 +101,15 @@ private struct ChatLab: View {
             .navigationTitle("Finance AI Lab")
             .toolbar {
                 Menu("Try") {
-                    ForEach(["Will I run out before payday?", "Find subscriptions", "Cancel StreamPlus", "Make my grocery list"], id: \.self) { sample in
+                    ForEach(["Where is my money going?", "Explain my financial position", "Split the reviewed receipt", "Propose a budget to save $150 more"], id: \.self) { sample in
                         Button(sample) { text = sample }
                     }
                 }
                 Menu {
-                    if controller.audit.isEmpty { Text("No actions yet") }
-                    ForEach(controller.audit) { entry in Text("\(entry.proposal.targetID): \(entry.status.rawValue)") }
+                    if controller.resultIDs.isEmpty { Text("No engine results yet") }
+                    ForEach(controller.resultIDs, id: \.self) { id in Text(id) }
                 } label: { Image(systemName: "list.bullet.clipboard") }
-                .accessibilityLabel("Action log")
+                .accessibilityLabel("Result provenance")
             }
         }
     }

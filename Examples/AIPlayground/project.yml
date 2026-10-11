@@ -6,6 +6,8 @@ options:
 packages:
   FinanceAI:
     path: ../..
+  FWMCore:
+    path: ../../Packages/FWMCore
 targets:
   AIPlayground:
     type: application
@@ -13,8 +15,11 @@ targets:
     sources:
       - path: .
         excludes: ["project.yml", "AIPlayground.xcodeproj", "Info.plist"]
+      - path: ../../fixtures/seed-v1.json
+        buildPhase: resources
     dependencies:
       - package: FinanceAI
+      - package: FWMCore
     settings:
       base:
         SWIFT_VERSION: "6.0"

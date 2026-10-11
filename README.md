@@ -6,6 +6,8 @@ The product gives people time back by reducing the work of understanding their m
 
 **Start here:** [Technical architecture and collaboration guide](docs/README.md). It covers ownership, shared interfaces, setup, tests, branches, commits, and merge procedures.
 
+**AI branch handoff:** [Concrete Swift integration and verification](docs/AI_INTEGRATION.md) describes the canonical agent, adapter protocols, local receipt/voice APIs, and approval gate.
+
 ## What we are building
 
 The current shared implementation follows the SRS v2 contracts referenced by `FWMCore`. The v2 document is in the team chat, not checked into this repository. The earlier broad SRS describes the product vision; it does not override the interfaces already shared here.
@@ -59,10 +61,10 @@ The shared product plan uses **local inference, without a cloud LLM**. The relay
 | `ios/` | Integrated iPhone host and feature screens | Intended app location; not yet present at this baseline |
 | `relay/` | Dial inbox/outbox, job transport, reminders, Keewano | Aryan's lane; not yet present at this baseline |
 | `docs/README.md` | Technical contracts and collaboration procedure | Shared documentation |
-| Root `Package.swift`, `Sources/FinanceAI/`, `Tests/FinanceAITests/` | Tanish's reusable local AI module | On `codex/on-device-ai`; integrating with `FWMCore` |
+| Root `Package.swift`, `Sources/FinanceAI/`, `Tests/FinanceAITests/` | Tanish's reusable local AI module | On `codex/on-device-ai`; integrated with `FWMCore` |
 | `Examples/AIPlayground/` | AI-only SwiftUI test harness | Development harness on AI branch; separate from final feature screens |
 
-The AI branch includes Apple Foundation Models routing, Vision OCR, local Speech transcription, confirmation orchestration, passcode-protected Keychain storage, and RFC-tested TOTP generation. Foundation Models is the initial backend; **MLX is an option to evaluate, not an installed dependency**. The initial cancellation/forecast harness is a prototype, not the canonical v2 dataset. A cloud routing prototype on that branch is unused and is not part of the agreed integrated architecture.
+The AI branch includes Apple Foundation Models routing, Vision OCR, local Speech transcription, confirmation orchestration, passcode-protected Keychain storage, and RFC-tested TOTP generation. Its harness now uses the canonical v2 dataset and shared money/split engines. Foundation Models is the initial backend; **MLX is an option to evaluate, not an installed dependency**. A cloud routing prototype on that branch is unused and is not part of the agreed integrated architecture.
 
 Update this baseline when components land. Distinguish implemented code, successful compilation, actual model inference, and physical-device verification.
 

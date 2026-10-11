@@ -7,16 +7,20 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		1947DEC399B6D917BAAF238E /* DemoEnvironment.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E3F428F8062D95B1A2A467B /* DemoEnvironment.swift */; };
 		3CA97B54E4E60DE04C233743 /* AIPlaygroundApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA3B11DD24232F4FC07B75FD /* AIPlaygroundApp.swift */; };
 		55936E3C9F970FCD78709841 /* FinanceAI in Frameworks */ = {isa = PBXBuildFile; productRef = 8BEA99F9E49BFB0F75E3B263 /* FinanceAI */; };
-		A21C021878F1EDFC7A72B393 /* DemoTools.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E7E7420AD16257C2304DDCD /* DemoTools.swift */; };
+		7F27282CB2477890326789DA /* seed-v1.json in Resources */ = {isa = PBXBuildFile; fileRef = FE6E74B30348615BD1833131 /* seed-v1.json */; };
+		8C181BDE91E8CDE6FDA53804 /* FWMCore in Frameworks */ = {isa = PBXBuildFile; productRef = 455FFE565B8CD53D4E6DA71E /* FWMCore */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		1AE4DD275C28B43B8F077791 /* AIPlayground.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = AIPlayground.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		1F38290F8B76E16E4D3306D3 /* FWMCore */ = {isa = PBXFileReference; lastKnownFileType = folder; name = FWMCore; path = ../../Packages/FWMCore; sourceTree = SOURCE_ROOT; };
 		2807B5167502F35C31D949EC /* speedrun-hacks */ = {isa = PBXFileReference; lastKnownFileType = folder; name = "speedrun-hacks"; path = ../..; sourceTree = SOURCE_ROOT; };
-		3E7E7420AD16257C2304DDCD /* DemoTools.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DemoTools.swift; sourceTree = "<group>"; };
+		4E3F428F8062D95B1A2A467B /* DemoEnvironment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DemoEnvironment.swift; sourceTree = "<group>"; };
 		EA3B11DD24232F4FC07B75FD /* AIPlaygroundApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIPlaygroundApp.swift; sourceTree = "<group>"; };
+		FE6E74B30348615BD1833131 /* seed-v1.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "seed-v1.json"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -25,6 +29,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				55936E3C9F970FCD78709841 /* FinanceAI in Frameworks */,
+				8C181BDE91E8CDE6FDA53804 /* FWMCore in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -39,9 +44,19 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
+		2C5DC2C15D31D68140274BF8 /* fixtures */ = {
+			isa = PBXGroup;
+			children = (
+				FE6E74B30348615BD1833131 /* seed-v1.json */,
+			);
+			name = fixtures;
+			path = ../../fixtures;
+			sourceTree = "<group>";
+		};
 		38EF083EC118A2F824D68BD9 /* Packages */ = {
 			isa = PBXGroup;
 			children = (
+				1F38290F8B76E16E4D3306D3 /* FWMCore */,
 				2807B5167502F35C31D949EC /* speedrun-hacks */,
 			);
 			name = Packages;
@@ -51,6 +66,7 @@
 			isa = PBXGroup;
 			children = (
 				AC792B3EA9A2E2A38E6E7D3F /* AIPlayground */,
+				2C5DC2C15D31D68140274BF8 /* fixtures */,
 				38EF083EC118A2F824D68BD9 /* Packages */,
 				183BB5CCAAA38BED5E429887 /* Products */,
 			);
@@ -60,7 +76,7 @@
 			isa = PBXGroup;
 			children = (
 				EA3B11DD24232F4FC07B75FD /* AIPlaygroundApp.swift */,
-				3E7E7420AD16257C2304DDCD /* DemoTools.swift */,
+				4E3F428F8062D95B1A2A467B /* DemoEnvironment.swift */,
 			);
 			name = AIPlayground;
 			path = .;
@@ -74,6 +90,7 @@
 			buildConfigurationList = C3A3311B1EB00174D3DC4865 /* Build configuration list for PBXNativeTarget "AIPlayground" */;
 			buildPhases = (
 				E1664A9AE4E4AC1FC68A89BA /* Sources */,
+				ADCCF67CEA1FE5911BC529A1 /* Resources */,
 				AFAC8D19DEFD8DC672C8C562 /* Frameworks */,
 			);
 			buildRules = (
@@ -83,6 +100,7 @@
 			name = AIPlayground;
 			packageProductDependencies = (
 				8BEA99F9E49BFB0F75E3B263 /* FinanceAI */,
+				455FFE565B8CD53D4E6DA71E /* FWMCore */,
 			);
 			productName = AIPlayground;
 			productReference = 1AE4DD275C28B43B8F077791 /* AIPlayground.app */;
@@ -109,6 +127,7 @@
 			mainGroup = 4E8A7911E793B785C57C0F47;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
+				05476A09EDABB3A533272080 /* XCLocalSwiftPackageReference "../../Packages/FWMCore" */,
 				83D5CC71848FAC89E72DB5CC /* XCLocalSwiftPackageReference "../.." */,
 			);
 			preferredProjectObjectVersion = 77;
@@ -121,13 +140,24 @@
 		};
 /* End PBXProject section */
 
+/* Begin PBXResourcesBuildPhase section */
+		ADCCF67CEA1FE5911BC529A1 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				7F27282CB2477890326789DA /* seed-v1.json in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
 /* Begin PBXSourcesBuildPhase section */
 		E1664A9AE4E4AC1FC68A89BA /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 				3CA97B54E4E60DE04C233743 /* AIPlaygroundApp.swift in Sources */,
-				A21C021878F1EDFC7A72B393 /* DemoTools.swift in Sources */,
+				1947DEC399B6D917BAAF238E /* DemoEnvironment.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -323,6 +353,10 @@
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
+		05476A09EDABB3A533272080 /* XCLocalSwiftPackageReference "../../Packages/FWMCore" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ../../Packages/FWMCore;
+		};
 		83D5CC71848FAC89E72DB5CC /* XCLocalSwiftPackageReference "../.." */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = ../..;
@@ -330,6 +364,10 @@
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		455FFE565B8CD53D4E6DA71E /* FWMCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = FWMCore;
+		};
 		8BEA99F9E49BFB0F75E3B263 /* FinanceAI */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = FinanceAI;
