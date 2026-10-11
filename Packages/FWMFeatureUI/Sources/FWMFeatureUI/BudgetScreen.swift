@@ -80,11 +80,23 @@ struct BudgetScreen: View {
         let goal = PreviewBudgetPlan.goalCents
         let changed = adoptedSignature != nil && adoptedSignature != signature
         let rent = p.current.first { $0.category == "Rent" }?.totalCents ?? 0
-        MessagePreview(question: "Help me save $150 next month without changing my rent.",
-                       answer: "Here’s a plan that keeps rent at \(usd(rent)) and frees up \(usd(goal)) a month: four swaps worth $100 and three small habit changes worth $50.")
-        Text("\(usd(p.reduction)) a month, projected").font(Theme.display(32)).padding(.top, 6)
-        Text((p.reduction >= goal ? "Meets your $150 goal." : "\(usd(goal - p.reduction)) short of your $150 goal.") + " A plan for \(PreviewBudgetPlan.period). Nothing is saved until you spend less.")
-            .foregroundStyle(Theme.ink2)
+        let met = p.reduction >= goal
+        AskChip("Help me save $150 next month without changing my rent.")
+        VStack(spacing: 6) {
+            HStack { Eyebrow(PreviewBudgetPlan.period); Spacer(); Eyebrow("per month") }
+            RingChart(segments: [.init(label: "Projected", cents: min(max(p.reduction, 0), goal), color: met ? Theme.ok : Theme.accent)], total: goal) {
+                VStack(spacing: 4) {
+                    Text("Projected").font(.footnote).foregroundStyle(Theme.ink2)
+                    HeroAmount(cents: p.reduction, size: 34)
+                    Text(met ? "Meets goal" : "\(usd(goal - p.reduction)) short").font(.caption.weight(.semibold))
+                        .padding(.horizontal, 10).padding(.vertical, 3)
+                        .foregroundStyle(met ? Theme.ok : Theme.warn).background(met ? Theme.okSoft : Theme.warnSoft, in: Capsule())
+                }
+                .padding(.horizontal, 30)
+            }
+        }
+        .padding(18).frame(maxWidth: .infinity)
+        .background(Theme.card, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
         if adoptedSignature != nil {
             Label(changed ? "Edited since adopting. Review and adopt again." : "Adopted. Balances and purchases are unchanged.", systemImage: "checkmark.circle.fill")
                 .font(.subheadline).foregroundStyle(Theme.accent).padding(14).frame(maxWidth: .infinity, alignment: .leading)
@@ -120,7 +132,7 @@ struct BudgetScreen: View {
                  + Text("\n→ \(s.to) ") + Text(usd(s.proposedCents)).bold())
             }
         }
-        Text("Prices are illustrative demo assumptions, not live quotes.").font(.caption).foregroundStyle(Theme.ink3)
+        Text("Demo prices, not live quotes.").font(.caption).foregroundStyle(Theme.ink3).padding(.horizontal, 4)
         SectionLabel("Habits · \(usd(PreviewBudgetPlan.habits.filter { accepted.contains($0.id) }.reduce(0) { $0 + $1.savingsCents }))")
         ForEach(PreviewBudgetPlan.habits) { h in
             OptionCard(title: h.title, savings: h.savingsCents, isOn: binding(h.id), fromHistory: false, reason: h.reason) { Text("\(h.category) · habit change") }
@@ -153,7 +165,6 @@ struct BudgetScreen: View {
     private var whySheet: some View {
         NavigationStack {
             Form {
-                Section { Text("Lana checks your past swap decisions before suggesting alternatives. Your own rules always win.") }
                 Section("Evidence") {
                     LabeledContent("History checked", value: "Oct 11, 12:58 PM")
                     LabeledContent("Past decisions", value: "Rejected instant coffee 3 times")
@@ -161,7 +172,7 @@ struct BudgetScreen: View {
                 }
                 Section {
                     Toggle("Use decision history", isOn: $useHistory)
-                    SimulatedNote("Demo adapter with synthetic history. Not a verified Keewano connection.")
+                    SimulatedNote("Simulated. Not a live Keewano connection.")
                 }
             }
             .navigationTitle("Why these suggestions?")

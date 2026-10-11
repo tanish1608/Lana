@@ -51,21 +51,23 @@ struct VaultScreen: View {
 
     var body: some View {
         NavigationStack {
+            ScrollViewReader { proxy in
             ScrollView {
                 VStack(alignment: .leading, spacing: 12) {
+                    Color.clear.frame(height: 0).id("top")
                     switch stage {
                     case .locked, .checking: locked
                     case .secondFactor, .verifying: secondFactor
                     case .unlocked: unlocked
                     }
                     if unlocker.isSimulated {
-                        Card(padding: 14) { SimulatedNote("Simulated vault. Face ID and authenticator checks are not performed in this demo build.") }
+                        Card(padding: 14) { SimulatedNote("Simulated. No Face ID or code check.") }
                     }
                     SectionLabel("Privacy")
                     Card {
                         Text("The model and financial reasoning run on your phone.").fontWeight(.semibold)
-                        Text("Messages you send Lana pass through a messaging provider, and connected services receive what they need to work.")
-                        Text("Lana’s model sees connection names and what they’re allowed to do. It never sees passwords, tokens or verification codes.")
+                        Text("Messages and connected services receive what they need to work.")
+                        Text("The model never sees passwords, tokens or codes.")
                     }
                     .font(.subheadline)
                     SectionLabel("Approvals")
@@ -75,6 +77,8 @@ struct VaultScreen: View {
                     }
                 }
                 .padding(.horizontal, 16).padding(.bottom, 24)
+            }
+            .onChange(of: stage) { _, _ in proxy.scrollTo("top", anchor: .top) } // each stage starts at its heading
             }
             .background(Theme.bg)
             .navigationTitle("Vault")
@@ -87,7 +91,6 @@ struct VaultScreen: View {
         VStack(spacing: 14) {
             Image(systemName: "lock").font(.system(size: 36)).foregroundStyle(Theme.accent).frame(width: 88, height: 88).background(Theme.accentSoft, in: Circle())
             Text("Vault is locked").font(Theme.display(30))
-            Text("Connections, saved credentials and sensitive settings.").foregroundStyle(Theme.ink2).multilineTextAlignment(.center)
             if let error { Label(error, systemImage: "exclamationmark.triangle").font(.footnote).foregroundStyle(Theme.bad) }
             Button(stage == .checking ? "Checking Face ID…" : "Unlock with Face ID") {
                 stage = .checking; error = nil
@@ -104,7 +107,7 @@ struct VaultScreen: View {
     private var secondFactor: some View {
         VStack(spacing: 14) {
             Text("One more step").font(Theme.display(30))
-            Text("Face ID passed. Enter the 6-digit code from your authenticator app.").foregroundStyle(Theme.ink2).multilineTextAlignment(.center)
+            Text("Enter your 6-digit authenticator code.").font(.subheadline).foregroundStyle(Theme.ink2).multilineTextAlignment(.center)
             TextField("000000", text: $code).font(.system(size: 28, weight: .medium, design: .monospaced)).multilineTextAlignment(.center)
                 .padding(12).background(Theme.card, in: RoundedRectangle(cornerRadius: 14)).frame(maxWidth: 220)
                 #if os(iOS)
@@ -129,7 +132,6 @@ struct VaultScreen: View {
         VStack(alignment: .leading, spacing: 12) {
             HStack { Text("Unlocked").font(Theme.display(30)); Spacer()
                 Tag(text: "Locks in \(max(0, Int(lockAt.timeIntervalSince(now))))s", tone: Theme.accent, fill: Theme.accentSoft) }
-            Text("Locks after 60 seconds, or as soon as you leave the app.").foregroundStyle(Theme.ink2)
             Card {
                 ForEach(demoEntries) { e in
                     HStack {
@@ -147,7 +149,7 @@ struct VaultScreen: View {
                     }
                 }
             }
-            Text("All values are synthetic demo credentials.").font(.caption).foregroundStyle(Theme.ink3)
+            Text("Synthetic demo credentials.").font(.caption).foregroundStyle(Theme.ink3).padding(.horizontal, 4)
             Button("Lock now") { lock() }.buttonStyle(PrimaryButtonStyle())
         }
         .privacySensitive()
