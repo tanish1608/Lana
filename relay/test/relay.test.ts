@@ -36,7 +36,7 @@ function approve(actionId: string, payload: unknown, expiresInMs = 60_000) {
 before(async () => {
   const dir = mkdtempSync(join(tmpdir(), 'fwm-relay-'));
   server = spawn(process.execPath, ['src/server.ts'], {
-    env: { ...process.env, DIAL_API_KEY: '', KEEWANO_API_KEY: '', KEEWANO_PAT: '', MANUAL_ESTIMATES_SECONDS: 'month_review=900,bill_split=999', PORT: String(PORT), RELAY_DEV: '1', RELAY_DB: join(dir, 'relay.db'), PAIRING_CODE: '424242', PAIRED_PHONES: `${PHONE}=user_ashwin` },
+    env: { ...process.env, DIAL_API_KEY: '', DIAL_SELF_HOSTED_SECRET: '', KEEWANO_API_KEY: '', KEEWANO_PAT: '', MANUAL_ESTIMATES_SECONDS: 'month_review=900,bill_split=999', PORT: String(PORT), RELAY_DEV: '1', RELAY_DB: join(dir, 'relay.db'), PAIRING_CODE: '424242', PAIRED_PHONES: `${PHONE}=user_ashwin` },
     stdio: 'ignore',
   });
   for (let i = 0; i < 50; i++) {
@@ -154,8 +154,12 @@ test('a call turn is answered by the paired phone and spoken back, never sent as
   await until(() => frames.some((f) => f.response_id === 1 && f.content_complete));
   assert.deepEqual(frames.find((f) => f.type === 'ping_pong'), { type: 'ping_pong', timestamp: 1 });
   const turn = frames.filter((f) => f.response_id === 1);
-  assert.deepEqual(turn.map((f) => f.content_complete), [false, true]);
-  assert.equal(turn[1].content, 'September 2026: income $4,800, expenses $3,150.');
+  assert.equal(turn.at(-1).content, 'September 2026: income $4,800, expenses $3,150.');
+
+  ws.send(JSON.stringify({ type: 'response_required', response_id: 2, transcript: [{ role: 'user', content: '(unintelligible audio)' }] }));
+  await until(() => frames.some((f) => f.response_id === 2));
+  assert.match(frames.find((f) => f.response_id === 2).content, /didn't catch that/);
+  assert.equal((await call('GET', '/v1/jobs/next?wait=0')).status, 204, 'noise never becomes a phone job');
   ws.close();
 });
 

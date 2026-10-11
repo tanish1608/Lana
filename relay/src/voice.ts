@@ -71,6 +71,8 @@ function onCall(ws: WebSocket, callId: string, deps: Deps) {
       const heard = [...msg.transcript].reverse().find((t) => t.role === 'user')?.content.trim();
       if (!user) return say(turn, "This number isn't paired with Lana yet. Pair it in the Lana app, then call back.", true, true);
       if (!heard) return say(turn, 'Hi, this is Lana. Ask me about your money.');
+      // Dial marks noise as "(unintelligible audio)"; don't send that to the phone as a question.
+      if (/^\(.*\)$/.test(heard)) return say(turn, "Sorry, I didn't catch that. Ask me again?");
       if (!deps.phoneOpen(user)) return say(turn, 'Open Lana on your iPhone, then ask me again. Your phone works out the answer, not me.');
       const jobId = id('job');
       const envelope = {
@@ -87,11 +89,13 @@ function onCall(ws: WebSocket, callId: string, deps: Deps) {
                   VALUES (?, ?, ?, ?, ?, 'queued', ?, ?)`).run(jobId, envelope.event_id, user, `call:${callId}`, JSON.stringify(envelope), now(), now());
       console.log(`[voice] job ${jobId} for turn ${turn}: ${heard}`);
       deps.enqueued(jobId);
-      say(turn, 'One sec. ', false);
+      // Fill the silence only if the phone is slow; a fast answer is spoken on its own.
+      const filler = setTimeout(() => say(turn, 'One sec. ', false), 1200);
       const reply = await new Promise<string | null>((resolve) => {
         const t = setTimeout(() => resolve(null), TURN_MS);
         answers.set(jobId, (text) => { clearTimeout(t); resolve(text); });
       });
+      clearTimeout(filler);
       answers.delete(jobId);
       say(turn, reply ? speakable(reply) : "Your phone is still working on it. The answer will be waiting in Lana.");
     }

@@ -21,6 +21,14 @@ const SIM_PHONE_ID = process.env.SIM_PHONE_ID || '';
 // ---------- inbound ----------
 
 const waiters: ((jobId: string) => void)[] = [];
+const polling = new Map<string, number>(); // open long polls per paired user
+
+/** A phone counts as open while it holds a long poll or polled in the last FOREGROUND_MS. */
+function phoneOpen(user: string) {
+  if (polling.get(user)) return true;
+  const dev = db.prepare('SELECT MAX(last_seen) AS t FROM devices WHERE paired_user_id = ?').get(user) as any;
+  return Boolean(dev?.t && Date.now() - dev.t < FOREGROUND_MS);
+}
 
 async function onInbound(m: InboundMessage) {
   if (m.from === FROM) return;
@@ -60,8 +68,7 @@ async function onInbound(m: InboundMessage) {
 async function nudgeIfIdle(jobId: string, user: string, to: string) {
   const job = db.prepare('SELECT state, nudged FROM jobs WHERE job_id = ?').get(jobId) as any;
   if (!job || job.state !== 'queued' || job.nudged) return;
-  const dev = db.prepare('SELECT MAX(last_seen) AS t FROM devices WHERE paired_user_id = ?').get(user) as any;
-  if (dev?.t && Date.now() - dev.t < FOREGROUND_MS) return;
+  if (phoneOpen(user)) return;
   db.prepare('UPDATE jobs SET nudged = 1, updated_at = ? WHERE job_id = ?').run(now(), jobId);
   await send({ key: `nudge:${jobId}`, to, body: `Got it. Open Lana to finish: lana://job/${jobId}` });
 }
@@ -180,10 +187,12 @@ const routes: [string, RegExp, (req: IncomingMessage, res: ServerResponse, m: Re
     const wait = Math.min(Number(new URL(req.url!, 'http://x').searchParams.get('wait') || 25), 30) * 1000;
     let next = claimNext(dev.paired_user_id);
     if (!next) {
+      polling.set(dev.paired_user_id, (polling.get(dev.paired_user_id) || 0) + 1);
       await new Promise<void>((resolve) => {
         const t = setTimeout(resolve, wait);
         waiters.push(() => { clearTimeout(t); resolve(); });
       });
+      polling.set(dev.paired_user_id, (polling.get(dev.paired_user_id) || 1) - 1);
       next = claimNext(dev.paired_user_id);
     }
     if (!next) { res.writeHead(204); res.end(); return; }
@@ -329,10 +338,7 @@ const server = createServer(async (req, res) => {
 
 attachVoice(server, {
   pairedUser: (phone) => PAIRED_PHONES[phone],
-  phoneOpen: (user) => {
-    const dev = db.prepare('SELECT MAX(last_seen) AS t FROM devices WHERE paired_user_id = ?').get(user) as any;
-    return Boolean(dev?.t && Date.now() - dev.t < FOREGROUND_MS);
-  },
+  phoneOpen,
   enqueued: (jobId) => waiters.splice(0).forEach((w) => w(jobId)),
 });
 
