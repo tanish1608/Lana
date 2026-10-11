@@ -1,7 +1,7 @@
 import SwiftUI
 import FWMCore
 
-enum LanaTab: Hashable { case home, budget, split, vault }
+enum LanaTab: Hashable, CaseIterable { case home, budget, split, accounts }
 
 /// Home: net worth and the month's money at a glance. Messages is the main interface; this app holds the details.
 struct HomeScreen: View {
@@ -9,16 +9,17 @@ struct HomeScreen: View {
     @Binding var tab: LanaTab
     let requestStates: [String: RequestState]
     let budgetAdopted: Bool
-    @State private var showMessages = false
+    @Binding var path: NavigationPath
+    var openChat: () -> Void
 
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $path) {
             ScrollView {
                 VStack(alignment: .leading, spacing: 12) {
                     header
                     if case .success(let v) = store.moneyView(store.snapshotPeriod) {
                         netWorth(v)
-                        NavigationLink { MoneyScreen(store: store) } label: { ringCard(v) }.buttonStyle(PressScaleStyle())
+                        NavigationLink(value: HomeRoute.money) { ringCard(v) }.buttonStyle(PressScaleStyle())
                         duo
                         latest(v)
                     } else {
@@ -32,7 +33,7 @@ struct HomeScreen: View {
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
             #endif
-            .sheet(isPresented: $showMessages) { messagesSheet }
+            .navigationDestination(for: HomeRoute.self) { _ in MoneyScreen(store: store) }
         }
     }
 
@@ -43,11 +44,6 @@ struct HomeScreen: View {
                 Text("Hi, \(store.dataset.user.displayName ?? "there")").font(Theme.display(30))
             }
             Spacer()
-            Button { showMessages = true } label: {
-                Label("Messages", systemImage: "message.fill").font(.subheadline.weight(.semibold))
-                    .padding(.horizontal, 14).frame(minHeight: 40).foregroundStyle(.white).background(Theme.accent, in: Capsule())
-            }
-            .buttonStyle(PressScaleStyle())
         }
         .padding(.horizontal, 4).padding(.bottom, 2)
     }
@@ -73,7 +69,12 @@ struct HomeScreen: View {
         }
         .foregroundStyle(Theme.skyInk)
         .padding(20).frame(maxWidth: .infinity, alignment: .leading)
-        .background(Theme.sky, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+        .background {
+            LinearGradient(colors: [Theme.sky, Theme.skyDeep], startPoint: .topLeading, endPoint: .bottomTrailing)
+                .overlay(alignment: .topTrailing) { Circle().fill(.white.opacity(0.18)).frame(width: 220, height: 220).offset(x: 70, y: -110).blur(radius: 8) }
+                .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+        }
+        .raised(24, tint: Theme.accent, strength: 1.6)
         .accessibilityElement(children: .combine)
     }
 
@@ -109,6 +110,7 @@ struct HomeScreen: View {
         }
         .foregroundStyle(Theme.ink)
         .padding(18).background(Theme.card, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+        .raised(24)
     }
 
     private var unpaid: [ReimbursementDraft] {
@@ -123,14 +125,14 @@ struct HomeScreen: View {
         let plan = PreviewBudgetPlan.swaps.reduce(0) { $0 + $1.savingsCents } + PreviewBudgetPlan.habits.reduce(0) { $0 + $1.savingsCents }
         return HStack(spacing: 12) {
             Button { tab = .split } label: {
-                duoCard(fill: Theme.inkCard, ink: .white) {
+                duoCard(fill: Theme.inkCard, ink: .white, glow: .black) {
                     Text(usd(owed.reduce(0) { $0 + $1.amountCents }, cents: true)).font(.system(size: 28, weight: .bold)).monospacedDigit().foregroundStyle(Theme.warn)
                     Text("owed to you").font(.footnote)
                     Text(owed.isEmpty ? "All settled" : owed.map(\.reviewedName).joined(separator: ", ")).font(.caption).opacity(0.6)
                 }
             }
             Button { tab = .budget } label: {
-                duoCard(fill: Theme.sky2, ink: Theme.skyInk) {
+                duoCard(fill: Theme.sky2, ink: Theme.skyInk, glow: Theme.accent) {
                     (Text(usd(plan)).font(.system(size: 28, weight: .bold)) + Text("/mo").font(.subheadline.weight(.semibold))).monospacedDigit().foregroundStyle(Theme.accent)
                     Text("plan to save").font(.footnote)
                     Text(budgetAdopted ? "Adopted" : "Ready to review").font(.caption).opacity(0.6)
@@ -140,19 +142,20 @@ struct HomeScreen: View {
         .buttonStyle(PressScaleStyle())
     }
 
-    private func duoCard<C: View>(fill: Color, ink: Color, @ViewBuilder _ content: () -> C) -> some View {
+    private func duoCard<C: View>(fill: Color, ink: Color, glow: Color, @ViewBuilder _ content: () -> C) -> some View {
         VStack(alignment: .leading, spacing: 2) { Spacer(minLength: 0); content() }
             .foregroundStyle(ink).lineLimit(1).minimumScaleFactor(0.8)
             .padding(18).frame(maxWidth: .infinity, minHeight: 132, alignment: .bottomLeading)
-            .background(fill, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+            .background(fill.gradient, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+            .raised(24, tint: glow, strength: 1.4)
     }
 
     private func latest(_ v: MoneyView) -> some View {
         let f = v.flow, stays = f.toSavingsCents + f.toInvestmentsCents + f.retainedCashCents
         let month = DemoStore.monthName(store.snapshotPeriod).components(separatedBy: " ").first ?? ""
-        return Button { showMessages = true } label: {
+        return Button { openChat() } label: {
             VStack(alignment: .leading, spacing: 8) {
-                HStack { Eyebrow("Latest in Messages"); Spacer()
+                HStack { Eyebrow("Latest from Lana"); Spacer()
                     Image(systemName: "chevron.right").font(.footnote.weight(.semibold)).foregroundStyle(Theme.ink3) }
                 Text("You kept \(usd(stays)) of \(usd(f.netIncomeCents)) in \(month). Want a plan to save $150 more?")
                     .font(.subheadline).multilineTextAlignment(.leading).padding(.horizontal, 13).padding(.vertical, 9)
@@ -161,32 +164,10 @@ struct HomeScreen: View {
             .foregroundStyle(Theme.ink)
             .padding(18).frame(maxWidth: .infinity, alignment: .leading)
             .background(Theme.card, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+            .raised(24)
         }
         .buttonStyle(PressScaleStyle())
     }
-
-    private var messagesSheet: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text("Lana lives in Messages").font(.title2.bold()).padding(.bottom, 4)
-            bubble("Where did my money go this month?", mine: true)
-            bubble("You kept $1,650 of $4,800 in September. Rent was the biggest cost.", mine: false)
-            bubble("Split dinner with Tanish and Aryan", mine: true)
-            bubble("You’re owed $80.60. Review the requests?", mine: false)
-            SimulatedNote("Preview only").padding(.top, 4)
-            Spacer(minLength: 0)
-            Button("Done") { showMessages = false }.buttonStyle(PrimaryButtonStyle())
-        }
-        .padding(20)
-        .presentationDetents([.fraction(0.62), .large])
-    }
-
-    private func bubble(_ text: String, mine: Bool) -> some View {
-        HStack {
-            if mine { Spacer(minLength: 50) }
-            Text(text).font(.subheadline).padding(.horizontal, 13).padding(.vertical, 9)
-                .foregroundStyle(mine ? .white : Theme.ink)
-                .background(mine ? Theme.accent : Theme.bubbleIn, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-            if !mine { Spacer(minLength: 40) }
-        }
-    }
 }
+
+enum HomeRoute: Hashable { case money }

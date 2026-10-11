@@ -1,4 +1,5 @@
 import SwiftUI
+import FWMCore
 
 /// Native security boundary the vault UI talks to. Tanish's FinanceAI module (SecureVault,
 /// DeviceOwnerAuthenticator, TOTP) provides the real implementation on codex/on-device-ai.
@@ -36,7 +37,9 @@ private let demoEntries = [
     VaultEntry(id: "v4", label: "Payment handle", scope: "Prefill request drafts", value: "@ashwin-demo"),
 ]
 
-struct VaultScreen: View {
+/// Everything Lana is connected to: financial accounts first, then the access keys behind Face ID.
+struct AccountsScreen: View {
+    let store: DemoStore
     let unlocker: VaultUnlocking
     let log: [String]
     enum Stage { case locked, checking, secondFactor, verifying, unlocked }
@@ -54,15 +57,17 @@ struct VaultScreen: View {
             ScrollViewReader { proxy in
             ScrollView {
                 VStack(alignment: .leading, spacing: 12) {
-                    Color.clear.frame(height: 0).id("top")
-                    switch stage {
-                    case .locked, .checking: locked
-                    case .secondFactor, .verifying: secondFactor
-                    case .unlocked: unlocked
+                    connected
+                    SectionLabel("Access keys")
+                    Card {
+                        switch stage {
+                        case .locked, .checking: locked
+                        case .secondFactor, .verifying: secondFactor
+                        case .unlocked: unlocked
+                        }
+                        if unlocker.isSimulated { SimulatedNote("Simulated. No Face ID or code check.") }
                     }
-                    if unlocker.isSimulated {
-                        Card(padding: 14) { SimulatedNote("Simulated. No Face ID or code check.") }
-                    }
+                    .id("keys")
                     SectionLabel("Privacy")
                     Card {
                         Text("The model and financial reasoning run on your phone.").fontWeight(.semibold)
@@ -78,10 +83,11 @@ struct VaultScreen: View {
                 }
                 .padding(.horizontal, 16).padding(.bottom, 24)
             }
-            .onChange(of: stage) { _, _ in proxy.scrollTo("top", anchor: .top) } // each stage starts at its heading
+            .onChange(of: stage) { _, _ in withAnimation { proxy.scrollTo("keys", anchor: .center) } } // keep the keys card in view
             }
             .background(Theme.bg)
-            .navigationTitle("Vault")
+            .navigationTitle("Accounts")
+            .toolbar { DemoDataBadge() }
             .onChange(of: scenePhase) { _, phase in if phase != .active { lock() } }
             .onReceive(timer) { t in now = t; if stage == .unlocked && t >= lockAt { lock(); error = "Vault locked after 60 seconds." } }
         }
@@ -89,8 +95,11 @@ struct VaultScreen: View {
 
     private var locked: some View {
         VStack(spacing: 14) {
-            Image(systemName: "lock").font(.system(size: 36)).foregroundStyle(Theme.accent).frame(width: 88, height: 88).background(Theme.accentSoft, in: Circle())
-            Text("Vault is locked").font(Theme.display(30))
+            HStack(spacing: 12) {
+                Image(systemName: "lock.fill").font(.title3).foregroundStyle(Theme.accent).frame(width: 44, height: 44).background(Theme.accentSoft, in: Circle())
+                VStack(alignment: .leading, spacing: 2) { Text("Locked").font(.headline); Text("\(demoEntries.count) keys and tokens").font(.footnote).foregroundStyle(Theme.ink2) }
+                Spacer()
+            }
             if let error { Label(error, systemImage: "exclamationmark.triangle").font(.footnote).foregroundStyle(Theme.bad) }
             Button(stage == .checking ? "Checking Face ID…" : "Unlock with Face ID") {
                 stage = .checking; error = nil
@@ -101,12 +110,61 @@ struct VaultScreen: View {
             }
             .buttonStyle(PrimaryButtonStyle()).disabled(stage == .checking)
         }
-        .frame(maxWidth: .infinity).padding(.top, 24)
+        .frame(maxWidth: .infinity)
+    }
+
+    private var connected: some View {
+        let accounts: [AccountBalance] = { if case .success(let v) = store.moneyView(store.snapshotPeriod) { return v.accounts }; return [] }()
+        return VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Text("\(accounts.count)").font(.system(size: 56, weight: .bold)).monospacedDigit()
+                VStack(alignment: .leading, spacing: 0) {
+                    Text("accounts connected").font(.headline)
+                    Text("\(Set(accounts.map(\.institution)).count) institutions").font(.footnote).foregroundStyle(Theme.ink2)
+                }
+            }
+            .padding(.horizontal, 4)
+            VStack(spacing: 10) {
+                ForEach(accounts, id: \.accountId) { a in
+                    let style = Self.style(a.kind)
+                    HStack(spacing: 12) {
+                        Image(systemName: style.icon).font(.body.weight(.semibold)).foregroundStyle(.white)
+                            .frame(width: 44, height: 44).background(style.color.gradient, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                            .shadow(color: style.color.opacity(0.35), radius: 6, y: 3)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(style.name).fontWeight(.semibold)
+                            HStack(spacing: 5) {
+                                Circle().fill(Theme.ok).frame(width: 7, height: 7)
+                                Text("\(a.institution) · \(DemoStore.day(a.asOf))").font(.caption).foregroundStyle(Theme.ink2)
+                            }
+                        }
+                        Spacer()
+                        VStack(alignment: .trailing, spacing: 2) {
+                            Text(usd(a.balanceCents)).fontWeight(.semibold).monospacedDigit()
+                            Text(a.assetOrLiability == .asset ? "owned" : "owed").font(.caption).foregroundStyle(Theme.ink2)
+                        }
+                    }
+                    .padding(14).background(Theme.card, in: RoundedRectangle(cornerRadius: 18, style: .continuous)).raised(18)
+                    .accessibilityElement(children: .combine)
+                }
+            }
+        }
+    }
+
+    private static func style(_ kind: String) -> (name: String, icon: String, color: Color) {
+        switch kind {
+        case "checking": return ("Checking", "building.columns.fill", .blue)
+        case "savings": return ("Savings", "banknote.fill", .green)
+        case "brokerage": return ("Brokerage", "chart.line.uptrend.xyaxis", .indigo)
+        case "credit_card": return ("Credit card", "creditcard.fill", .orange)
+        case "student_loan": return ("Student loan", "graduationcap.fill", .pink)
+        default: return (kind.replacingOccurrences(of: "_", with: " ").capitalized, "wallet.pass.fill", .gray)
+        }
     }
 
     private var secondFactor: some View {
         VStack(spacing: 14) {
-            Text("One more step").font(Theme.display(30))
+            Text("One more step").font(.headline)
             Text("Enter your 6-digit authenticator code.").font(.subheadline).foregroundStyle(Theme.ink2).multilineTextAlignment(.center)
             TextField("000000", text: $code).font(.system(size: 28, weight: .medium, design: .monospaced)).multilineTextAlignment(.center)
                 .padding(12).background(Theme.card, in: RoundedRectangle(cornerRadius: 14)).frame(maxWidth: 220)
@@ -125,14 +183,14 @@ struct VaultScreen: View {
             .buttonStyle(PrimaryButtonStyle()).disabled(stage == .verifying)
             Button("Cancel") { lock() }.buttonStyle(GhostButtonStyle())
         }
-        .frame(maxWidth: .infinity).padding(.top, 24)
+        .frame(maxWidth: .infinity)
     }
 
     private var unlocked: some View {
         VStack(alignment: .leading, spacing: 12) {
-            HStack { Text("Unlocked").font(Theme.display(30)); Spacer()
+            HStack { Text("Unlocked").font(.headline); Spacer()
                 Tag(text: "Locks in \(max(0, Int(lockAt.timeIntervalSince(now))))s", tone: Theme.accent, fill: Theme.accentSoft) }
-            Card {
+            VStack(alignment: .leading, spacing: 10) {
                 ForEach(demoEntries) { e in
                     HStack {
                         VStack(alignment: .leading, spacing: 3) {

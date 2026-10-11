@@ -97,6 +97,7 @@ struct BudgetScreen: View {
         }
         .padding(18).frame(maxWidth: .infinity)
         .background(Theme.card, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+        .raised(24)
         if adoptedSignature != nil {
             Label(changed ? "Edited since adopting. Review and adopt again." : "Adopted. Balances and purchases are unchanged.", systemImage: "checkmark.circle.fill")
                 .font(.subheadline).foregroundStyle(Theme.accent).padding(14).frame(maxWidth: .infinity, alignment: .leading)
