@@ -214,8 +214,8 @@ struct BudgetScreen: View {
                         }
                         .foregroundStyle(on ? .white : Theme.ink)
                         .padding(12).frame(width: 128, alignment: .leading)
-                        .background(on ? AnyShapeStyle(Theme.accent.gradient) : AnyShapeStyle(Theme.cardFill), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-                        .raised(18, tint: on ? Theme.accent : .black, strength: on ? 2 : 1)
+                        .background(on ? AnyShapeStyle(Theme.deepBlueFill) : AnyShapeStyle(Theme.cardFill), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+                        .raised(18, tint: on ? Theme.deepBlue : .black, strength: on ? 2 : 1)
                         .opacity(all.isEmpty ? 0.6 : 1)
                     }
                     .buttonStyle(PressScaleStyle()).disabled(all.isEmpty)

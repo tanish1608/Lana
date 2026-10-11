@@ -149,10 +149,10 @@ struct HomeScreen: View {
         let plan = PreviewBudgetPlan.swaps.reduce(0) { $0 + $1.savingsCents } + PreviewBudgetPlan.habits.reduce(0) { $0 + $1.savingsCents }
         return HStack(spacing: 12) {
             Button { tab = .split } label: {
-                duoCard(fill: Theme.inkCardFill, ink: .white, glow: .black) {
-                    Text(usd(owed.reduce(0) { $0 + $1.amountCents }, cents: true)).font(.system(size: 28, weight: .bold)).monospacedDigit().foregroundStyle(Theme.warn)
+                duoCard(fill: Theme.deepBlueFill, ink: .white, glow: Theme.deepBlue) {
+                    Text(usd(owed.reduce(0) { $0 + $1.amountCents }, cents: true)).font(.system(size: 28, weight: .bold)).monospacedDigit()
                     Text("owed to you").font(.footnote)
-                    Text(owed.isEmpty ? "All settled" : owed.map(\.reviewedName).joined(separator: ", ")).font(.caption).opacity(0.6)
+                    Text(owed.isEmpty ? "All settled" : owed.map(\.reviewedName).joined(separator: ", ")).font(.caption).opacity(0.8)
                 }
             }
             Button { tab = .budget } label: {
