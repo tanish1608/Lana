@@ -1,0 +1,29 @@
+# Matches the checked-in LanaDemoApp.xcodeproj; `xcodegen generate` here regenerates it.
+name: LanaDemoApp
+options:
+  bundleIdPrefix: io.speedhacks
+  deploymentTarget:
+    iOS: "17.0"
+packages:
+  FWMFeatureUI:
+    path: ../../Packages/FWMFeatureUI
+targets:
+  LanaDemoApp:
+    type: application
+    platform: iOS
+    sources:
+      - path: .
+        excludes: ["project.yml", "LanaDemoApp.xcodeproj"]
+    dependencies:
+      - package: FWMFeatureUI
+    settings:
+      base:
+        SWIFT_VERSION: "5.0"
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_CFBundleDisplayName: Lana
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
+        TARGETED_DEVICE_FAMILY: "1"
+        PRODUCT_BUNDLE_IDENTIFIER: io.speedhacks.LanaDemoApp
+    scheme:
+      testTargets: []
