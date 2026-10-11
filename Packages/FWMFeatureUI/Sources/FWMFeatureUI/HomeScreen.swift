@@ -12,6 +12,7 @@ struct HomeScreen: View {
     var plannedCents = 0
     @Binding var path: NavigationPath
     var openChat: () -> Void
+    var openDinner: () -> Void = {}
 
     var body: some View {
         NavigationStack(path: $path) {
@@ -33,9 +34,6 @@ struct HomeScreen: View {
             .toolbar {
                 #if os(iOS)
                 ToolbarItem(placement: .topBarLeading) { LanaLogo().fixedSize() }.sharedBackgroundVisibility(.hidden)
-                ToolbarItem(placement: .topBarTrailing) { DemoDataBadge() }
-                #else
-                ToolbarItem { DemoDataBadge() }
                 #endif
             }
             #if os(iOS)
@@ -104,7 +102,7 @@ struct HomeScreen: View {
             HStack(alignment: .bottom) {
                 VStack(alignment: .leading, spacing: 2) {
                     HeroAmount(cents: stays, size: 40)
-                    Text("stayed with you").font(.footnote).foregroundStyle(Theme.ink2)
+                    Text("left after spending").font(.footnote).foregroundStyle(Theme.ink2)
                 }
                 Spacer()
                 VStack(alignment: .trailing, spacing: 2) {
@@ -155,7 +153,7 @@ struct HomeScreen: View {
         let owed = unpaid
         let plan = PreviewBudgetPlan.swaps.reduce(0) { $0 + $1.savingsCents } + PreviewBudgetPlan.habits.reduce(0) { $0 + $1.savingsCents }
         return HStack(spacing: 12) {
-            Button { tab = .split } label: {
+            Button { tab = .split; openDinner() } label: {
                 duoCard(fill: Theme.deepBlueFill, ink: .white, glow: Theme.deepBlue) {
                     Text(usd(owed.reduce(0) { $0 + $1.amountCents }, cents: true)).font(.system(size: 28, weight: .bold)).monospacedDigit()
                     Text("owed to you").font(.footnote)
