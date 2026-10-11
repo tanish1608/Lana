@@ -52,6 +52,7 @@ struct ChatPanel: View {
                     }
                     .padding(.horizontal, 14).padding(.top, 12)
                 }
+                .scrollIndicators(.hidden)
                 .onChange(of: messages.count) { _, _ in withAnimation { proxy.scrollTo("end", anchor: .bottom) } }
                 .onChange(of: typing) { _, _ in withAnimation { proxy.scrollTo("end", anchor: .bottom) } }
                 .onAppear { proxy.scrollTo("end", anchor: .bottom) }

@@ -39,13 +39,17 @@ struct BudgetIdea: Identifiable, Equatable {
     let id: String, category: String, title: String, savingsCents: Int, reason: String
     var from: String?, to: String?, currentCents: Int?, proposedCents: Int?
     var fromHistory = false
-    /// What Lana would do if asked to carry it out. Nil for habits: nothing to buy or switch.
-    var action: String?
-    var isSwap: Bool { action != nil }
+    /// What Lana would do if asked to follow through: buy or switch for a swap, a nudge for a habit.
+    var action: String
+    let isSwap: Bool
     /// Plans are switched; everything else in the demo catalog is bought on the next order.
     var isSwitch: Bool { id == "s_phone" }
-    var approveLabel: String { isSwitch ? "Switch plan" : "Buy for \(usd(proposedCents ?? 0))" }
-    var handledStatus: String { isSwitch ? "Switch requested · simulated" : "On next order · simulated" }
+    var question: String { !isSwap ? "Remind you?" : (isSwitch ? "Switch it for you?" : "Buy it for you?") }
+    var approveLabel: String { !isSwap ? "Remind me" : (isSwitch ? "Switch plan" : "Buy for \(usd(proposedCents ?? 0))") }
+    /// Short verb for acting later from the plan list.
+    var laterLabel: String { !isSwap ? "Remind" : (isSwitch ? "Switch" : "Buy") }
+    var handledStatus: String { !isSwap ? "Weekly reminder · simulated" : (isSwitch ? "Switch requested · simulated" : "On next order · simulated") }
+    var safeguard: String { !isSwap ? "One nudge a week in Messages. Turn it off any time." : (isSwitch ? "You confirm with your carrier before anything changes." : "You approve the cart before anything is charged.") }
 
     /// The follow-through Lana offers for each swap. Bounded demo copy; no purchase integration exists yet.
     static let actions = [
@@ -57,9 +61,12 @@ struct BudgetIdea: Identifiable, Equatable {
     init(_ s: SwapOption) {
         id = s.id; category = s.category; title = s.title; savingsCents = s.savingsCents; reason = s.reason
         from = s.from; to = s.to; currentCents = s.currentCents; proposedCents = s.proposedCents; fromHistory = s.fromHistory
-        action = Self.actions[s.id] ?? "Make this switch for you"
+        action = Self.actions[s.id] ?? "Make this switch for you"; isSwap = true
     }
-    init(_ h: HabitOption) { id = h.id; category = h.category; title = h.title; savingsCents = h.savingsCents; reason = h.reason }
+    init(_ h: HabitOption) {
+        id = h.id; category = h.category; title = h.title; savingsCents = h.savingsCents; reason = h.reason
+        action = "Nudge you about this once a week"; isSwap = false
+    }
 }
 
 /// Journey 2: spending by category, then one suggestion at a time to keep or skip. Keeping a swap asks
@@ -173,8 +180,13 @@ struct BudgetScreen: View {
     // MARK: categories
 
     /// A row of category tiles: what was spent, what the plan brings it to, and how many ideas are left.
+    private static func icon(_ category: String) -> String {
+        ["Rent": "🏠", "Groceries": "🛒", "Dining": "🍜", "Transport": "🚇", "Bills and subscriptions": "📱", "Other": "🛍️"][category] ?? "•"
+    }
+
     private func categories(_ p: Plan) -> some View {
-        ScrollView(.horizontal, showsIndicators: false) {
+        let maxC = CGFloat(p.current.map(\.totalCents).max() ?? 1)
+        return ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 10) {
                 // Categories with ideas first, biggest spend first; fixed ones (rent) at the end.
                 ForEach(p.current.filter { !ideas(in: $0.category).isEmpty } + p.current.filter { ideas(in: $0.category).isEmpty }, id: \.category) { c in
@@ -182,12 +194,15 @@ struct BudgetScreen: View {
                     let target = p.target[c.category] ?? c.totalCents, on = category == c.category
                     Button { if !all.isEmpty { withAnimation(.spring(duration: 0.3)) { category = c.category; drag = .zero } } } label: {
                         VStack(alignment: .leading, spacing: 6) {
-                            Text(short(c.category)).font(.subheadline.weight(.semibold)).lineLimit(1)
+                            HStack(spacing: 6) { Text(Self.icon(c.category)); Text(short(c.category)).font(.subheadline.weight(.semibold)).lineLimit(1).minimumScaleFactor(0.85) }
                             HStack(alignment: .firstTextBaseline, spacing: 5) {
                                 Text(usd(target)).font(.title3.weight(.bold)).foregroundStyle(on ? .white : (target < c.totalCents ? Theme.ok : Theme.ink))
                                 if target < c.totalCents { Text(usd(c.totalCents)).font(.caption).strikethrough().opacity(0.7) }
                             }
                             .monospacedDigit()
+                            Capsule().fill(on ? Color.white.opacity(0.25) : Theme.line).frame(height: 4).overlay(alignment: .leading) {
+                                GeometryReader { g in Capsule().fill(on ? Color.white : Theme.spent).frame(width: g.size.width * CGFloat(target) / maxC) }
+                            }
                             badge(all: all.count, left: left, on: on)
                         }
                         .foregroundStyle(on ? .white : Theme.ink)
@@ -280,11 +295,12 @@ struct BudgetScreen: View {
             }
             HStack(alignment: .top, spacing: 6) {
                 if i.fromHistory { Tag(text: "From your history", tone: Theme.accent, fill: Theme.accentSoft) }
-                Text(i.reason).font(.footnote).foregroundStyle(Theme.ink2)
+                Text(i.reason).font(i.isSwap ? .footnote : .subheadline).foregroundStyle(Theme.ink2)
             }
+            if !i.isSwap { Label("No purchase needed. Lana can remind you.", systemImage: "bell").font(.footnote).foregroundStyle(Theme.ink2) }
             if i.isSwap { Text("Demo prices, not live quotes.").font(.caption2).foregroundStyle(Theme.ink3) }
         }
-        .padding(16).frame(maxWidth: .infinity, minHeight: 210, alignment: .topLeading)
+        .padding(16).frame(maxWidth: .infinity, minHeight: i.isSwap ? 210 : 0, alignment: .topLeading)
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 26, style: .continuous))
         .background(Theme.cardFill, in: RoundedRectangle(cornerRadius: 26, style: .continuous))
         .raised(26, strength: 1.6)
@@ -320,7 +336,7 @@ struct BudgetScreen: View {
         withAnimation(.easeIn(duration: 0.22)) { drag = CGSize(width: keep ? 520 : -520, height: 30) }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.22) {
             decisions[i.id] = keep; order.append(i.id); drag = .zero
-            if keep && i.isSwap { asking = i }
+            if keep { asking = i }
         }
     }
 
@@ -336,9 +352,9 @@ struct BudgetScreen: View {
 
     private func askSheet(_ i: BudgetIdea) -> some View {
         VStack(alignment: .leading, spacing: 14) {
-            HStack(spacing: 10) { LanaOrb(size: 36); Text(i.isSwitch ? "Switch it for you?" : "Buy it for you?").font(.title3.bold()) }
+            HStack(spacing: 10) { LanaOrb(size: 36); Text(i.question).font(.title3.bold()) }
             VStack(alignment: .leading, spacing: 8) {
-                Text(i.action ?? "").font(.headline).fixedSize(horizontal: false, vertical: true)
+                Text(i.isSwap ? i.action : "\(i.title): \(i.action.prefix(1).lowercased() + i.action.dropFirst())").font(.headline).fixedSize(horizontal: false, vertical: true)
                 if let to = i.to, let prop = i.proposedCents, let cur = i.currentCents {
                     Text("\(to), \(usd(prop)) instead of \(usd(cur)).").font(.subheadline).foregroundStyle(Theme.ink2).fixedSize(horizontal: false, vertical: true)
                 }
@@ -346,13 +362,14 @@ struct BudgetScreen: View {
             }
             .padding(14).frame(maxWidth: .infinity, alignment: .leading)
             .background(Theme.line.opacity(0.6), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-            Text(i.isSwitch ? "You confirm with your carrier before anything changes." : "You approve the cart before anything is charged.").font(.footnote).foregroundStyle(Theme.ink2)
+            Text(i.safeguard).font(.footnote).foregroundStyle(Theme.ink2)
             SimulatedNote("Simulated. Nothing is bought, sent or switched.")
             Spacer(minLength: 0)
             Button(i.approveLabel) {
                 if handling[i.id] != .lana { // duplicate tap guard
                     handling[i.id] = .lana
-                    onApprove("Approved: \(i.title) · \(i.isSwitch ? "switch" : "buy") for \(usd(i.proposedCents ?? 0)) (simulated, nothing charged)")
+                    onApprove(i.isSwap ? "Approved: \(i.title) · \(i.isSwitch ? "switch" : "buy") for \(usd(i.proposedCents ?? 0)) (simulated, nothing charged)"
+                                       : "Approved: weekly reminder · \(i.title) (simulated, nothing sent)")
                 }
                 asking = nil
             }
@@ -360,7 +377,7 @@ struct BudgetScreen: View {
             Button("Just add to plan") { handling[i.id] = .me; asking = nil }.buttonStyle(GhostButtonStyle()).frame(maxWidth: .infinity)
         }
         .padding(20)
-        .presentationDetents([.height(450)]).presentationDragIndicator(.visible)
+        .presentationDetents([.height(i.isSwap ? 450 : 400)]).presentationDragIndicator(.visible)
         .onDisappear { if handling[i.id] == nil { handling[i.id] = .me } } // dismissing never authorizes Lana
     }
 
@@ -375,11 +392,16 @@ struct BudgetScreen: View {
                     HStack {
                         VStack(alignment: .leading, spacing: 2) {
                             Text(i.title).fontWeight(.semibold)
-                            Text(!i.isSwap ? "Habit · up to you" : (handling[i.id] == .lana ? i.handledStatus : "In plan · you’ll do it yourself"))
+                            Text(handling[i.id] == .lana ? i.handledStatus : "\(usd(i.savingsCents))/mo · in plan")
                                 .font(.caption).foregroundStyle(handling[i.id] == .lana ? Theme.warn : Theme.ink2)
                         }
                         Spacer()
-                        Text("\(usd(i.savingsCents))/mo").fontWeight(.semibold).monospacedDigit().foregroundStyle(Theme.ok)
+                        if handling[i.id] == .lana {
+                            Text("\(usd(i.savingsCents))/mo").fontWeight(.semibold).monospacedDigit().foregroundStyle(Theme.ok)
+                        } else {
+                            // Chosen "Just add to plan": the follow-through stays one tap away.
+                            Button(i.laterLabel) { asking = i }.buttonStyle(GhostButtonStyle())
+                        }
                     }
                 }
                 Divider()
