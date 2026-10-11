@@ -23,4 +23,12 @@ final class DemoStoreTests: XCTestCase {
         XCTAssertTrue(PreviewBudgetPlan.habits.allSatisfy { categories.contains($0.category) })
         XCTAssertEqual(v.flow.retainedCashCents + swaps + habits, 75_000)
     }
+
+    func testHomePercentsTotalOneHundred() throws {
+        let s = try XCTUnwrap(DemoStore.repoSeed())
+        let f = try MoneyEngine.moneyView(s.dataset, period: s.snapshotPeriod).flow
+        let p = HomeScreen.percents([f.expensesCents, f.toSavingsCents, f.toInvestmentsCents, f.retainedCashCents])
+        XCTAssertEqual(p, [66, 14, 8, 12])
+        XCTAssertEqual(HomeScreen.percents([1, 1, 1]).reduce(0, +), 100)
+    }
 }

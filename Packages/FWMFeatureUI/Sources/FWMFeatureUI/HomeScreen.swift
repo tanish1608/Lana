@@ -87,30 +87,57 @@ struct HomeScreen: View {
             .init(label: "Kept", cents: f.retainedCashCents, color: Theme.ok),
         ]
         let stays = f.toSavingsCents + f.toInvestmentsCents + f.retainedCashCents
-        return VStack(spacing: 12) {
+        let pct = Self.percents(parts.map(\.cents))
+        // Matches `flow-card` in preview/web: headline, one proportional bar, then an aligned ledger.
+        return VStack(alignment: .leading, spacing: 14) {
             HStack { Eyebrow(DemoStore.monthName(store.snapshotPeriod).components(separatedBy: " ").first ?? ""); Spacer()
                 Image(systemName: "chevron.right").font(.footnote.weight(.semibold)).foregroundStyle(Theme.ink3) }
-            RingChart(segments: parts, total: f.netIncomeCents) {
-                AnyView(VStack(spacing: 0) {
-                    Text("Stayed").font(.footnote).foregroundStyle(Theme.ink2)
-                    Text(usd(stays)).font(.system(size: 30, weight: .bold)).monospacedDigit()
-                    Text("of \(usd(f.netIncomeCents))").font(.footnote).foregroundStyle(Theme.ink2)
-                })
+            HStack(alignment: .bottom) {
+                VStack(alignment: .leading, spacing: 2) {
+                    HeroAmount(cents: stays, size: 40)
+                    Text("stayed with you").font(.footnote).foregroundStyle(Theme.ink2)
+                }
+                Spacer()
+                VStack(alignment: .trailing, spacing: 2) {
+                    Text("Came in").font(.footnote).foregroundStyle(Theme.ink2)
+                    Text(usd(f.netIncomeCents)).font(.headline).monospacedDigit()
+                }
             }
-            LazyVGrid(columns: [GridItem(.flexible(), spacing: 8), GridItem(.flexible())], spacing: 8) {
-                ForEach(parts) { p in
-                    VStack(alignment: .leading, spacing: 2) {
-                        HStack(spacing: 8) { Circle().fill(p.color).frame(width: 10, height: 10); Text(p.label).font(.footnote).foregroundStyle(Theme.ink2) }
-                        Text(usd(p.cents)).font(.system(size: 20, weight: .bold)).monospacedDigit()
+            GeometryReader { g in
+                let w = g.size.width - CGFloat(parts.count - 1) * 3, total = CGFloat(max(f.netIncomeCents, 1))
+                HStack(spacing: 3) {
+                    ForEach(parts) { p in Capsule().fill(p.color).frame(width: max(4, w * CGFloat(p.cents) / total)) }
+                }
+            }
+            .frame(height: 12)
+            VStack(spacing: 0) {
+                ForEach(Array(parts.enumerated()), id: \.element.id) { i, p in
+                    if i > 0 { Divider() }
+                    HStack(spacing: 10) {
+                        Circle().fill(p.color).frame(width: 10, height: 10)
+                        Text(p.label).font(.subheadline)
+                        Text("\(pct[i])%").font(.footnote).foregroundStyle(Theme.ink2).monospacedDigit()
+                        Spacer()
+                        Text(usd(p.cents)).font(.subheadline.weight(.bold)).monospacedDigit()
                     }
-                    .padding(.horizontal, 12).padding(.vertical, 10).frame(maxWidth: .infinity, alignment: .leading)
-                    .background(Theme.bg, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                    .frame(minHeight: 36)
                 }
             }
         }
         .foregroundStyle(Theme.ink)
         .padding(18).background(Theme.cardFill, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
         .raised(24)
+        .accessibilityElement(children: .combine)
+    }
+
+    /// Whole percents that total exactly 100 (largest remainder), so the ledger never reads 99% or 101%.
+    static func percents(_ values: [Int]) -> [Int] {
+        let total = values.reduce(0, +)
+        guard total > 0 else { return values.map { _ in 0 } }
+        var out = values.map { $0 * 100 / total }
+        let order = values.indices.sorted { ($0 == $1) ? false : (values[$0] * 100 % total, -$0) > (values[$1] * 100 % total, -$1) }
+        for i in order.prefix(100 - out.reduce(0, +)) { out[i] += 1 }
+        return out
     }
 
     private var unpaid: [ReimbursementDraft] { store.unpaidRequests(requestStates) }

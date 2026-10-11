@@ -81,10 +81,10 @@ struct LanaDock: View {
         HStack(spacing: 0) {
             // Two equal halves so the orb's gap stays centred whichever pill is open.
             HStack(spacing: 0) { button(.home); button(.budget) }.frame(maxWidth: .infinity)
-            Color.clear.frame(width: 62, height: 1)
+            Color.clear.frame(width: 76, height: 1)
             HStack(spacing: 0) { button(.split); button(.accounts) }.frame(maxWidth: .infinity)
         }
-        .padding(.horizontal, 9).frame(height: 64).frame(maxWidth: .infinity)
+        .padding(.horizontal, 7).frame(height: 64).frame(maxWidth: .infinity)
         .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 32, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: 32, style: .continuous).strokeBorder(Theme.edge))
         .shadow(color: .black.opacity(0.06), radius: 2, y: 1)
@@ -110,7 +110,7 @@ struct LanaDock: View {
                 if on { Text(it.label).font(.footnote.weight(.semibold)).fixedSize() }
             }
             .foregroundStyle(on ? Theme.pillOnText : Theme.ink2)
-            .padding(.horizontal, on ? 12 : 0).frame(minWidth: 44, minHeight: 46)
+            .padding(.horizontal, on ? 11 : 0).frame(minWidth: 44, minHeight: 46)
             .background { if on { Capsule().fill(Theme.ink).shadow(color: .black.opacity(0.25), radius: 6, y: 3) } }
             .fixedSize()
             .frame(maxWidth: on ? nil : .infinity).contentShape(Rectangle())
