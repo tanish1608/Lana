@@ -26,6 +26,18 @@ Node 23.6+ (runs TypeScript directly and uses `node:sqlite` without flags). Buil
 
 ## Phone ↔ relay contract
 
+The app should use `FWMCore.RelayClient` (`Packages/FWMCore/Sources/FWMCore/RelayClient.swift`) instead of hand-rolling these calls. `Approval.sign` produces the exact bytes the relay checks, and `RelayClientTests.testApprovalMatchesRelayBytes` pins a vector from `src/canonical.ts`.
+
+```swift
+let pairing = try await RelayClient.pair(baseURL: relayURL, code: "123456")   // once; Keychain both secrets
+let relay = RelayClient(baseURL: relayURL, deviceToken: pairing.deviceToken)
+while appIsForeground {
+    guard let job = try await relay.nextJob() else { continue }
+    // route job.envelope through the on-device model + engines, then:
+    try await relay.postResult(AgentResult(jobId: job.jobId, replyText: reply, provenance: result.provenance))
+}
+```
+
 Every `/v1/*` call except `/v1/pair` sends `Authorization: Bearer <device_token>`. Errors use the FWMCore shape: `{"error": {"code": "AUTH_REQUIRED", "retryable": false, "user_message": "..."}}`.
 
 | Call | Body / query | Returns |
@@ -64,6 +76,7 @@ For reminders, `payload = {action_id, contact_id, to, body, due_at}`. A changed 
 | Piece | State |
 |---|---|
 | Job queue, pairing, idempotent replies, approvals, reminders, demo clock | `npm test` passes (5 end-to-end tests) |
+| Swift client | `swift test` passes; `testLiveRelayLoop` ran against a local relay (pair, job, result, signed reminder, forged approval rejected) |
 | Dial send/receive | Code complete. Not yet verified live: our number is SMS/voice only, and iMessage needs Dial to enable it. |
 | Dial webhook | Signature check written. Not exercised; the event stream is the primary path. |
 | Keewano swap memory | Query and seed script written. Waiting on the project ingest key to backfill and verify. |
