@@ -9,7 +9,7 @@ struct HomeScreen: View {
     @Binding var tab: LanaTab
     let requestStates: [String: RequestState]
     let budgetAdopted: Bool
-    var budgetSavingsCents: Int = PreviewBudgetPlan.goalCents
+    var plannedCents = 0
     @Binding var path: NavigationPath
     var openChat: () -> Void
 
@@ -29,7 +29,7 @@ struct HomeScreen: View {
                 }
                 .padding(.horizontal, 16).padding(.bottom, 24)
             }
-            .background { Theme.backdrop }
+            .scrollIndicators(.hidden).background { Theme.backdrop }
             .toolbar { DemoDataBadge() }
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
@@ -146,7 +146,7 @@ struct HomeScreen: View {
 
     private var duo: some View {
         let owed = unpaid
-        let plan = budgetSavingsCents
+        let plan = PreviewBudgetPlan.swaps.reduce(0) { $0 + $1.savingsCents } + PreviewBudgetPlan.habits.reduce(0) { $0 + $1.savingsCents }
         return HStack(spacing: 12) {
             Button { tab = .split } label: {
                 duoCard(fill: Theme.inkCardFill, ink: .white, glow: .black) {
@@ -157,9 +157,9 @@ struct HomeScreen: View {
             }
             Button { tab = .budget } label: {
                 duoCard(fill: Theme.sky2.opacity(0.55).gradient, ink: Theme.skyInk, glow: Theme.accent) {
-                    (Text(usd(plan)).font(.system(size: 28, weight: .bold)) + Text("/mo").font(.subheadline.weight(.semibold))).monospacedDigit().foregroundStyle(Theme.accent)
-                    Text("plan to save").font(.footnote)
-                    Text(budgetAdopted ? "Adopted" : "Ready to review").font(.caption).opacity(0.6)
+                    (Text(usd(plannedCents > 0 ? plannedCents : plan)).font(.system(size: 28, weight: .bold)) + Text("/mo").font(.subheadline.weight(.semibold))).monospacedDigit().foregroundStyle(Theme.accent)
+                    Text(plannedCents > 0 ? "in your plan" : "you could save").font(.footnote)
+                    Text(budgetAdopted ? "Adopted" : (plannedCents > 0 ? "Not adopted yet" : "Ideas ready")).font(.caption).opacity(0.6)
                 }
             }
         }

@@ -99,7 +99,7 @@ struct AccountsScreen: View {
             }
             .onChange(of: stage) { _, _ in withAnimation { proxy.scrollTo("keys", anchor: .center) } } // keep the keys card in view
             }
-            .background { Theme.backdrop }
+            .scrollIndicators(.hidden).background { Theme.backdrop }
             .navigationTitle("Accounts")
             .toolbar {
                 Button { withAnimation { addNote = true }; Task { try? await Task.sleep(nanoseconds: 2_000_000_000); withAnimation { addNote = false } } } label: {
