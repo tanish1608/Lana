@@ -25,8 +25,8 @@ public struct LanaRootView: View {
     }
 
     public var body: some View {
-        // All four stay alive so each keeps its place and state while you move around.
-        ZStack {
+        // Native tab containment keeps each navigation stack's toolbar scoped to its section.
+        LanaSectionHost(selection: $tab) {
             section(.home) { HomeScreen(store: store, tab: $tab, requestStates: requestStates, budgetAdopted: budgetAdopted, budgetSavingsCents: (try? BudgetProjection.make(dataset: chat.dataset, period: "2026-09", accepted: chat.accepted, useHistory: chat.useHistory))?.savingsCents ?? 0, path: $homePath, openChat: { setChat(true) }) }
             section(.budget) { BudgetScreen(store: store, unlocker: unlocker, onSelection: { chat.updateBudget(accepted: $0, useHistory: $1)
                 store.dataset = chat.dataset
@@ -67,7 +67,11 @@ public struct LanaRootView: View {
     private func setChat(_ open: Bool) { withAnimation(.spring(duration: 0.35, bounce: 0.2)) { showChat = open } }
 
     private func section<V: View>(_ t: LanaTab, @ViewBuilder _ content: () -> V) -> some View {
+        #if os(iOS)
+        content().tag(t)
+        #else
         content().opacity(tab == t ? 1 : 0).allowsHitTesting(tab == t).accessibilityHidden(tab != t)
+        #endif
     }
 
     private func jump(_ j: LanaChatJump) {
@@ -153,3 +157,18 @@ public struct LanaDemoRoot: View {
 }
 
 #Preview("Lana") { LanaDemoRoot() }
+
+private struct LanaSectionHost<Content: View>: View {
+    @Binding var selection: LanaTab
+    let content: Content
+    init(selection: Binding<LanaTab>, @ViewBuilder content: () -> Content) {
+        _selection = selection; self.content = content()
+    }
+    var body: some View {
+        #if os(iOS)
+        TabView(selection: $selection) { content }.toolbar(.hidden, for: .tabBar)
+        #else
+        ZStack { content }
+        #endif
+    }
+}

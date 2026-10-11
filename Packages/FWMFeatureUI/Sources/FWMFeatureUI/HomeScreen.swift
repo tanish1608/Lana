@@ -133,7 +133,7 @@ struct HomeScreen: View {
     }
 
     /// Whole percents that total exactly 100 (largest remainder), so the ledger never reads 99% or 101%.
-    static func percents(_ values: [Int]) -> [Int] {
+    nonisolated static func percents(_ values: [Int]) -> [Int] {
         let total = values.reduce(0, +)
         guard total > 0 else { return values.map { _ in 0 } }
         var out = values.map { $0 * 100 / total }
