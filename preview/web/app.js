@@ -592,7 +592,7 @@
   }
   function chatHTML() {
     const c = S.chat;
-    return `<div class="chat-head"><span class="lana-av">${SPARK}</span><div class="grow"><b>Lana</b><div class="tiny">Preview replies from your demo numbers</div></div>
+    return `<div class="chat-head"><img class="lana-av" src="brand/lana-mark.png" alt=""><div class="grow"><b>Lana</b><div class="tiny">Preview replies from your demo numbers</div></div>
         <button class="chat-x" data-chat aria-label="Close chat">×</button></div>
       <div class="chat-log" id="chatLog" aria-live="polite">
         ${c.msgs.map((m) => `<div class="bubble ${m.from === "me" ? "me" : "lana"}">${esc(m.text)}${m.actions ? `<div class="bub-acts">${m.actions.map(([t, l]) => `<button data-tab="${t}">${esc(l)} ›</button>`).join("")}</div>` : ""}</div>`).join("")}
