@@ -18,7 +18,7 @@
  "accounts": [
   {
    "account_id": "acct_checking",
-   "institution": "Demo Bank",
+   "institution": "Chase",
    "kind": "checking",
    "asset_or_liability": "asset",
    "opening_balance_cents": 280000,
@@ -29,7 +29,7 @@
   },
   {
    "account_id": "acct_savings",
-   "institution": "Demo Bank",
+   "institution": "Chase",
    "kind": "savings",
    "asset_or_liability": "asset",
    "opening_balance_cents": 800000,
@@ -40,7 +40,7 @@
   },
   {
    "account_id": "acct_brokerage",
-   "institution": "Demo Brokerage",
+   "institution": "Robinhood",
    "kind": "brokerage",
    "asset_or_liability": "asset",
    "opening_balance_cents": 1200000,
@@ -51,7 +51,7 @@
   },
   {
    "account_id": "acct_card",
-   "institution": "Demo Card",
+   "institution": "Capital One",
    "kind": "credit_card",
    "asset_or_liability": "liability",
    "opening_balance_cents": 90000,
@@ -62,7 +62,7 @@
   },
   {
    "account_id": "acct_student",
-   "institution": "Demo Loans",
+   "institution": "Sallie Mae",
    "kind": "student_loan",
    "asset_or_liability": "liability",
    "opening_balance_cents": 1200000,

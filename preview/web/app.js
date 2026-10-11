@@ -35,6 +35,7 @@
         owners: Object.fromEntries(Object.entries(ex.assignments).map(([item, who]) => [item, who.length > 1 ? "shared" : who[0]])),
         req: {}, reminders: {}, clock: 0, disputed: {}
       },
+      rcpt: { open: null, done: {}, upload: null },
       vault: { stage: "locked", revealed: {}, err: "", lockAt: 0 },
       chat: { open: false, typing: false, msgs: [{ from: "lana", text: "Hi Ashwin. Ask me about your money, your plan or who owes you." }] },
       log: []
@@ -53,7 +54,7 @@
   ICONS.vault = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="13" rx="3"/><path d="M3 10.5h18M7 15h3"/><path d="M6.5 6 8 3.5h8L17.5 6"/></svg>';
   const SPARK = '<svg viewBox="0 0 24 24" width="26" height="26" fill="currentColor"><path d="M12 2.5c.5 4.6 2.9 7 7.5 7.5-4.6.5-7 2.9-7.5 7.5-.5-4.6-2.9-7-7.5-7.5 4.6-.5 7-2.9 7.5-7.5z"/><path d="M19 15.5c.2 1.8 1.1 2.7 2.9 2.9-1.8.2-2.7 1.1-2.9 2.9-.2-1.8-1.1-2.7-2.9-2.9 1.8-.2 2.7-1.1 2.9-2.9z" opacity=".7"/></svg>';
   // Tab id stays "vault" for continuity with the native screens; the screen is now Accounts.
-  const TABS = [["home", "Home"], ["budget", "Budget"], ["split", "Split"], ["vault", "Accounts"]];
+  const TABS = [["home", "Home"], ["budget", "Budget"], ["split", "Receipts"], ["vault", "Accounts"]];
   const navTab = () => (S.tab === "money" ? "home" : S.tab);
   function renderNav() {
     const b = ([id, l]) => `<button class="dock-btn" data-tab="${id}" aria-label="${l}" ${navTab() === id ? 'aria-current="page"' : ""}>${ICONS[id]}<span>${l}</span></button>`;
@@ -127,7 +128,7 @@
         <div class="fc-rows">${parts.map((p, i) => `<div class="fc-row"><i class="dot" style="background:${p.c}"></i><span class="grow">${p.label}</span><span class="pct num">${pcts[i]}%</span><b class="num">${fmt(p.v)}</b></div>`).join("")}</div>
       </button>
       <div class="duo">
-        <button class="card ink-card" data-tab="split"><div class="ink-num num">${fmt(unpaidCents, { cents: true })}</div><div class="small">owed to you</div><div class="tiny">${unpaid.length ? unpaid.map((q) => esc(q.reviewed_name)).join(", ") : "All settled"}</div></button>
+        <button class="card ink-card" data-tab="split" data-split><div class="ink-num num">${fmt(unpaidCents, { cents: true })}</div><div class="small">owed to you</div><div class="tiny">${unpaid.length ? unpaid.map((q) => esc(q.reviewed_name)).join(", ") : "All settled"}</div></button>
         <button class="card sky2" data-tab="budget"><div class="sky-num num">${fmt(PL.reduction || budgetPlan(true).reduction)}<small>/mo</small></div><div class="small">${PL.reduction ? "plan to save" : "you could save"}</div><div class="tiny">${S.budget.adopted ? "Adopted" : PL.reduction ? "In progress" : "Swipe to review"}</div></button>
       </div>
       <button class="card msg-card" data-messages><div class="row"><span class="eyebrow">Latest in Messages</span><span class="chev">›</span></div>
@@ -150,7 +151,7 @@
     }[kind];
     sheet(`<div class="thread-head"><img src="brand/lana-mark.png" alt="" class="thread-av"><div><b>Lana</b><div class="tiny">iMessage · Today</div></div></div>
       <div class="msg thread">${T.msgs.map(([who, t]) => `<div class="bubble ${who}">${esc(t)}</div>`).join("")}
-        <button class="link-card" data-tab="${T.tab}"><img src="brand/lana-mark.png" alt=""><div class="grow"><b>${esc(T.title)}</b><div class="tiny">Open in Lana</div></div><span class="chev">›</span></button></div>
+        <button class="link-card" data-tab="${T.tab}" ${T.tab === "split" ? "data-split" : ""}><img src="brand/lana-mark.png" alt=""><div class="grow"><b>${esc(T.title)}</b><div class="tiny">Open in Lana</div></div><span class="chev">›</span></button></div>
       <div class="sim">◆ Preview of the thread. On iPhone this jumps straight back to your Lana conversation in Messages.</div>
       <div class="btns" style="margin-top:12px"><button class="btn ghost" data-close>Stay here</button><button class="btn accent" data-open-messages>Open Messages</button></div>`);
   }
@@ -369,6 +370,7 @@
       <div class="cats" role="tablist">${cats.map((c) => `<button class="cat ${c.name === cur.name ? "on" : ""}" data-bcat="${esc(c.name)}" role="tab" aria-selected="${c.name === cur.name}">
           <span class="cat-ic">${CAT_ICON[c.name] || "•"}</span><span class="cat-n">${shortCat(c.name)}</span><b class="num">${fmt(c.spent)}</b>
           <span class="cat-bar"><i style="width:${((c.spent / maxSpent) * 100).toFixed(0)}%"></i></span>
+          <span class="cat-plan small">${c.locked ? "Stays the same" : c.kept ? `Plan ${fmt(c.spent - c.kept)}` : c.ideas.length ? `Up to −${fmt(sum(c.ideas, (x) => x.savings))}` : "On track"}</span>
           <span class="cat-s">${c.locked ? "Locked" : !c.ideas.length ? "No ideas" : c.pending.length ? `${c.pending.length} idea${c.pending.length > 1 ? "s" : ""}` : c.kept ? `−${fmt(c.kept)}` : "Reviewed"}</span></button>`).join("")}</div>
       ${deck}
       ${S.budget.history.length ? `<div style="text-align:center"><button class="small" data-undo style="min-height:44px;color:var(--accent)">Undo last</button></div>` : ""}
@@ -444,11 +446,60 @@
   const STEPS = ["Inputs", "Check", "Assign", "Shares", "Requests", "Follow-ups"];
   const REQ_STATES = [["draft", "Draft"], ["ready_for_review", "Ready for review"], ["handed_off", "Handed off"], ["user_reported_requested", "You sent it"], ["paid_reported", "Paid (you said)"]];
 
+  // ======================= RECEIPTS (hub) =======================
+  // Any receipt in, then choose what to do with it. Split runs the full engine-backed flow for the
+  // dinner fixture; Pay and Add to budget are simulated confirmations.
+  function allReceipts() {
+    const d = receipt();
+    return [{ receipt_id: d.receipt_id, kind: "restaurant", merchant: d.merchant, date: d.date, category: "Dining", total_cents: d.total_cents, paid_with: "Demo Card", items: d.items, fixture: true }, ...P.receipts];
+  }
+  const RC_ICON = { restaurant: "🍽", bill: "⚡️", store: "🛒" };
+  function viewReceipts() {
+    const R = S.rcpt, list = allReceipts(), cur = list.find((r) => r.receipt_id === R.open);
+    const upload = `<div class="drop"><div class="drop-ic">${ICONS.split}</div><b>Add any receipt</b><div class="small muted">Dinner, groceries, a bill or an invoice. Lana reads it on your phone.</div>
+        <label class="btn small accent" style="cursor:pointer;margin-top:12px">Upload photo<input type="file" accept="image/*" data-rcpt-upload hidden></label></div>`;
+    const card = (r) => { const d = R.done[r.receipt_id]; return `<button class="rc-row" data-rcpt="${r.receipt_id}"><span class="rc-ic">${RC_ICON[r.kind]}</span><div class="grow"><div class="t">${esc(r.merchant)}</div><div class="s">${dateLabel(r.date + "T12:00:00-07:00")}${r.due ? ` · due ${dateLabel(r.due + "T12:00:00-07:00")}` : ""}${d ? ` · <span style="color:var(--ok)">${esc(d)}</span>` : r.fixture ? "" : " · sample"}</div></div><b class="num">${fmt(r.total_cents, { cents: true })}</b><span class="chev">›</span></button>`; };
+    if (!cur) return `${bubbles("Here’s the receipt from dinner", "split")}<h1>Receipts</h1>${upload}
+      ${R.upload ? '<div class="sim" style="margin:-4px 4px 10px">◆ Photo received. This preview reads one of the samples below; on iPhone the photo is read on-device.</div>' : ""}
+      <h2>Recent</h2><div class="card list rc-list">${list.map(card).join("")}</div>`;
+    const isBill = cur.kind === "bill", d = R.done[cur.receipt_id];
+    const acts = [
+      ["split", "👥", "Split it", cur.fixture ? "Assign items and request shares" : "Share evenly with friends"],
+      ["pay", "💳", isBill ? "Pay it" : "Paid", isBill ? `From Checking · due ${dateLabel(cur.due + "T12:00:00-07:00")}` : `Already paid with ${cur.paid_with}`],
+      ["budget", "📊", "Add to budget", `File under ${shortCat(cur.category)}`],
+      ["remind", "⏰", isBill ? "Remind me" : "Keep for returns", isBill ? "A nudge 2 days before it’s due" : "Saved with the card you used"]
+    ];
+    return `<button class="back" data-rcpt-home>‹ Receipts</button>
+      <div class="card rc-hero"><div class="row"><span class="rc-ic big">${RC_ICON[cur.kind]}</span><span class="tag">${cur.fixture ? "From Messages" : "Sample"}</span></div>
+        <div class="t" style="font-weight:650;margin-top:10px">${esc(cur.merchant)}</div><div class="small muted">${dateLabel(cur.date + "T12:00:00-07:00")} · ${cur.items.length} lines · ${shortCat(cur.category)}</div>
+        ${big(cur.total_cents, "md")}
+        <div class="rc-lines">${cur.items.slice(0, 4).map((i) => `<div class="kv"><span class="muted">${esc(i.description)}</span><span class="num">${fmt(i.extended_price_cents, { cents: true })}</span></div>`).join("")}${cur.items.length > 4 ? `<div class="small muted">+ ${cur.items.length - 4} more</div>` : ""}</div></div>
+      ${d ? `<div class="checkline">✓ ${esc(d)}</div>` : ""}
+      <h2>What should Lana do?</h2>
+      <div class="acts">${acts.map(([id, ic, t, s]) => `<button class="act" data-ract="${id}" ${id === "pay" && !isBill ? "disabled" : ""}><span class="act-ic">${ic}</span><b>${t}</b><span class="small muted">${s}</span></button>`).join("")}</div>`;
+  }
+  function receiptAction(act) {
+    const r = allReceipts().find((x) => x.receipt_id === S.rcpt.open);
+    if (act === "split" && r.fixture) { S.tab = "split"; S.rcpt.splitting = true; top(); return render(); }
+    const ppl = people().filter((p) => p.contact_id !== payerId());
+    const even = E.allocate(r.total_cents, Array(ppl.length + 1).fill(1));
+    const C = {
+      split: { ic: "👥", h: `Split ${fmt(r.total_cents, { cents: true })} evenly?`, b: `${ppl.map((p, i) => `${esc(p.reviewed_name)} owes <b class="num">${fmt(even[i + 1], { cents: true })}</b>`).join(", ")}. Your share is ${fmt(even[0], { cents: true })}. Lana drafts the requests for you to review.`, go: "Draft requests", done: "Split drafted" },
+      pay: { ic: "💳", h: `Pay ${esc(r.merchant)}?`, b: `<b class="num">${fmt(r.total_cents, { cents: true })}</b> from Checking (balance ${fmt(DS.accounts.find((a) => a.kind === "checking").balance_cents)}). You confirm with Face ID before anything is sent.`, go: `Pay ${fmt(r.total_cents, { cents: true })}`, done: "Payment scheduled" },
+      budget: { ic: "📊", h: `Add to ${shortCat(r.category)}?`, b: `Counts <b class="num">${fmt(r.total_cents, { cents: true })}</b> toward your ${shortCat(r.category)} budget for October.`, go: "Add to budget", done: `Added to ${shortCat(r.category)}` },
+      remind: { ic: "⏰", h: r.kind === "bill" ? "Remind you before it’s due?" : "Keep for returns?", b: r.kind === "bill" ? `Lana messages you on ${dateLabel(r.due.replace(/\d\d$/, (d) => String(+d - 2).padStart(2, "0")) + "T12:00:00-07:00")}.` : "Lana keeps the receipt and the card you used, so returns and warranty claims are one tap.", go: r.kind === "bill" ? "Remind me" : "Keep it", done: r.kind === "bill" ? "Reminder set" : "Kept for returns" }
+    }[act];
+    sheet(`<div class="exec-ic">${C.ic}</div><h3 style="text-align:center">${C.h}</h3><p class="small" style="text-align:center;margin:8px 8px 14px">${C.b}</p>
+      <div class="sim">◆ Simulated. Nothing is paid, sent or filed in this preview.</div>
+      <div class="btns" style="margin-top:14px"><button class="btn ghost" data-close>Not now</button><button class="btn accent" data-ract-go="${act}">${C.go}</button></div>`);
+    S.rcpt.pending = C.done;
+  }
   function viewSplit() {
+    if (!S.rcpt.splitting) return viewReceipts();
     const rc = receipt(), st = S.split, merchant = rc.merchant, dateStr = dateLabel(rc.date + "T12:00:00-07:00");
     const stepper = `<div class="stepper">${STEPS.map((_, i) => `<span class="${i <= st.step ? "on" : ""}"></span>`).join("")}</div>`;
     const nav = (next, label, dis) => `<div class="btns" style="margin-top:14px">${st.step > 0 ? '<button class="btn ghost" data-back style="width:auto;padding:0 18px">Back</button>' : ""}<button class="btn accent" data-next="${next}" ${dis ? "disabled" : ""}>${label}</button></div>`;
-    const head = (t, s) => `${bubbles("I paid for dinner with Tanish and Aryan…", "split")}${stepper}<p class="muted small" style="margin:0 4px">Step ${st.step + 1} of ${STEPS.length} · ${STEPS[st.step]}</p><h1>${t}</h1>${s ? `<p class="sub">${s}</p>` : ""}`;
+    const head = (t, s) => `<button class="back" data-rcpt-home>‹ Receipts</button>${bubbles("I paid for dinner with Tanish and Aryan…", "split")}${stepper}<p class="muted small" style="margin:0 4px">Step ${st.step + 1} of ${STEPS.length} · ${STEPS[st.step]}</p><h1>${t}</h1>${s ? `<p class="sub">${s}</p>` : ""}`;
 
     if (st.step === 0) {
       const wave = Array.from({ length: 34 }, (_, i) => `<i style="height:${6 + Math.round(Math.abs(Math.sin(i * 1.7) * 18 + Math.cos(i * 0.6) * 4))}px"></i>`).join("");
@@ -612,7 +663,7 @@
     return `<div class="chat-head"><img class="lana-av" src="brand/lana-mark.png" alt=""><div class="grow"><b>Lana</b><div class="tiny">Preview replies from your demo numbers</div></div>
         <button class="chat-x" data-chat aria-label="Close chat">×</button></div>
       <div class="chat-log" id="chatLog" aria-live="polite">
-        ${c.msgs.map((m) => `<div class="bubble ${m.from === "me" ? "me" : "lana"}">${esc(m.text)}${m.actions ? `<div class="bub-acts">${m.actions.map(([t, l]) => `<button data-tab="${t}">${esc(l)} ›</button>`).join("")}</div>` : ""}</div>`).join("")}
+        ${c.msgs.map((m) => `<div class="bubble ${m.from === "me" ? "me" : "lana"}">${esc(m.text)}${m.actions ? `<div class="bub-acts">${m.actions.map(([t, l]) => `<button data-tab="${t}" ${t === "split" ? "data-split" : ""}>${esc(l)} ›</button>`).join("")}</div>` : ""}</div>`).join("")}
         ${c.typing ? '<div class="bubble lana typing" aria-label="Lana is typing"><i></i><i></i><i></i></div>' : ""}
       </div>
       <div class="chat-sugs">${SUGGEST.map((t) => `<button data-ask="${esc(t)}">${esc(t)}</button>`).join("")}</div>
@@ -637,8 +688,8 @@
   }
 
   // ======================= ACCOUNTS (was Vault) =======================
-  const INST = { "Demo Bank": ["#0A84FF", "#5E5CE6"], "Demo Brokerage": ["#34C759", "#0E8F5A"], "Demo Card": ["#48484A", "#1C1C1E"], "Demo Loans": ["#FF9F0A", "#FF5E3A"] };
-  const mono = (inst, size = 40) => { const [a, b] = INST[inst] || ["#8E8E93", "#636366"]; return `<span class="mono" style="width:${size}px;height:${size}px;background:linear-gradient(145deg,${a},${b})">${esc(inst.replace("Demo ", "")[0])}</span>`; };
+  const INST = { "Chase": ["#117ACA", "#0B4F8A"], "Robinhood": ["#CCFF00", "#00C805"], "Capital One": ["#D03027", "#004977"], "Sallie Mae": ["#0F2C52", "#1D5FA8"] };
+  const mono = (inst, size = 40) => { const [a, b] = INST[inst] || ["#8E8E93", "#636366"]; return `<span class="mono" style="width:${size}px;height:${size}px;background:linear-gradient(145deg,${a},${b})">${esc(inst[0])}</span>`; };
   let vaultTimer;
   function viewVault() {
     const snap = mv(snapshotMonth()), accts = snap.accounts, insts = [...new Set(accts.map((a) => a.institution))], when = dateLabel(DS.as_of);
@@ -657,7 +708,7 @@
       ["Purchase history", "Past swap decisions for your plan", "Simulated here"]
     ];
     return `<div class="row" style="margin:6px 4px 2px"><h1 style="margin:0">Accounts</h1><button class="btn small ghost" data-connect>+ Add</button></div>
-      <p class="sub">${accts.length} accounts at ${insts.length} institutions · demo data</p>
+      <p class="sub">${accts.length} accounts at ${insts.length} institutions · sample data</p>
       <div class="card stack-card">
         <div class="eyebrow">Net worth</div>
         ${big(snap.net_worth_cents, "md")}
@@ -672,6 +723,7 @@
       <p style="margin:0 0 8px"><b>The model and financial reasoning run on your phone.</b></p>
       <p style="margin:0 0 8px">Messages you send Lana pass through a messaging provider, and connected services receive what they need to work.</p>
       <p style="margin:0">Lana’s model sees connection names and what they’re allowed to do. It never sees passwords, tokens or verification codes.</p></div>
+      <button class="demo-link" id="demoPill">Demo data · reset or switch theme</button>
       <h2>Approvals</h2><div class="card list">${S.log.length ? S.log.map((l) => `<div class="item"><div class="grow"><div style="font-weight:550">${esc(l.text)}</div><div class="s">${esc(l.at)}</div></div><span class="tag ${l.kind === "approved" ? "acc" : ""}">${esc(l.kind)}</span></div>`).join("") : '<div class="empty small">Nothing approved yet.</div>'}</div>`;
   }
   // The credentials that keep these connections working, behind Face ID plus a code.
@@ -756,11 +808,13 @@
   document.addEventListener("keydown", (e) => { if (e.key === "Escape" && S && S.chat.open) toggleChat(false); });
   document.addEventListener("change", (e) => {
     const t = e.target;
+    if (t.matches("[data-rcpt-upload]") && t.files[0]) { S.rcpt.upload = true; toast("Photo received. Pick a sample below to continue."); return render(); }
     if (t.matches("[data-upload]") && t.files[0]) { const r = new FileReader(); r.onload = () => { S.split.upload = r.result; S.split.receipt = true; render(); }; r.readAsDataURL(t.files[0]); }
   });
   document.addEventListener("click", (e) => {
     const t = e.target.closest("button,[data-close]"); if (!t || !S) return;
     const d = t.dataset;
+    if (d.tab === "split") S.rcpt.splitting = "split" in d;
     if (d.tab) { closeSheet(); if (S.chat.open) toggleChat(false); return go(d.tab); }
     if ("chat" in d) return toggleChat();
     if (d.ask) return ask(d.ask);
@@ -777,6 +831,10 @@
     if (d.cat) return catSheet(d.cat);
     if (d.xfer) return xferSheet(d.xfer);
     if (d.acct) return acctSheet(d.acct);
+    if (d.rcpt) { S.rcpt.open = d.rcpt; top(); return render(); }
+    if ("rcptHome" in d) { S.rcpt.open = null; S.rcpt.splitting = false; top(); return render(); }
+    if (d.ract) return receiptAction(d.ract);
+    if (d.ractGo) { const r = allReceipts().find((x) => x.receipt_id === S.rcpt.open); S.rcpt.done[r.receipt_id] = S.rcpt.pending; logAction(`${r.merchant}: ${S.rcpt.pending.toLowerCase()} (simulated)`); closeSheet(); render(); return toast(`${S.rcpt.pending}. Simulated in this preview.`); }
     if (d.bcat) { S.budget.cat = d.bcat; return render(); }
     if (d.swipe) { const top = $(".idea.top"); if (top) flyOut(top, d.swipe === "keep"); return; }
     if ("undo" in d) { const id = S.budget.history.pop(); if (id) { delete S.budget.accepted[id]; delete S.budget.exec[id]; S.budget.cat = budgetItems().find((x) => x.id === id).category; } return render(); }

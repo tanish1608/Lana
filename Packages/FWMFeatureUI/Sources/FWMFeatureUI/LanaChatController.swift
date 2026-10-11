@@ -36,6 +36,20 @@ final class LanaChatController {
         self.accepted = accepted; self.useHistory = useHistory; budgetAdopted = false
         invalidateEvidence()
     }
+    /// Adds an account imported on this phone; earlier financial evidence no longer describes the dataset.
+    func addAccount(_ account: Account, transactions: [FWMCore.Transaction]) {
+        guard !dataset.accounts.contains(where: { $0.accountId == account.accountId }) else { return }
+        dataset.accounts.append(account)
+        dataset.transactions += transactions.filter { $0.accountId == account.accountId }
+        invalidateEvidence()
+    }
+    /// Removes an imported account and its transactions. Fixture accounts stay.
+    func removeImportedAccount(_ id: String) {
+        guard dataset.accounts.contains(where: { $0.accountId == id && $0.sourceId?.hasPrefix("csv:") == true }) else { return }
+        dataset.accounts.removeAll { $0.accountId == id }
+        dataset.transactions.removeAll { $0.accountId == id }
+        invalidateEvidence()
+    }
     private func invalidateEvidence() {
         dataset.datasetVersion = "session-" + UUID().uuidString
         archive?.datasetVersion = dataset.datasetVersion

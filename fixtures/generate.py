@@ -7,11 +7,11 @@ TZ = "-07:00"  # America/Los_Angeles, PDT for all fixture dates
 USER = "user_ashwin"
 
 accounts = [
-  {"account_id": "acct_checking", "institution": "Demo Bank", "kind": "checking", "asset_or_liability": "asset", "opening_balance_cents": 280000, "balance_cents": 340000},
-  {"account_id": "acct_savings", "institution": "Demo Bank", "kind": "savings", "asset_or_liability": "asset", "opening_balance_cents": 800000, "balance_cents": 865000},
-  {"account_id": "acct_brokerage", "institution": "Demo Brokerage", "kind": "brokerage", "asset_or_liability": "asset", "opening_balance_cents": 1200000, "balance_cents": 1240000},
-  {"account_id": "acct_card", "institution": "Demo Card", "kind": "credit_card", "asset_or_liability": "liability", "opening_balance_cents": 90000, "balance_cents": 90000},
-  {"account_id": "acct_student", "institution": "Demo Loans", "kind": "student_loan", "asset_or_liability": "liability", "opening_balance_cents": 1200000, "balance_cents": 1200000},
+  {"account_id": "acct_checking", "institution": "Chase", "kind": "checking", "asset_or_liability": "asset", "opening_balance_cents": 280000, "balance_cents": 340000},
+  {"account_id": "acct_savings", "institution": "Chase", "kind": "savings", "asset_or_liability": "asset", "opening_balance_cents": 800000, "balance_cents": 865000},
+  {"account_id": "acct_brokerage", "institution": "Robinhood", "kind": "brokerage", "asset_or_liability": "asset", "opening_balance_cents": 1200000, "balance_cents": 1240000},
+  {"account_id": "acct_card", "institution": "Capital One", "kind": "credit_card", "asset_or_liability": "liability", "opening_balance_cents": 90000, "balance_cents": 90000},
+  {"account_id": "acct_student", "institution": "Sallie Mae", "kind": "student_loan", "asset_or_liability": "liability", "opening_balance_cents": 1200000, "balance_cents": 1200000},
 ]
 for a in accounts:
   a.update({"user_id": USER, "as_of": f"2026-09-30T23:59:59{TZ}", "source_id": f"fixture:{a['account_id']}"})
