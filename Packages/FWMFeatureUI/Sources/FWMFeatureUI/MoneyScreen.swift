@@ -53,7 +53,7 @@ struct MoneyScreen: View {
         let f = v.flow
         let stays = f.toSavingsCents + f.toInvestmentsCents + f.retainedCashCents
         let month = DemoStore.monthName(period).components(separatedBy: " ").first ?? period
-        AskChip("Where did my money go in \(month)?")
+        AskChip("Where did my money go in \(month)?", kind: .money, store: store)
         VStack(alignment: .leading, spacing: 4) {
             Eyebrow("Stayed with you · \(month)")
             HeroAmount(cents: stays)

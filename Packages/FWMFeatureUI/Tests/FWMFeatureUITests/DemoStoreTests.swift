@@ -36,4 +36,10 @@ final class DemoStoreTests: XCTestCase {
         XCTAssertTrue((PreviewBudgetPlan.swaps + [PreviewBudgetPlan.instantCoffee]).allSatisfy { BudgetIdea.actions[$0.id] != nil })
         XCTAssertTrue(PreviewBudgetPlan.habits.allSatisfy { !BudgetIdea($0).isSwap })
     }
+
+    func testMessagesLineComesFromConfigAndRejectsJunk() {
+        XCTAssertNil(LanaMessagesLine.url(infoValue: nil))
+        XCTAssertNil(LanaMessagesLine.url(infoValue: "not a number"))
+        XCTAssertEqual(LanaMessagesLine.url(infoValue: "+1 (555) 010-0199")?.absoluteString, "sms:+15550100199")
+    }
 }
