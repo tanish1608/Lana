@@ -14,6 +14,8 @@ const PAIRING_CODE = process.env.PAIRING_CODE || String(randomBytes(3).readUIntB
 // Which phone numbers belong to which paired user: "+14085550101=user_ashwin,+1..."
 const PAIRED_PHONES = Object.fromEntries((process.env.PAIRED_PHONES || '').split(',').filter(Boolean).map((p) => p.split('=').map((s) => s.trim())));
 const FOREGROUND_MS = 20_000; // a device that polled this recently counts as open
+const SIM_PHONE = process.env.SIM_PHONE || '';
+const SIM_PHONE_ID = process.env.SIM_PHONE_ID || '';
 
 // ---------- inbound ----------
 
@@ -60,7 +62,7 @@ async function nudgeIfIdle(jobId: string, user: string, to: string) {
   const dev = db.prepare('SELECT MAX(last_seen) AS t FROM devices WHERE paired_user_id = ?').get(user) as any;
   if (dev?.t && Date.now() - dev.t < FOREGROUND_MS) return;
   db.prepare('UPDATE jobs SET nudged = 1, updated_at = ? WHERE job_id = ?').run(now(), jobId);
-  await send({ key: `nudge:${jobId}`, to, body: `Got it. Open FWM to finish: fwm://job/${jobId}` });
+  await send({ key: `nudge:${jobId}`, to, body: `Got it. Open Lana to finish: lana://job/${jobId}` });
 }
 
 // ---------- device auth and approvals ----------
@@ -131,6 +133,33 @@ const routes: [string, RegExp, (req: IncomingMessage, res: ServerResponse, m: Re
     res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
     res.end(readFileSync(new URL('../public/timer.html', import.meta.url)));
   }, false],
+
+  // Demo phone: a second Dial number plays the user's phone, so the whole thread is real Dial traffic (Dial's advice
+  // while iMessage is unavailable). Dial-to-Dial SMS is not blocked by 10DLC.
+  ['GET', /^\/phone$/, (_q, res) => {
+    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+    res.end(readFileSync(new URL('../public/phone.html', import.meta.url)));
+  }, false],
+
+  ['POST', /^\/sim\/send$/, async (req, res) => {
+    if (!dial || !SIM_PHONE) return err(res, 503, 'PROVIDER_UNAVAILABLE', 'The demo phone is not configured (SIM_PHONE).');
+    const b = JSON.parse((await readBody(req)) || '{}');
+    if (!b.text && !b.image?.base64) return err(res, 400, 'INVALID_ARGUMENTS', 'Send text or a photo.');
+    const media = b.image?.base64 ? [{ data: new Uint8Array(Buffer.from(b.image.base64, 'base64')), contentType: b.image.content_type || 'image/jpeg', filename: b.image.filename || 'photo.jpg' }] : undefined;
+    const msg: any = await dial.sendMessage({ to: FROM, fromNumber: SIM_PHONE, body: b.text || '', ...(media ? { media } : {}) });
+    json(res, 201, { message_id: msg.id });
+  }, true],
+
+  ['GET', /^\/sim\/thread$/, async (_req, res) => {
+    if (!dial || !SIM_PHONE) return err(res, 503, 'PROVIDER_UNAVAILABLE', 'The demo phone is not configured (SIM_PHONE).');
+    const all: any[] = await dial.listMessages(SIM_PHONE_ID ? { numberId: SIM_PHONE_ID } : {});
+    const messages = all
+      .filter((m) => (m.from === SIM_PHONE && m.to === FROM) || (m.from === FROM && m.to === SIM_PHONE))
+      .sort((a, b) => String(a.createdAt).localeCompare(String(b.createdAt)))
+      .map((m) => ({ id: m.id, direction: m.from === SIM_PHONE ? 'out' : 'in', body: m.body || '', created_at: m.createdAt,
+                     media: (m.media || []).map((x: any) => ({ url: x.url, content_type: x.contentType })) }));
+    json(res, 200, { sim_phone: SIM_PHONE, lana: FROM, messages });
+  }, true],
 
   ['GET', /^\/health$/, (_q, res) => json(res, 200, { ok: true, dial: !!dial, from: FROM || null, demo_now: new Date(demoNow()).toISOString() }), false],
 

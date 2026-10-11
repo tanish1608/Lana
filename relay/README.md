@@ -54,6 +54,9 @@ Every `/v1/*` call except `/v1/pair` sends `Authorization: Bearer <device_token>
 | `GET /v1/time-receipt` | | `{rows: [{workflow, manual_seconds, manual_source: measured\|estimate, lana_seconds, saved_seconds, manual_runs, lana_runs}], total_saved_seconds, data_mode: live\|local, query}`. Averages measured runs only; seeded history is excluded. A chore with no measured manual run falls back to `MANUAL_ESTIMATES_SECONDS`, labeled `estimate`. |
 | `GET /v1/evidence` | | recent jobs, outbox rows with Dial message IDs, reminders (integration evidence, T09) |
 | `GET /health` | no auth | `{ok, dial, from, demo_now}` |
+| `GET /phone` | no auth (pairs in page) | Demo phone: an iMessage-style thread that texts Lana from a second Dial number (`SIM_PHONE`). Dial-to-Dial SMS is not blocked by 10DLC, so every message in it is real Dial traffic. |
+| `POST /sim/send`, `GET /sim/thread` | `{text, image?: {base64, content_type, filename}}` | Used by `/phone`. |
+| `GET /timer` | no auth (pairs in page) | Stopwatch for timing chores; posts to `/v1/timings`. |
 
 **Identity.** The relay maps the sender's number to `paired_user_id` through `PAIRED_PHONES`. Messages from other numbers are dropped. Nothing in the message text can change the user.
 
@@ -79,7 +82,7 @@ For reminders, `payload = {action_id, contact_id, to, body, due_at}`. A changed 
 |---|---|
 | Job queue, pairing, idempotent replies, approvals, reminders, demo clock | `npm test` passes (5 end-to-end tests) |
 | Swift client | `swift test` passes; `testLiveRelayLoop` ran against a local relay (pair, job, result, signed reminder, forged approval rejected) |
-| Dial send/receive | Verified live at 1:19 PM: Dial's Test Inbound SMS reached the relay over the event stream, became a job for user_ashwin, and the relay sent the "Open FWM" nudge back through Dial (provider message ID recorded in `/v1/evidence`). At 1:25 PM the full relay side ran through the public ngrok URL: a Dial inbound became a job, a scripted phone claimed it and posted a result, and Dial accepted the reply about 0.5 s after the claim. Our number is SMS/voice. Inbound SMS from any phone works. Outbound SMS to US numbers is blocked until 10DLC registration ($25, 3 to 5 days), and iMessage costs $250 up front, so the demo shows replies in the app. |
+| Dial send/receive | Two-way verified at 2:00 PM with a second Dial number (+1 415-612-5042) as the user's phone: question in, job, answer posted, reply on the demo phone 15 s after the question. Verified at 1:19 PM: Dial's Test Inbound SMS reached the relay over the event stream, became a job for user_ashwin, and the relay sent the "Open FWM" nudge back through Dial (provider message ID recorded in `/v1/evidence`). At 1:25 PM the full relay side ran through the public ngrok URL: a Dial inbound became a job, a scripted phone claimed it and posted a result, and Dial accepted the reply about 0.5 s after the claim. Our number is SMS/voice. Inbound SMS from any phone works. Outbound SMS to US numbers is blocked until 10DLC registration ($25, 3 to 5 days), and iMessage costs $250 up front, so the demo shows replies in the app. |
 | Dial webhook | Signature check written. Not exercised; the event stream is the primary path. |
 | Time receipt | `npm test` covers averaging and minutes saved (local mode). Keewano query is the same timeline SQL as swap memory. |
 | Keewano swap memory | Verified live at 1:36 PM: `swapMemory("user_ashwin", ...)` returns `blocked_groups: ["instant_coffee"]` (3 rejected, 0 accepted) with `data_mode: live`. History from `npm run seed:keewano`. New events took several minutes to become queryable. |
