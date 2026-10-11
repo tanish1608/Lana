@@ -214,3 +214,19 @@ private actor SuspendedVersionAdapter: CoreActionCommitting {
     #expect(await adapter.count() == 0)
     #expect(await gate.status(actionID: "action-canceled") == .failed)
 }
+
+@Test func demoPhrasingsReachTheirTools() async throws {
+    let ds = try loadFixture()
+    let context = CoreRoutingContext(scope: scope(ds))
+    let router = CoreRouter()
+    guard case .getMoneyView(let period, _)? = try await router.route("How did September go?", context: context).tool else {
+        Issue.record("How did September go? should read the money view"); return
+    }
+    #expect(period == "2026-09")
+    guard case .suggestSwaps(let budget, _)? = try await router.route("What can I swap to save money?", context: context).tool else {
+        Issue.record("What can I swap to save money? should suggest swaps"); return
+    }
+    #expect(budget == "budget-1")
+    // Any other named month is still refused rather than guessed.
+    await #expect(throws: ToolError.self) { try await router.route("How did March go?", context: context) }
+}

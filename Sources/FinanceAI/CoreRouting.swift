@@ -71,6 +71,7 @@ private struct CoreModelDecision {
 /// identifiers, and deterministic input parsing supplies money/month arguments.
 public struct CoreRouter: CoreIntentRouting {
     private let preferRules: Bool
+    static let months = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"]
     public init(preferRules: Bool = true) { self.preferRules = preferRules }
     public func route(_ text: String, context: CoreRoutingContext) async throws -> CoreRoute {
         let clean = text.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -114,12 +115,15 @@ public struct CoreRouter: CoreIntentRouting {
     }
     private func rules(_ text: String, words: Set<String>) -> CoreModelIntent? {
         if !words.intersection(["not", "never", "dont", "don"]).isEmpty { return .clarify }
+        // "What can I swap to save money?" asks for swaps; saving is the reason, not a second request.
+        if !words.intersection(["swaps", "swap", "cheaper", "alternatives"]).isEmpty && words.isDisjoint(with: ["split", "receipt"]) { return .swaps }
         var intents: [CoreModelIntent] = []
         if words.contains("split") { intents.append(.split) }
         if words.contains("receipt") && !words.contains("split") { intents.append(.receipt) }
         if !words.intersection(["swaps", "swap", "cheaper", "alternatives"]).isEmpty { intents.append(.swaps) }
         if !words.intersection(["budget", "save", "saving", "savings"]).isEmpty || text.lowercased().contains("put aside") { intents.append(.budget) }
-        if !words.intersection(["money", "spending", "income", "assets", "debts", "worth", "accounts"]).isEmpty
+        if !words.intersection(["money", "spending", "spend", "spent", "income", "assets", "debts", "worth", "accounts"]).isEmpty
+            || (!words.isDisjoint(with: Self.months) && !words.isDisjoint(with: ["how", "go", "went", "did", "look", "looking"]))
             || text.lowercased().hasPrefix("how am i doing") || text.lowercased().contains("financial position") { intents.append(.money) }
         return intents.count == 1 ? intents.first : intents.count > 1 ? .clarify : nil
     }
@@ -165,9 +169,12 @@ public struct CoreRouter: CoreIntentRouting {
         let period = matches.first.flatMap { Range($0.range, in: text).map { String(text[$0]) } } ?? defaultPeriod
         guard validPeriod(period) else { throw ToolError(.invalidArguments, "Use a valid month such as 2026-09.") }
         // Avoid silently treating an unparsed named month as the current month.
-        let months = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"]
         let words = text.lowercased().split(whereSeparator: { !$0.isLetter }).map(String.init)
         if matches.isEmpty, words.contains(where: months.contains) || text.lowercased().contains("last month") {
+            // Naming the default period's own month is unambiguous: "How did September go?" while showing 2026-09.
+            let named = Set(words.filter(months.contains))
+            if named.count == 1, !text.lowercased().contains("last month"), let i = months.firstIndex(of: named.first!),
+               defaultPeriod.hasSuffix(String(format: "-%02d", i + 1)) { return defaultPeriod }
             throw ToolError(.invalidArguments, "Specify the month as YYYY-MM, for example 2026-09.")
         }
         return period
