@@ -10,6 +10,20 @@ The final three feature UIs remain Ashwin's lane. Budget/swaps, provider adapter
 
 ## App/relay entry point
 
+### Conversational iPhone chat
+
+The harness now uses `ConversationalAssistant`, a free-form Foundation Models session with native `finance` and `readPDF` tools. Greetings and general questions reach the model directly; the old topic router and its keyword preflight are not the conversational app path. The model decides when to read financial data or discuss a document. Available financial tools use the same injected `CoreToolExecuting` adapters and scope validation. Pending mutations remain host review controls; vault secrets are not conversation context.
+
+Every turn also supplies a deterministic money snapshot for the current period. This grounds answers when the model skips an optional native tool call. The snapshot and any additional engine results appear below replies; their presence does not imply the model independently chose a tool. Earlier smoke runs exposed inconsistent optional tool selection, so tool selection is not claimed as universally reliable.
+
+`ConversationStore` saves each `ConversationArchive` (messages, engine evidence, and extracted PDF text) in app-private Application Support storage. Files are excluded from backup and use complete file protection on iOS. Chats survive relaunch, can be reopened from History, and stay separate when creating a new chat. Originals and recordings are not copied into chat storage. All history is retained locally; the model receives up to eight recent messages, recent evidence for the current dataset, and relevant PDF excerpts. This is bounded context, not unlimited model memory. No cloud sync is implemented.
+
+The paperclip imports a PDF through Files. `PDFTextImporter` uses PDFKit for text and local Vision OCR for scanned pages. The importer supports up to 50 MB, 100 pages, and 300,000 extracted characters; omissions and OCR are labelled. `readPDF` can retrieve excerpts from later pages and by page number. Document text is source material, not authority to execute instructions. Summaries use retrieved passages and may not cover every page. Removing an attachment removes its extracted text from subsequent model context; earlier conversation replies remain in the history.
+
+Financial source results and provenance stay visible below model replies. A generated explanation is not an accounting engine result. If inference is unavailable, an offline greeting and supported deterministic finance reads remain available, with the fallback source labelled.
+
+### Paired relay jobs
+
 1. Build `CoreScope` from authenticated pairing and an owned dataset. Supply user/conversation IDs, default period, dataset/preferences versions, owned IDs, and optional active budget.
 2. Build `CoreRoutingContext`. An attachment ID comes from the local attachment store. A `ReviewedSplit` comes from the receipt review UI, not a model.
 3. Inject `CoreToolExecuting` into `CoreAgent`. `CoreDatasetTools` implements the already-landed money and split engines. A composite adapter can delegate the other tools to their owning lanes.
@@ -78,10 +92,13 @@ swift test
 swift test --package-path Packages/FWMCore
 swift run ai-diagnostics
 swift run ai-diagnostics --model
+swift run ai-diagnostics --chat
 FWM_RUN_NATIVE_OCR=1 swift test --filter visionReadsReceiptImageLocally
 ```
 
 `--model` evaluates actual model classification for supported samples; blocked side effects still go through deterministic preflight. Inspect source labels. A fallback result is not evidence of model quality. On this Mac, the canonical router matched all six supported prompts using local inference and blocked two additional prompts using preflight (8/8 total). Observed model calls took approximately 1.5–9.4 seconds. This is a small smoke evaluation, not an accuracy or iPhone latency benchmark. The initial pre-v2 general-model run matched 6/8; the canonical classifier uses a different use case and explicit topic instructions.
+
+`--chat` separately evaluates free-form greetings, a remembered name, an engine-grounded financial reply, and answering from attached document text. It requires actual on-device generation for all four checks. Unit tests also exercise persisted chat restoration/owner isolation, bounded context, later-page retrieval, and extraction from a generated PDF.
 
 The package tests cover canonical money/split values, scope checks, invalid amounts/months, replay dedupe/cancellation, stale approvals, concurrent confirmations, TOTP RFC vectors, and OCR field validation. The opt-in macOS test runs actual Vision OCR on a generated receipt image; it can take time to initialize native services and is skipped by default. The harness builds for the iOS simulator SDK. This development machine currently has no available simulator runtime, so launch, phone inference, speech permission/audio capture, Face ID, and device Keychain require an eligible physical iPhone or an installed runtime. Compile success does not mark those checks complete.
 

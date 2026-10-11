@@ -64,7 +64,7 @@ The shared product plan uses **local inference, without a cloud LLM**. The relay
 | Root `Package.swift`, `Sources/FinanceAI/`, `Tests/FinanceAITests/` | Tanish's reusable local AI module | On `codex/on-device-ai`; integrated with `FWMCore` |
 | `Examples/AIPlayground/` | AI-only SwiftUI test harness | Development harness on AI branch; separate from final feature screens |
 
-The AI branch includes Apple Foundation Models routing, Vision OCR, local Speech transcription, confirmation orchestration, passcode-protected Keychain storage, and RFC-tested TOTP generation. Its harness now uses the canonical v2 dataset and shared money/split engines. Foundation Models is the initial backend; **MLX is an option to evaluate, not an installed dependency**. A cloud routing prototype on that branch is unused and is not part of the agreed integrated architecture.
+The AI branch includes free-form Foundation Models chat with native finance/PDF tools, local conversation history, PDF text/scanned-page import, Vision OCR, local Speech transcription, confirmation orchestration, passcode-protected Keychain storage, and RFC-tested TOTP generation. Its harness uses the canonical v2 dataset and shared money/split engines. Foundation Models is the initial backend; **MLX is an option to evaluate, not an installed dependency**. A cloud routing prototype on that branch is unused and is not part of the agreed integrated architecture.
 
 Update this baseline when components land. Distinguish implemented code, successful compilation, actual model inference, and physical-device verification.
 

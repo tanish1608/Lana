@@ -12,13 +12,15 @@
 		55936E3C9F970FCD78709841 /* FinanceAI in Frameworks */ = {isa = PBXBuildFile; productRef = 8BEA99F9E49BFB0F75E3B263 /* FinanceAI */; };
 		7F27282CB2477890326789DA /* seed-v1.json in Resources */ = {isa = PBXBuildFile; fileRef = FE6E74B30348615BD1833131 /* seed-v1.json */; };
 		8C181BDE91E8CDE6FDA53804 /* FWMCore in Frameworks */ = {isa = PBXBuildFile; productRef = 455FFE565B8CD53D4E6DA71E /* FWMCore */; };
+		DE5953BD82ECEEDF97065B0D /* ChatLab.swift in Sources */ = {isa = PBXBuildFile; fileRef = E285F55D8DD666A040E7CDB7 /* ChatLab.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		1AE4DD275C28B43B8F077791 /* AIPlayground.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = AIPlayground.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		1F38290F8B76E16E4D3306D3 /* FWMCore */ = {isa = PBXFileReference; lastKnownFileType = folder; name = FWMCore; path = ../../Packages/FWMCore; sourceTree = SOURCE_ROOT; };
-		2807B5167502F35C31D949EC /* speedrun-hacks */ = {isa = PBXFileReference; lastKnownFileType = folder; name = "speedrun-hacks"; path = ../..; sourceTree = SOURCE_ROOT; };
 		4E3F428F8062D95B1A2A467B /* DemoEnvironment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DemoEnvironment.swift; sourceTree = "<group>"; };
+		6C9AD0812A16D52F4FC7DA7F /* speedhacks-iphone-source */ = {isa = PBXFileReference; lastKnownFileType = folder; name = "speedhacks-iphone-source"; path = ../..; sourceTree = SOURCE_ROOT; };
+		E285F55D8DD666A040E7CDB7 /* ChatLab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatLab.swift; sourceTree = "<group>"; };
 		EA3B11DD24232F4FC07B75FD /* AIPlaygroundApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIPlaygroundApp.swift; sourceTree = "<group>"; };
 		FE6E74B30348615BD1833131 /* seed-v1.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "seed-v1.json"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -57,7 +59,7 @@
 			isa = PBXGroup;
 			children = (
 				1F38290F8B76E16E4D3306D3 /* FWMCore */,
-				2807B5167502F35C31D949EC /* speedrun-hacks */,
+				6C9AD0812A16D52F4FC7DA7F /* speedhacks-iphone-source */,
 			);
 			name = Packages;
 			sourceTree = "<group>";
@@ -76,6 +78,7 @@
 			isa = PBXGroup;
 			children = (
 				EA3B11DD24232F4FC07B75FD /* AIPlaygroundApp.swift */,
+				E285F55D8DD666A040E7CDB7 /* ChatLab.swift */,
 				4E3F428F8062D95B1A2A467B /* DemoEnvironment.swift */,
 			);
 			name = AIPlayground;
@@ -157,6 +160,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				3CA97B54E4E60DE04C233743 /* AIPlaygroundApp.swift in Sources */,
+				DE5953BD82ECEEDF97065B0D /* ChatLab.swift in Sources */,
 				1947DEC399B6D917BAAF238E /* DemoEnvironment.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

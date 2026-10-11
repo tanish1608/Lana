@@ -3,7 +3,7 @@ import FinanceAI
 import FWMCore
 
 enum DemoEnvironment {
-    static func agent() throws -> (CoreAgent, CoreScope) {
+    static func assistant() throws -> (ConversationalAssistant, CoreScope) {
         guard let url = Bundle.main.url(forResource: "seed-v1", withExtension: "json") else {
             throw ToolError(.invalidArguments, "Canonical seed-v1 fixture is missing from the app bundle.")
         }
@@ -17,7 +17,7 @@ enum DemoEnvironment {
         let split = ReviewedSplit(receiptID: "rcpt_dinner_1011", payerID: "c_ashwin", assignments:
             ["it_1": ["c_tanish"], "it_2": ["c_aryan"], "it_3": ["c_ashwin"], "it_4": ["c_ashwin", "c_tanish", "c_aryan"]])
         let context = CoreRoutingContext(scope: scope, reviewedSplit: split)
-        return (CoreAgent(context: context, tools: CoreDatasetTools(dataset: ds)), scope)
+        return (ConversationalAssistant(context: context, tools: CoreDatasetTools(dataset: ds)), scope)
     }
     static func message(_ text: String, scope: CoreScope) throws -> MessageEnvelope {
         let data = try JSONSerialization.data(withJSONObject: [
