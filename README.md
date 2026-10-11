@@ -1,4 +1,86 @@
-# Financial World Model
+# Lana
+
+My money lives in five apps. Every one shows me a balance. Not one tells me what to do.
+
+So we built Lana. You don't open a dashboard. You text it, or call it, like the friend who's good with money. The model runs on your phone, code does every calculation, and nothing moves until you approve it.
+
+Tanish, Aryan and Ashwin built it at SpeedHacks on October 11, 2026. The code still calls it Financial World Model (FWM), because that's where we want it to end up. Lana would understand your whole money world and live where you already talk, in iMessage and WhatsApp. This README covers what already works.
+
+**Demo video:** link added at submission.
+
+| Home | Budget | Receipts |
+|:---:|:---:|:---:|
+| <img src="docs/screenshots/home.png" width="240"> | <img src="docs/screenshots/budget.png" width="240"> | <img src="docs/screenshots/split.png" width="240"> |
+| **Accounts** | **Chat** | **Call history** |
+| <img src="docs/screenshots/accounts.png" width="240"> | <img src="docs/screenshots/chat.png" width="240"> | <img src="docs/screenshots/history.png" width="240"> |
+
+These are from the iOS simulator on `main`, with synthetic September data. The call in the last one was real. We called Lana's number from a phone, Dial transcribed it, and the app answered.
+
+## One evening with Lana
+
+It's Sunday night. Ashwin just paid $109.20 for dinner with Tanish and Aryan, and September just closed. Splitting that bill by hand took Aryan 22 minutes. We timed it. Reading the receipt, doing the math, sending the requests, checking they went through. And the monthly review and finding money to save? Nobody ever gets to that part.
+
+Here's the same evening with Lana.
+
+**He texts the receipt.** Ashwin doesn't open an app. He texts Lana a photo of the receipt and says who had what. Dial gives Lana a real phone number. The app is closed, so Lana texts back and tells him to open it.
+
+**He approves the split.** Lana reads the receipt on the phone, and nothing goes to a cloud AI. Ashwin checks each line and Lana does the math. Tanish owes $36.40, Aryan owes $44.20, and Ashwin's share is $28.60. That's $109.20, to the cent. Lana sends nothing until he approves.
+
+**He calls on the walk home.** "How did September go?" Dial turns his voice into text. The question goes to his phone, the model there answers, and Dial reads the answer back. Afterward the call sits in Lana's history, next to his chats.
+
+**He finds $150 a month.** "What can I swap to save money?" Lana picks store-brand pantry staples, concentrated detergent and a cheaper plan on the same network. For coffee it picks whole beans, not instant, because Ashwin turned instant down last time. When he approves, the phone checks it's really him. Until then nothing changes.
+
+## Time saved
+
+| Chore | By hand | With Lana | Where the number comes from |
+|---|---|---|---|
+| Split the dinner bill | 22 min, measured | In the demo video | `/timer` stopwatch, logged to Keewano |
+| Month review | 15 min | Not measured | Team estimate |
+| Budget and swaps | 20 min | Not measured | Team estimate |
+
+Lana's time counts checking every receipt line and approving each request. Setup happens once. You pair the phone with the relay in Accounts → Messaging → Configure messaging relay, using a code the relay gives you. The relay serves the live receipt at `GET /v1/time-receipt`.
+
+## Partners
+
+| Partner | What it does for Lana | Code |
+|---|---|---|
+| Dial | Gives Lana a real phone number. Texts and receipt photos come in on Dial's event stream, and replies go out through Dial. Calls use Dial's Self-Hosted mode, so Dial handles the speech and the answer comes from the phone. | `relay/src/server.ts`, `relay/src/voice.ts` |
+| Keewano | Remembers which swaps you turned down, like instant coffee, so Lana stops suggesting them. It also stores the measured chore times behind the time receipt. | `relay/src/keewano.ts` |
+| Sparta Worlds | We tested the code that applies an approved phone-plan switch. Our first version switched a plan without approval and applied a repeated request twice. It passed 1 of 4 cases, and 0 of 4 when the billing server failed. The fixed version passes all 4 both ways. | `sparta/README.md`, `sparta/evidence/` |
+
+## How a text or call gets answered
+
+![A text or call goes from your phone to Dial, then the relay, then the iPhone running Lana, and the answer comes back the same way](docs/diagrams/flow.png)
+
+The relay never runs a model and never touches money math. It carries jobs between Dial and the phone. To edit the diagram, open `docs/diagrams/flow.excalidraw` in [Excalidraw](https://excalidraw.com).
+
+## Private by design
+
+The model runs on your phone, so your financial data never goes to a cloud AI or a data company. That's what lets Lana get personal. It learns your brands, your habits and the choices you've made. Code does every calculation, and nothing moves without your approval.
+
+## Who pays, and what's next
+
+We're starting with young professionals whose money already spans several apps. Lana makes money two ways: a $10 a month subscription, and referral fees when someone adopts one of its fixes, like a cheaper phone plan. You pick the swap, and we never sell your data.
+
+Next comes live bank connections, then iMessage and WhatsApp, then shared money for roommates and couples.
+
+## Run it
+
+- **App.** Open `Examples/LanaDemoApp/LanaDemoApp.xcodeproj`, pick the LanaDemoApp scheme and run on iOS 26+. Chat answers need Apple Intelligence.
+- **Relay.** `cd relay && npm install && npm test`, then `npm start`. Copy `.env.example` to `.env` and add the Dial and Keewano keys.
+- **Swift tests.** `swift test`, and `swift test --package-path Packages/FWMCore`.
+- **Sparta.** Steps are in `sparta/README.md`.
+
+## What isn't real yet
+
+- The bank data is a synthetic fixture plus CSV import. There are no live bank connections.
+- Dial can't text US numbers until 10DLC registration clears, so the demo sends texts from the relay's `/phone` page. Calls work from any phone.
+- iOS won't let Lana answer in the background. That's why the relay texts you to open it.
+- The Budget screen labels its preference history as simulated. The live Keewano connection is in the relay.
+
+---
+
+# Team notes: Financial World Model
 
 An iPhone financial assistant that turns accounts, transactions, preferences, and receipts into useful answers and reviewable actions in one conversation. Built for SpeedHacks, October 11, 2026. Working name: **Financial World Model (FWM)**. Team: **Tanish, Aryan, and Ashwin**.
 
@@ -40,23 +122,9 @@ Supporting work includes local model routing, receipt OCR, on-device voice trans
 
 ## Architecture
 
-```text
-App chat / reviewed voice / authenticated paired messaging
-                          |
-                iPhone-local model router
-                          |
-           Schema + scope + state + approval checks
-                          |
-                 Allowlisted FWMCore tools
-                    /                \
-        Deterministic engines    Local OCR / reviewed receipt
-                    \                /
-              Result + provenance + action proposal
-                          |
-             Chat / cards / drill-down share one result
-                          |
-           Human approval before commit or dispatch
-```
+![Requests go to the on-device model router, then checks, then allowlisted tools and engines, then one result you approve](docs/diagrams/arch.png)
+
+Source: `docs/diagrams/arch.excalidraw`, editable in [Excalidraw](https://excalidraw.com).
 
 The shared product plan uses **local inference, without a cloud LLM**. The relay carries jobs/messages and provider responses. It does not run inference or calculate money. Remote provider calls are separate from model processing. iOS background execution is constrained; the relay must handle an unavailable or foreground-required phone explicitly.
 
