@@ -1,0 +1,1140 @@
+{
+ "dataset_version": "seed-v1",
+ "data_mode": "fixture",
+ "as_of": "2026-09-30T23:59:59-07:00",
+ "demo_clock": "2026-10-11T18:00:00-07:00",
+ "user": {
+  "user_id": "user_ashwin",
+  "display_name": "Ashwin",
+  "timezone": "America/Los_Angeles",
+  "currency": "USD",
+  "brand_locks": [
+   "oat_milk"
+  ],
+  "dietary_rules": [],
+  "savings_goal_cents": 15000,
+  "preferences_version": 1
+ },
+ "accounts": [
+  {
+   "account_id": "acct_checking",
+   "institution": "Demo Bank",
+   "kind": "checking",
+   "asset_or_liability": "asset",
+   "opening_balance_cents": 280000,
+   "balance_cents": 340000,
+   "user_id": "user_ashwin",
+   "as_of": "2026-09-30T23:59:59-07:00",
+   "source_id": "fixture:acct_checking"
+  },
+  {
+   "account_id": "acct_savings",
+   "institution": "Demo Bank",
+   "kind": "savings",
+   "asset_or_liability": "asset",
+   "opening_balance_cents": 800000,
+   "balance_cents": 865000,
+   "user_id": "user_ashwin",
+   "as_of": "2026-09-30T23:59:59-07:00",
+   "source_id": "fixture:acct_savings"
+  },
+  {
+   "account_id": "acct_brokerage",
+   "institution": "Demo Brokerage",
+   "kind": "brokerage",
+   "asset_or_liability": "asset",
+   "opening_balance_cents": 1200000,
+   "balance_cents": 1240000,
+   "user_id": "user_ashwin",
+   "as_of": "2026-09-30T23:59:59-07:00",
+   "source_id": "fixture:acct_brokerage"
+  },
+  {
+   "account_id": "acct_card",
+   "institution": "Demo Card",
+   "kind": "credit_card",
+   "asset_or_liability": "liability",
+   "opening_balance_cents": 90000,
+   "balance_cents": 90000,
+   "user_id": "user_ashwin",
+   "as_of": "2026-09-30T23:59:59-07:00",
+   "source_id": "fixture:acct_card"
+  },
+  {
+   "account_id": "acct_student",
+   "institution": "Demo Loans",
+   "kind": "student_loan",
+   "asset_or_liability": "liability",
+   "opening_balance_cents": 1200000,
+   "balance_cents": 1200000,
+   "user_id": "user_ashwin",
+   "as_of": "2026-09-30T23:59:59-07:00",
+   "source_id": "fixture:acct_student"
+  }
+ ],
+ "transactions": [
+  {
+   "transaction_id": "txn_jul_001",
+   "account_id": "acct_checking",
+   "posted_at": "2026-07-15T12:00:00-07:00",
+   "signed_amount_cents": 240000,
+   "merchant": "Acme Inc payroll",
+   "category": "Income",
+   "pending": false,
+   "transfer_pair_id": null,
+   "source_id": "fixture:txn_jul_001"
+  },
+  {
+   "transaction_id": "txn_jul_002",
+   "account_id": "acct_checking",
+   "posted_at": "2026-07-30T12:00:00-07:00",
+   "signed_amount_cents": 240000,
+   "merchant": "Acme Inc payroll",
+   "category": "Income",
+   "pending": false,
+   "transfer_pair_id": null,
+   "source_id": "fixture:txn_jul_002"
+  },
+  {
+   "transaction_id": "txn_jul_003",
+   "account_id": "acct_checking",
+   "posted_at": "2026-07-01T12:00:00-07:00",
+   "signed_amount_cents": -160000,
+   "merchant": "Mission Apartments",
+   "category": "Rent",
+   "pending": false,
+   "transfer_pair_id": null,
+   "source_id": "fixture:txn_jul_003"
+  },
+  {
+   "transaction_id": "txn_jul_004",
+   "account_id": "acct_checking",
+   "posted_at": "2026-07-03T12:00:00-07:00",
+   "signed_amount_cents": -14250,
+   "merchant": "Trader Joe's",
+   "category": "Groceries",
+   "pending": false,
+   "transfer_pair_id": null,
+   "source_id": "fixture:txn_jul_004"
+  },
+  {
+   "transaction_id": "txn_jul_005",
+   "account_id": "acct_checking",
+   "posted_at": "2026-07-10T12:00:00-07:00",
+   "signed_amount_cents": -12875,
+   "merchant": "Safeway",
+   "category": "Groceries",
+   "pending": false,
+   "transfer_pair_id": null,
+   "source_id": "fixture:txn_jul_005"
+  },
+  {
+   "transaction_id": "txn_jul_006",
+   "account_id": "acct_checking",
+   "posted_at": "2026-07-17T12:00:00-07:00",
+   "signed_amount_cents": -11900,
+   "merchant": "Trader Joe's",
+   "category": "Groceries",
+   "pending": false,
+   "transfer_pair_id": null,
+   "source_id": "fixture:txn_jul_006"
+  },
+  {
+   "transaction_id": "txn_jul_007",
+   "account_id": "acct_checking",
+   "posted_at": "2026-07-24T12:00:00-07:00",
+   "signed_amount_cents": -10975,
+   "merchant": "Costco",
+   "category": "Groceries",
+   "pending": false,
+   "transfer_pair_id": null,
+   "source_id": "fixture:txn_jul_007"
+  },
+  {
+   "transaction_id": "txn_jul_008",
+   "account_id": "acct_checking",
+   "posted_at": "2026-07-05T12:00:00-07:00",
+   "signed_amount_cents": -4800,
+   "merchant": "Tartine",
+   "category": "Dining",
+   "pending": false,
+   "transfer_pair_id": null,
+   "source_id": "fixture:txn_jul_008"
+  },
+  {
+   "transaction_id": "txn_jul_009",
+   "account_id": "acct_checking",
+   "posted_at": "2026-07-12T12:00:00-07:00",
+   "signed_amount_cents": -9650,
+   "merchant": "Nopa",
+   "category": "Dining",
+   "pending": false,
+   "transfer_pair_id": null,
+   "source_id": "fixture:txn_jul_009"
+  },
+  {
+   "transaction_id": "txn_jul_010",
+   "account_id": "acct_checking",
+   "posted_at": "2026-07-19T12:00:00-07:00",
+   "signed_amount_cents": -2875,
+   "merchant": "Chipotle",
+   "category": "Dining",
+   "pending": false,
+   "transfer_pair_id": null,
+   "source_id": "fixture:txn_jul_010"
+  },
+  {
+   "transaction_id": "txn_jul_011",
+   "account_id": "acct_checking",
+   "posted_at": "2026-07-26T12:00:00-07:00",
+   "signed_amount_cents": -12675,
+   "merchant": "Zuni Cafe",
+   "category": "Dining",
+   "pending": false,
+   "transfer_pair_id": null,
+   "source_id": "fixture:txn_jul_011"
+  },
+  {
+   "transaction_id": "txn_jul_012",
+   "account_id": "acct_checking",
+   "posted_at": "2026-07-02T12:00:00-07:00",
+   "signed_amount_cents": -8600,
+   "merchant": "Clipper",
+   "category": "Transport",
+   "pending": false,
+   "transfer_pair_id": null,
+   "source_id": "fixture:txn_jul_012"
+  },
+  {
+   "transaction_id": "txn_jul_013",
+   "account_id": "acct_checking",
+   "posted_at": "2026-07-14T12:00:00-07:00",
+   "signed_amount_cents": -4320,
+   "merchant": "Uber",
+   "category": "Transport",
+   "pending": false,
+   "transfer_pair_id": null,
+   "source_id": "fixture:txn_jul_013"
+  },
+  {
+   "transaction_id": "txn_jul_014",
+   "account_id": "acct_checking",
+   "posted_at": "2026-07-22T12:00:00-07:00",
+   "signed_amount_cents": -3880,
+   "merchant": "Lyft",
+   "category": "Transport",
+   "pending": false,
+   "transfer_pair_id": null,
+   "source_id": "fixture:txn_jul_014"
+  },
+  {
+   "transaction_id": "txn_jul_015",
+   "account_id": "acct_checking",
+   "posted_at": "2026-07-28T12:00:00-07:00",
+   "signed_amount_cents": -8200,
+   "merchant": "Shell",
+   "category": "Transport",
+   "pending": false,
+   "transfer_pair_id": null,
+   "source_id": "fixture:txn_jul_015"
+  },
+  {
+   "transaction_id": "txn_jul_016",
+   "account_id": "acct_checking",
+   "posted_at": "2026-07-04T12:00:00-07:00",
+   "signed_amount_cents": -8500,
+   "merchant": "Verizon",
+   "category": "Bills and subscriptions",
+   "pending": false,
+   "transfer_pair_id": null,
+   "source_id": "fixture:txn_jul_016"
+  },
+  {
+   "transaction_id": "txn_jul_017",
+   "account_id": "acct_checking",
+   "posted_at": "2026-07-08T12:00:00-07:00",
+   "signed_amount_cents": -9200,
+   "merchant": "PG&E",
+   "category": "Bills and subscriptions",
+   "pending": false,
+   "transfer_pair_id": null,
+   "source_id": "fixture:txn_jul_017"
+  },
+  {
+   "transaction_id": "txn_jul_018",
+   "account_id": "acct_checking",
+   "posted_at": "2026-07-15T12:00:00-07:00",
+   "signed_amount_cents": -1199,
+   "merchant": "Spotify",
+   "category": "Bills and subscriptions",
+   "pending": false,
+   "transfer_pair_id": null,
+   "source_id": "fixture:txn_jul_018"
+  },
+  {
+   "transaction_id": "txn_jul_019",
+   "account_id": "acct_checking",
+   "posted_at": "2026-07-15T12:00:00-07:00",
+   "signed_amount_cents": -1549,
+   "merchant": "Netflix",
+   "category": "Bills and subscriptions",
+   "pending": false,
+   "transfer_pair_id": null,
+   "source_id": "fixture:txn_jul_019"
+  },
+  {
+   "transaction_id": "txn_jul_020",
+   "account_id": "acct_checking",
+   "posted_at": "2026-07-20T12:00:00-07:00",
+   "signed_amount_cents": -4552,
+   "merchant": "Comcast",
+   "category": "Bills and subscriptions",
+   "pending": false,
+   "transfer_pair_id": null,
+   "source_id": "fixture:txn_jul_020"
+  },
+  {
+   "transaction_id": "txn_jul_021",
+   "account_id": "acct_checking",
+   "posted_at": "2026-07-06T12:00:00-07:00",
+   "signed_amount_cents": -4000,
+   "merchant": "Blue Bottle Coffee beans",
+   "category": "Other",
+   "pending": false,
+   "transfer_pair_id": null,
+   "source_id": "fixture:txn_jul_021"
+  },
+  {
+   "transaction_id": "txn_jul_022",
+   "account_id": "acct_checking",
+   "posted_at": "2026-07-11T12:00:00-07:00",
+   "signed_amount_cents": -6890,
+   "merchant": "Target",
+   "category": "Other",
+   "pending": false,
+   "transfer_pair_id": null,
+   "source_id": "fixture:txn_jul_022"
+  },
+  {
+   "transaction_id": "txn_jul_023",
+   "account_id": "acct_checking",
+   "posted_at": "2026-07-18T12:00:00-07:00",
+   "signed_amount_cents": -7245,
+   "merchant": "Amazon",
+   "category": "Other",
+   "pending": false,
+   "transfer_pair_id": null,
+   "source_id": "fixture:txn_jul_023"
+  },
+  {
+   "transaction_id": "txn_jul_024",
+   "account_id": "acct_checking",
+   "posted_at": "2026-07-25T12:00:00-07:00",
+   "signed_amount_cents": -4100,
+   "merchant": "Walgreens",
+   "category": "Other",
+   "pending": false,
+   "transfer_pair_id": null,
+   "source_id": "fixture:txn_jul_024"
+  },
+  {
+   "transaction_id": "txn_jul_025",
+   "account_id": "acct_checking",
+   "posted_at": "2026-07-27T12:00:00-07:00",
+   "signed_amount_cents": -2765,
+   "merchant": "Tide detergent",
+   "category": "Other",
+   "pending": false,
+   "transfer_pair_id": null,
+   "source_id": "fixture:txn_jul_025"
+  },
+  {
+   "transaction_id": "txn_jul_026",
+   "account_id": "acct_checking",
+   "posted_at": "2026-07-16T12:00:00-07:00",
+   "signed_amount_cents": -65000,
+   "merchant": "Transfer to savings",
+   "category": "Transfer",
+   "pending": false,
+   "transfer_pair_id": "pair_jul_sav",
+   "source_id": "fixture:txn_jul_026"
+  },
+  {
+   "transaction_id": "txn_jul_027",
+   "account_id": "acct_savings",
+   "posted_at": "2026-07-16T12:00:00-07:00",
+   "signed_amount_cents": 65000,
+   "merchant": "Transfer from checking",
+   "category": "Transfer",
+   "pending": false,
+   "transfer_pair_id": "pair_jul_sav",
+   "source_id": "fixture:txn_jul_027"
+  },
+  {
+   "transaction_id": "txn_jul_028",
+   "account_id": "acct_checking",
+   "posted_at": "2026-07-16T12:00:00-07:00",
+   "signed_amount_cents": -40000,
+   "merchant": "Transfer to brokerage",
+   "category": "Transfer",
+   "pending": false,
+   "transfer_pair_id": "pair_jul_inv",
+   "source_id": "fixture:txn_jul_028"
+  },
+  {
+   "transaction_id": "txn_jul_029",
+   "account_id": "acct_brokerage",
+   "posted_at": "2026-07-16T12:00:00-07:00",
+   "signed_amount_cents": 40000,
+   "merchant": "Transfer from checking",
+   "category": "Transfer",
+   "pending": false,
+   "transfer_pair_id": "pair_jul_inv",
+   "source_id": "fixture:txn_jul_029"
+  },
+  {
+   "transaction_id": "txn_aug_001",
+   "account_id": "acct_checking",
+   "posted_at": "2026-08-15T12:00:00-07:00",
+   "signed_amount_cents": 240000,
+   "merchant": "Acme Inc payroll",
+   "category": "Income",
+   "pending": false,
+   "transfer_pair_id": null,
+   "source_id": "fixture:txn_aug_001"
+  },
+  {
+   "transaction_id": "txn_aug_002",
+   "account_id": "acct_checking",
+   "posted_at": "2026-08-30T12:00:00-07:00",
+   "signed_amount_cents": 240000,
+   "merchant": "Acme Inc payroll",
+   "category": "Income",
+   "pending": false,
+   "transfer_pair_id": null,
+   "source_id": "fixture:txn_aug_002"
+  },
+  {
+   "transaction_id": "txn_aug_003",
+   "account_id": "acct_checking",
+   "posted_at": "2026-08-01T12:00:00-07:00",
+   "signed_amount_cents": -160000,
+   "merchant": "Mission Apartments",
+   "category": "Rent",
+   "pending": false,
+   "transfer_pair_id": null,
+   "source_id": "fixture:txn_aug_003"
+  },
+  {
+   "transaction_id": "txn_aug_004",
+   "account_id": "acct_checking",
+   "posted_at": "2026-08-03T12:00:00-07:00",
+   "signed_amount_cents": -14250,
+   "merchant": "Trader Joe's",
+   "category": "Groceries",
+   "pending": false,
+   "transfer_pair_id": null,
+   "source_id": "fixture:txn_aug_004"
+  },
+  {
+   "transaction_id": "txn_aug_005",
+   "account_id": "acct_checking",
+   "posted_at": "2026-08-10T12:00:00-07:00",
+   "signed_amount_cents": -12875,
+   "merchant": "Safeway",
+   "category": "Groceries",
+   "pending": false,
+   "transfer_pair_id": null,
+   "source_id": "fixture:txn_aug_005"
+  },
+  {
+   "transaction_id": "txn_aug_006",
+   "account_id": "acct_checking",
+   "posted_at": "2026-08-17T12:00:00-07:00",
+   "signed_amount_cents": -11900,
+   "merchant": "Trader Joe's",
+   "category": "Groceries",
+   "pending": false,
+   "transfer_pair_id": null,
+   "source_id": "fixture:txn_aug_006"
+  },
+  {
+   "transaction_id": "txn_aug_007",
+   "account_id": "acct_checking",
+   "posted_at": "2026-08-24T12:00:00-07:00",
+   "signed_amount_cents": -10975,
+   "merchant": "Costco",
+   "category": "Groceries",
+   "pending": false,
+   "transfer_pair_id": null,
+   "source_id": "fixture:txn_aug_007"
+  },
+  {
+   "transaction_id": "txn_aug_008",
+   "account_id": "acct_checking",
+   "posted_at": "2026-08-05T12:00:00-07:00",
+   "signed_amount_cents": -4800,
+   "merchant": "Tartine",
+   "category": "Dining",
+   "pending": false,
+   "transfer_pair_id": null,
+   "source_id": "fixture:txn_aug_008"
+  },
+  {
+   "transaction_id": "txn_aug_009",
+   "account_id": "acct_checking",
+   "posted_at": "2026-08-12T12:00:00-07:00",
+   "signed_amount_cents": -9650,
+   "merchant": "Nopa",
+   "category": "Dining",
+   "pending": false,
+   "transfer_pair_id": null,
+   "source_id": "fixture:txn_aug_009"
+  },
+  {
+   "transaction_id": "txn_aug_010",
+   "account_id": "acct_checking",
+   "posted_at": "2026-08-19T12:00:00-07:00",
+   "signed_amount_cents": -2875,
+   "merchant": "Chipotle",
+   "category": "Dining",
+   "pending": false,
+   "transfer_pair_id": null,
+   "source_id": "fixture:txn_aug_010"
+  },
+  {
+   "transaction_id": "txn_aug_011",
+   "account_id": "acct_checking",
+   "posted_at": "2026-08-26T12:00:00-07:00",
+   "signed_amount_cents": -12675,
+   "merchant": "Zuni Cafe",
+   "category": "Dining",
+   "pending": false,
+   "transfer_pair_id": null,
+   "source_id": "fixture:txn_aug_011"
+  },
+  {
+   "transaction_id": "txn_aug_012",
+   "account_id": "acct_checking",
+   "posted_at": "2026-08-02T12:00:00-07:00",
+   "signed_amount_cents": -8600,
+   "merchant": "Clipper",
+   "category": "Transport",
+   "pending": false,
+   "transfer_pair_id": null,
+   "source_id": "fixture:txn_aug_012"
+  },
+  {
+   "transaction_id": "txn_aug_013",
+   "account_id": "acct_checking",
+   "posted_at": "2026-08-14T12:00:00-07:00",
+   "signed_amount_cents": -4320,
+   "merchant": "Uber",
+   "category": "Transport",
+   "pending": false,
+   "transfer_pair_id": null,
+   "source_id": "fixture:txn_aug_013"
+  },
+  {
+   "transaction_id": "txn_aug_014",
+   "account_id": "acct_checking",
+   "posted_at": "2026-08-22T12:00:00-07:00",
+   "signed_amount_cents": -3880,
+   "merchant": "Lyft",
+   "category": "Transport",
+   "pending": false,
+   "transfer_pair_id": null,
+   "source_id": "fixture:txn_aug_014"
+  },
+  {
+   "transaction_id": "txn_aug_015",
+   "account_id": "acct_checking",
+   "posted_at": "2026-08-28T12:00:00-07:00",
+   "signed_amount_cents": -8200,
+   "merchant": "Shell",
+   "category": "Transport",
+   "pending": false,
+   "transfer_pair_id": null,
+   "source_id": "fixture:txn_aug_015"
+  },
+  {
+   "transaction_id": "txn_aug_016",
+   "account_id": "acct_checking",
+   "posted_at": "2026-08-04T12:00:00-07:00",
+   "signed_amount_cents": -8500,
+   "merchant": "Verizon",
+   "category": "Bills and subscriptions",
+   "pending": false,
+   "transfer_pair_id": null,
+   "source_id": "fixture:txn_aug_016"
+  },
+  {
+   "transaction_id": "txn_aug_017",
+   "account_id": "acct_checking",
+   "posted_at": "2026-08-08T12:00:00-07:00",
+   "signed_amount_cents": -9200,
+   "merchant": "PG&E",
+   "category": "Bills and subscriptions",
+   "pending": false,
+   "transfer_pair_id": null,
+   "source_id": "fixture:txn_aug_017"
+  },
+  {
+   "transaction_id": "txn_aug_018",
+   "account_id": "acct_checking",
+   "posted_at": "2026-08-15T12:00:00-07:00",
+   "signed_amount_cents": -1199,
+   "merchant": "Spotify",
+   "category": "Bills and subscriptions",
+   "pending": false,
+   "transfer_pair_id": null,
+   "source_id": "fixture:txn_aug_018"
+  },
+  {
+   "transaction_id": "txn_aug_019",
+   "account_id": "acct_checking",
+   "posted_at": "2026-08-15T12:00:00-07:00",
+   "signed_amount_cents": -1549,
+   "merchant": "Netflix",
+   "category": "Bills and subscriptions",
+   "pending": false,
+   "transfer_pair_id": null,
+   "source_id": "fixture:txn_aug_019"
+  },
+  {
+   "transaction_id": "txn_aug_020",
+   "account_id": "acct_checking",
+   "posted_at": "2026-08-20T12:00:00-07:00",
+   "signed_amount_cents": -4552,
+   "merchant": "Comcast",
+   "category": "Bills and subscriptions",
+   "pending": false,
+   "transfer_pair_id": null,
+   "source_id": "fixture:txn_aug_020"
+  },
+  {
+   "transaction_id": "txn_aug_021",
+   "account_id": "acct_checking",
+   "posted_at": "2026-08-06T12:00:00-07:00",
+   "signed_amount_cents": -4000,
+   "merchant": "Blue Bottle Coffee beans",
+   "category": "Other",
+   "pending": false,
+   "transfer_pair_id": null,
+   "source_id": "fixture:txn_aug_021"
+  },
+  {
+   "transaction_id": "txn_aug_022",
+   "account_id": "acct_checking",
+   "posted_at": "2026-08-11T12:00:00-07:00",
+   "signed_amount_cents": -6890,
+   "merchant": "Target",
+   "category": "Other",
+   "pending": false,
+   "transfer_pair_id": null,
+   "source_id": "fixture:txn_aug_022"
+  },
+  {
+   "transaction_id": "txn_aug_023",
+   "account_id": "acct_checking",
+   "posted_at": "2026-08-18T12:00:00-07:00",
+   "signed_amount_cents": -7245,
+   "merchant": "Amazon",
+   "category": "Other",
+   "pending": false,
+   "transfer_pair_id": null,
+   "source_id": "fixture:txn_aug_023"
+  },
+  {
+   "transaction_id": "txn_aug_024",
+   "account_id": "acct_checking",
+   "posted_at": "2026-08-25T12:00:00-07:00",
+   "signed_amount_cents": -4100,
+   "merchant": "Walgreens",
+   "category": "Other",
+   "pending": false,
+   "transfer_pair_id": null,
+   "source_id": "fixture:txn_aug_024"
+  },
+  {
+   "transaction_id": "txn_aug_025",
+   "account_id": "acct_checking",
+   "posted_at": "2026-08-27T12:00:00-07:00",
+   "signed_amount_cents": -2765,
+   "merchant": "Tide detergent",
+   "category": "Other",
+   "pending": false,
+   "transfer_pair_id": null,
+   "source_id": "fixture:txn_aug_025"
+  },
+  {
+   "transaction_id": "txn_aug_026",
+   "account_id": "acct_checking",
+   "posted_at": "2026-08-16T12:00:00-07:00",
+   "signed_amount_cents": -65000,
+   "merchant": "Transfer to savings",
+   "category": "Transfer",
+   "pending": false,
+   "transfer_pair_id": "pair_aug_sav",
+   "source_id": "fixture:txn_aug_026"
+  },
+  {
+   "transaction_id": "txn_aug_027",
+   "account_id": "acct_savings",
+   "posted_at": "2026-08-16T12:00:00-07:00",
+   "signed_amount_cents": 65000,
+   "merchant": "Transfer from checking",
+   "category": "Transfer",
+   "pending": false,
+   "transfer_pair_id": "pair_aug_sav",
+   "source_id": "fixture:txn_aug_027"
+  },
+  {
+   "transaction_id": "txn_aug_028",
+   "account_id": "acct_checking",
+   "posted_at": "2026-08-16T12:00:00-07:00",
+   "signed_amount_cents": -40000,
+   "merchant": "Transfer to brokerage",
+   "category": "Transfer",
+   "pending": false,
+   "transfer_pair_id": "pair_aug_inv",
+   "source_id": "fixture:txn_aug_028"
+  },
+  {
+   "transaction_id": "txn_aug_029",
+   "account_id": "acct_brokerage",
+   "posted_at": "2026-08-16T12:00:00-07:00",
+   "signed_amount_cents": 40000,
+   "merchant": "Transfer from checking",
+   "category": "Transfer",
+   "pending": false,
+   "transfer_pair_id": "pair_aug_inv",
+   "source_id": "fixture:txn_aug_029"
+  },
+  {
+   "transaction_id": "txn_sep_001",
+   "account_id": "acct_checking",
+   "posted_at": "2026-09-15T12:00:00-07:00",
+   "signed_amount_cents": 240000,
+   "merchant": "Acme Inc payroll",
+   "category": "Income",
+   "pending": false,
+   "transfer_pair_id": null,
+   "source_id": "fixture:txn_sep_001"
+  },
+  {
+   "transaction_id": "txn_sep_002",
+   "account_id": "acct_checking",
+   "posted_at": "2026-09-30T12:00:00-07:00",
+   "signed_amount_cents": 240000,
+   "merchant": "Acme Inc payroll",
+   "category": "Income",
+   "pending": false,
+   "transfer_pair_id": null,
+   "source_id": "fixture:txn_sep_002"
+  },
+  {
+   "transaction_id": "txn_sep_003",
+   "account_id": "acct_checking",
+   "posted_at": "2026-09-01T12:00:00-07:00",
+   "signed_amount_cents": -160000,
+   "merchant": "Mission Apartments",
+   "category": "Rent",
+   "pending": false,
+   "transfer_pair_id": null,
+   "source_id": "fixture:txn_sep_003"
+  },
+  {
+   "transaction_id": "txn_sep_004",
+   "account_id": "acct_checking",
+   "posted_at": "2026-09-03T12:00:00-07:00",
+   "signed_amount_cents": -14250,
+   "merchant": "Trader Joe's",
+   "category": "Groceries",
+   "pending": false,
+   "transfer_pair_id": null,
+   "source_id": "fixture:txn_sep_004"
+  },
+  {
+   "transaction_id": "txn_sep_005",
+   "account_id": "acct_checking",
+   "posted_at": "2026-09-10T12:00:00-07:00",
+   "signed_amount_cents": -12875,
+   "merchant": "Safeway",
+   "category": "Groceries",
+   "pending": false,
+   "transfer_pair_id": null,
+   "source_id": "fixture:txn_sep_005"
+  },
+  {
+   "transaction_id": "txn_sep_006",
+   "account_id": "acct_checking",
+   "posted_at": "2026-09-17T12:00:00-07:00",
+   "signed_amount_cents": -11900,
+   "merchant": "Trader Joe's",
+   "category": "Groceries",
+   "pending": false,
+   "transfer_pair_id": null,
+   "source_id": "fixture:txn_sep_006"
+  },
+  {
+   "transaction_id": "txn_sep_007",
+   "account_id": "acct_checking",
+   "posted_at": "2026-09-24T12:00:00-07:00",
+   "signed_amount_cents": -10975,
+   "merchant": "Costco",
+   "category": "Groceries",
+   "pending": false,
+   "transfer_pair_id": null,
+   "source_id": "fixture:txn_sep_007"
+  },
+  {
+   "transaction_id": "txn_sep_008",
+   "account_id": "acct_checking",
+   "posted_at": "2026-09-05T12:00:00-07:00",
+   "signed_amount_cents": -4800,
+   "merchant": "Tartine",
+   "category": "Dining",
+   "pending": false,
+   "transfer_pair_id": null,
+   "source_id": "fixture:txn_sep_008"
+  },
+  {
+   "transaction_id": "txn_sep_009",
+   "account_id": "acct_checking",
+   "posted_at": "2026-09-12T12:00:00-07:00",
+   "signed_amount_cents": -9650,
+   "merchant": "Nopa",
+   "category": "Dining",
+   "pending": false,
+   "transfer_pair_id": null,
+   "source_id": "fixture:txn_sep_009"
+  },
+  {
+   "transaction_id": "txn_sep_010",
+   "account_id": "acct_checking",
+   "posted_at": "2026-09-19T12:00:00-07:00",
+   "signed_amount_cents": -2875,
+   "merchant": "Chipotle",
+   "category": "Dining",
+   "pending": false,
+   "transfer_pair_id": null,
+   "source_id": "fixture:txn_sep_010"
+  },
+  {
+   "transaction_id": "txn_sep_011",
+   "account_id": "acct_checking",
+   "posted_at": "2026-09-26T12:00:00-07:00",
+   "signed_amount_cents": -12675,
+   "merchant": "Zuni Cafe",
+   "category": "Dining",
+   "pending": false,
+   "transfer_pair_id": null,
+   "source_id": "fixture:txn_sep_011"
+  },
+  {
+   "transaction_id": "txn_sep_012",
+   "account_id": "acct_checking",
+   "posted_at": "2026-09-02T12:00:00-07:00",
+   "signed_amount_cents": -8600,
+   "merchant": "Clipper",
+   "category": "Transport",
+   "pending": false,
+   "transfer_pair_id": null,
+   "source_id": "fixture:txn_sep_012"
+  },
+  {
+   "transaction_id": "txn_sep_013",
+   "account_id": "acct_checking",
+   "posted_at": "2026-09-14T12:00:00-07:00",
+   "signed_amount_cents": -4320,
+   "merchant": "Uber",
+   "category": "Transport",
+   "pending": false,
+   "transfer_pair_id": null,
+   "source_id": "fixture:txn_sep_013"
+  },
+  {
+   "transaction_id": "txn_sep_014",
+   "account_id": "acct_checking",
+   "posted_at": "2026-09-22T12:00:00-07:00",
+   "signed_amount_cents": -3880,
+   "merchant": "Lyft",
+   "category": "Transport",
+   "pending": false,
+   "transfer_pair_id": null,
+   "source_id": "fixture:txn_sep_014"
+  },
+  {
+   "transaction_id": "txn_sep_015",
+   "account_id": "acct_checking",
+   "posted_at": "2026-09-28T12:00:00-07:00",
+   "signed_amount_cents": -8200,
+   "merchant": "Shell",
+   "category": "Transport",
+   "pending": false,
+   "transfer_pair_id": null,
+   "source_id": "fixture:txn_sep_015"
+  },
+  {
+   "transaction_id": "txn_sep_016",
+   "account_id": "acct_checking",
+   "posted_at": "2026-09-04T12:00:00-07:00",
+   "signed_amount_cents": -8500,
+   "merchant": "Verizon",
+   "category": "Bills and subscriptions",
+   "pending": false,
+   "transfer_pair_id": null,
+   "source_id": "fixture:txn_sep_016"
+  },
+  {
+   "transaction_id": "txn_sep_017",
+   "account_id": "acct_checking",
+   "posted_at": "2026-09-08T12:00:00-07:00",
+   "signed_amount_cents": -9200,
+   "merchant": "PG&E",
+   "category": "Bills and subscriptions",
+   "pending": false,
+   "transfer_pair_id": null,
+   "source_id": "fixture:txn_sep_017"
+  },
+  {
+   "transaction_id": "txn_sep_018",
+   "account_id": "acct_checking",
+   "posted_at": "2026-09-15T12:00:00-07:00",
+   "signed_amount_cents": -1199,
+   "merchant": "Spotify",
+   "category": "Bills and subscriptions",
+   "pending": false,
+   "transfer_pair_id": null,
+   "source_id": "fixture:txn_sep_018"
+  },
+  {
+   "transaction_id": "txn_sep_019",
+   "account_id": "acct_checking",
+   "posted_at": "2026-09-15T12:00:00-07:00",
+   "signed_amount_cents": -1549,
+   "merchant": "Netflix",
+   "category": "Bills and subscriptions",
+   "pending": false,
+   "transfer_pair_id": null,
+   "source_id": "fixture:txn_sep_019"
+  },
+  {
+   "transaction_id": "txn_sep_020",
+   "account_id": "acct_checking",
+   "posted_at": "2026-09-20T12:00:00-07:00",
+   "signed_amount_cents": -4552,
+   "merchant": "Comcast",
+   "category": "Bills and subscriptions",
+   "pending": false,
+   "transfer_pair_id": null,
+   "source_id": "fixture:txn_sep_020"
+  },
+  {
+   "transaction_id": "txn_sep_021",
+   "account_id": "acct_checking",
+   "posted_at": "2026-09-06T12:00:00-07:00",
+   "signed_amount_cents": -4000,
+   "merchant": "Blue Bottle Coffee beans",
+   "category": "Other",
+   "pending": false,
+   "transfer_pair_id": null,
+   "source_id": "fixture:txn_sep_021"
+  },
+  {
+   "transaction_id": "txn_sep_022",
+   "account_id": "acct_checking",
+   "posted_at": "2026-09-11T12:00:00-07:00",
+   "signed_amount_cents": -6890,
+   "merchant": "Target",
+   "category": "Other",
+   "pending": false,
+   "transfer_pair_id": null,
+   "source_id": "fixture:txn_sep_022"
+  },
+  {
+   "transaction_id": "txn_sep_023",
+   "account_id": "acct_checking",
+   "posted_at": "2026-09-18T12:00:00-07:00",
+   "signed_amount_cents": -7245,
+   "merchant": "Amazon",
+   "category": "Other",
+   "pending": false,
+   "transfer_pair_id": null,
+   "source_id": "fixture:txn_sep_023"
+  },
+  {
+   "transaction_id": "txn_sep_024",
+   "account_id": "acct_checking",
+   "posted_at": "2026-09-25T12:00:00-07:00",
+   "signed_amount_cents": -4100,
+   "merchant": "Walgreens",
+   "category": "Other",
+   "pending": false,
+   "transfer_pair_id": null,
+   "source_id": "fixture:txn_sep_024"
+  },
+  {
+   "transaction_id": "txn_sep_025",
+   "account_id": "acct_checking",
+   "posted_at": "2026-09-27T12:00:00-07:00",
+   "signed_amount_cents": -2765,
+   "merchant": "Tide detergent",
+   "category": "Other",
+   "pending": false,
+   "transfer_pair_id": null,
+   "source_id": "fixture:txn_sep_025"
+  },
+  {
+   "transaction_id": "txn_sep_026",
+   "account_id": "acct_checking",
+   "posted_at": "2026-09-16T12:00:00-07:00",
+   "signed_amount_cents": -65000,
+   "merchant": "Transfer to savings",
+   "category": "Transfer",
+   "pending": false,
+   "transfer_pair_id": "pair_sep_sav",
+   "source_id": "fixture:txn_sep_026"
+  },
+  {
+   "transaction_id": "txn_sep_027",
+   "account_id": "acct_savings",
+   "posted_at": "2026-09-16T12:00:00-07:00",
+   "signed_amount_cents": 65000,
+   "merchant": "Transfer from checking",
+   "category": "Transfer",
+   "pending": false,
+   "transfer_pair_id": "pair_sep_sav",
+   "source_id": "fixture:txn_sep_027"
+  },
+  {
+   "transaction_id": "txn_sep_028",
+   "account_id": "acct_checking",
+   "posted_at": "2026-09-16T12:00:00-07:00",
+   "signed_amount_cents": -40000,
+   "merchant": "Transfer to brokerage",
+   "category": "Transfer",
+   "pending": false,
+   "transfer_pair_id": "pair_sep_inv",
+   "source_id": "fixture:txn_sep_028"
+  },
+  {
+   "transaction_id": "txn_sep_029",
+   "account_id": "acct_brokerage",
+   "posted_at": "2026-09-16T12:00:00-07:00",
+   "signed_amount_cents": 40000,
+   "merchant": "Transfer from checking",
+   "category": "Transfer",
+   "pending": false,
+   "transfer_pair_id": "pair_sep_inv",
+   "source_id": "fixture:txn_sep_029"
+  }
+ ],
+ "receipts": [
+  {
+   "receipt_id": "rcpt_dinner_1011",
+   "merchant": "Lazy Bear (demo)",
+   "date": "2026-10-11",
+   "attachment_hash": null,
+   "items": [
+    {
+     "item_id": "it_1",
+     "description": "Short rib",
+     "quantity": 1,
+     "extended_price_cents": 2400,
+     "ocr_confidence": 0.97
+    },
+    {
+     "item_id": "it_2",
+     "description": "Duck breast",
+     "quantity": 1,
+     "extended_price_cents": 3000,
+     "ocr_confidence": 0.95
+    },
+    {
+     "item_id": "it_3",
+     "description": "Mushroom risotto",
+     "quantity": 1,
+     "extended_price_cents": 1800,
+     "ocr_confidence": 0.96
+    },
+    {
+     "item_id": "it_4",
+     "description": "Burrata appetizer",
+     "quantity": 1,
+     "extended_price_cents": 1200,
+     "ocr_confidence": 0.93
+    }
+   ],
+   "subtotal_cents": 8400,
+   "tax_cents": 840,
+   "tip_cents": 1680,
+   "total_cents": 10920
+  }
+ ],
+ "contacts": [
+  {
+   "contact_id": "c_ashwin",
+   "reviewed_name": "Ashwin",
+   "phone": "+15555550101",
+   "venmo_handle": "@ashwin-demo",
+   "is_self": true
+  },
+  {
+   "contact_id": "c_tanish",
+   "reviewed_name": "Tanish",
+   "phone": "+15555550102",
+   "venmo_handle": "@tanish-demo"
+  },
+  {
+   "contact_id": "c_aryan",
+   "reviewed_name": "Aryan",
+   "phone": "+15555550103",
+   "venmo_handle": "@aryan-demo"
+  },
+  {
+   "contact_id": "c_tanya",
+   "reviewed_name": "Tanya",
+   "phone": "+15555550104",
+   "venmo_handle": "@tanya-demo"
+  }
+ ],
+ "split_example": {
+  "receipt_id": "rcpt_dinner_1011",
+  "payer_id": "c_ashwin",
+  "tax_tip_rule": "proportional",
+  "assignments": {
+   "it_1": [
+    "c_tanish"
+   ],
+   "it_2": [
+    "c_aryan"
+   ],
+   "it_3": [
+    "c_ashwin"
+   ],
+   "it_4": [
+    "c_ashwin",
+    "c_tanish",
+    "c_aryan"
+   ]
+  },
+  "expected_shares_cents": {
+   "c_ashwin": 2860,
+   "c_tanish": 3640,
+   "c_aryan": 4420
+  },
+  "expected_outstanding_cents": 8060
+ },
+ "category_targets_sep_cents": {
+  "Rent": 160000,
+  "Groceries": 50000,
+  "Dining": 30000,
+  "Transport": 25000,
+  "Bills and subscriptions": 25000,
+  "Other": 25000
+ },
+ "catalog": [],
+ "_catalog_note": "Ashwin owns catalog + budget/swap fixtures (SRS section 4)."
+}
