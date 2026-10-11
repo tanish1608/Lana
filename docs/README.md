@@ -199,3 +199,5 @@ At this baseline, `main` contains money/split engines, contracts, fixtures, and 
 Tanish's AI module and standalone harness initially used pre-v2 DTOs and a cancellation scenario. Final integration consumes `FWMCore.ToolCall`, carries `Provenance` into `AgentResult`, binds relay identity to scope, and uses canonical fixtures. The cloud prototype stays unused; the integrated product is local-only.
 
 Before networking: publish pairing/authentication, endpoints, acknowledgement/retry policy, attachment expiry, and foreground behavior. Before mutations: agree on action storage, payload/state versions, token issuance, idempotency, and provider challenge handling. Record concrete contracts here when their owners land them.
+
+**Relay networking (proposed by Aryan, needs Tanish's review):** [relay/README.md](../relay/README.md#phone--relay-contract) covers pairing/auth, endpoints, ack/retry (90 s lease, idempotent results, `delivery_unknown` on send timeout), attachment proxying, the foreground nudge, and the approval signature for reminders.
