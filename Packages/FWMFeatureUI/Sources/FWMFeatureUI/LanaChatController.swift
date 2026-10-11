@@ -26,11 +26,36 @@ final class LanaChatController {
     var tools: FeatureTools { FeatureTools(dataset: dataset, requestStates: requestStates, accepted: accepted, useHistory: useHistory, budgetAdopted: budgetAdopted) }
     private var restored = false
     private let store: ConversationStore
+    /// On-device SQLite ledger: mirrors the session dataset for the agent's `ledger` tool, keeps imported accounts
+    /// across relaunches, and journals app activity. Nil only if the database can't be opened.
+    let ledger: LocalLedger?
+    private var ledgerWrites: Task<Void, Never>?
     var messages: [ConversationMessage] { archive?.messages ?? [] }
     init(dataset: Dataset, directory: URL = URL.applicationSupportDirectory.appendingPathComponent("FinanceChats", isDirectory: true)) {
         self.dataset = dataset
         store = ConversationStore(directory: directory)
+        ledger = try? LocalLedger(directory: directory.appendingPathComponent("ledger", isDirectory: true))
         archive = ConversationArchive(userID: dataset.user.userId, datasetVersion: dataset.datasetVersion)
+    }
+    /// Ledger writes run one after another, so a later dataset can't be overwritten by an earlier one.
+    private func ledgerWrite(_ work: @escaping @Sendable (LocalLedger) async throws -> Void) {
+        guard let ledger else { return }
+        let previous = ledgerWrites
+        ledgerWrites = Task { await previous?.value; try? await work(ledger) }
+    }
+    /// Waits for pending ledger writes, e.g. before the agent reads it.
+    func ledgerSettled() async { await ledgerWrites?.value }
+    private func mirrorDataset() { let snapshot = dataset; ledgerWrite { try await $0.sync(snapshot) } }
+    /// Records something the user did, for the agent's activity answers and the Approvals list after relaunch.
+    func journal(_ kind: String, _ summary: String, details: [String: String] = [:]) {
+        let user = dataset.user.userId, event = LedgerEvent(kind: kind, summary: summary, details: details)
+        ledgerWrite { try await $0.record(event, userID: user) }
+    }
+    /// Journal kinds shown in Accounts › Approvals.
+    static let approvalKinds: Set<String> = ["plan_adopted", "plan_item_confirmed", "split_reviewed", "split_action", "account_imported", "account_removed"]
+    func approvalLog() async -> [String] {
+        await ledgerSettled()
+        return (try? await ledger?.events(userID: dataset.user.userId, kinds: Self.approvalKinds, limit: 50).map(\.summary)) ?? []
     }
     func updateBudget(accepted: Set<String>, useHistory: Bool) {
         self.accepted = accepted; self.useHistory = useHistory; budgetAdopted = false
@@ -42,6 +67,7 @@ final class LanaChatController {
         dataset.accounts.append(account)
         dataset.transactions += transactions.filter { $0.accountId == account.accountId }
         invalidateEvidence()
+        mirrorDataset()
     }
     /// Removes an imported account and its transactions. Fixture accounts stay.
     func removeImportedAccount(_ id: String) {
@@ -49,6 +75,7 @@ final class LanaChatController {
         dataset.accounts.removeAll { $0.accountId == id }
         dataset.transactions.removeAll { $0.accountId == id }
         invalidateEvidence()
+        mirrorDataset()
     }
     private func invalidateEvidence() {
         dataset.datasetVersion = "session-" + UUID().uuidString
@@ -65,6 +92,15 @@ final class LanaChatController {
         guard !restored else { return }
         restored = true; busy = true
         defer { busy = false }
+        // Statement accounts imported in an earlier session come back before anything reads the dataset.
+        if let ledger, let saved = try? await ledger.importedAccounts(userID: dataset.user.userId) {
+            for (account, txns) in saved where !dataset.accounts.contains(where: { $0.accountId == account.accountId }) {
+                dataset.accounts.append(account)
+                dataset.transactions += txns
+            }
+            if !saved.isEmpty { invalidateEvidence() }
+        }
+        mirrorDataset()
         do {
             savedChats = try await store.load(userID: scope.userID)
             if let latest = savedChats.first { archive = latest }
@@ -86,7 +122,8 @@ final class LanaChatController {
         defer { busy = false }
         current.datasetVersion = dataset.datasetVersion
         let context = current
-        let assistant = ConversationalAssistant(context: CoreRoutingContext(scope: scope, reviewedSplit: reviewedSplit), tools: tools)
+        await ledgerSettled()
+        let assistant = ConversationalAssistant(context: CoreRoutingContext(scope: scope, reviewedSplit: reviewedSplit), tools: tools, ledger: ledger)
         current.messages.append(.init(role: .user, text: text)); archive = current
         await persist()
         do {

@@ -29,23 +29,33 @@ public struct LanaRootView: View {
         // Native tab containment keeps each navigation stack's toolbar scoped to its section.
         LanaSectionHost(selection: $tab) {
             section(.home) { HomeScreen(store: store, tab: $tab, requestStates: requestStates, budgetAdopted: budgetAdopted, plannedCents: plannedCents, path: $homePath, openChat: { setChat(true) }) }
-            section(.budget) { BudgetScreen(store: store, unlocker: unlocker, onSelection: { chat.updateBudget(accepted: $0, useHistory: $1)
+            section(.budget) { BudgetScreen(store: store, unlocker: unlocker, onSelection: { accepted, useHistory in
+                chat.updateBudget(accepted: accepted, useHistory: useHistory)
                 store.dataset = chat.dataset
                 if var split = store.reviewedResult { split.provenance.datasetVersion = chat.dataset.datasetVersion; store.reviewedResult = split }
-                budgetAdopted = false }, onAdopt: { log.insert($0, at: 0); budgetAdopted = true; chat.budgetAdopted = true },
-                onApprove: { log.insert($0, at: 0) }, onPlanChange: { plannedCents = $0 }) }
+                budgetAdopted = false
+                chat.journal("budget_selection", "Budget plan has \(accepted.count) kept idea\(accepted.count == 1 ? "" : "s")\(useHistory ? "" : ", preference history off")",
+                             details: ["kept": accepted.sorted().joined(separator: ","), "use_history": String(useHistory)])
+            }, onAdopt: { record("plan_adopted", $0); budgetAdopted = true; chat.budgetAdopted = true },
+                onApprove: { record("plan_item_confirmed", $0) }, onPlanChange: { plannedCents = $0 }) }
             section(.split) { SplitScreen(store: store, isActive: tab == .split, onReview: { receipt, assignments, payer, result in
                 chat.review(receipt: receipt, assignments: assignments, payerID: payer)
                 store.dataset = chat.dataset
                 store.reviewedResult = try? SplitEngine.prepareSplit(receipt: receipt, assignments: assignments, payerId: payer,
                     contacts: store.dataset.contacts ?? [], datasetVersion: store.dataset.datasetVersion, dataMode: receipt.receiptId.hasPrefix("local-") ? .cached : store.dataset.dataMode)
-                log.insert("Reviewed split · \(result.outstandingCents) cents outstanding; nothing sent", at: 0)
-            }, onInvalidate: { chat.reviewedSplit = nil; store.reviewedResult = nil }, onAction: { log.insert($0, at: 0) }, states: $requestStates) }
+                record("split_reviewed", "Reviewed split · \(result.outstandingCents) cents outstanding; nothing sent",
+                       details: ["receipt_id": receipt.receiptId, "total_cents": String(receipt.totalCents), "payer_id": payer])
+            }, onInvalidate: { chat.reviewedSplit = nil; store.reviewedResult = nil }, onAction: { record("split_action", $0) }, states: $requestStates) }
             section(.accounts) { AccountsScreen(store: store, dataset: chat.dataset, unlocker: unlocker, log: log, relay: relay, isActive: tab == .accounts,
                 onLink: { account, txns in
                     chat.addAccount(account, transactions: txns); syncStore()
-                    log.insert("Imported \(account.institution) \(AccountDisplay(account).subtitle) · \(txns.count) transactions, on this iPhone", at: 0)
-                }, onRemove: { chat.removeImportedAccount($0); syncStore() }) }
+                    record("account_imported", "Imported \(account.institution) \(AccountDisplay(account).subtitle) · \(txns.count) transactions, on this iPhone",
+                           details: ["account_id": account.accountId, "institution": account.institution, "kind": account.kind])
+                }, onRemove: { id in
+                    let removed = chat.dataset.accounts.first { $0.accountId == id }
+                    chat.removeImportedAccount(id); syncStore()
+                    if let removed { record("account_removed", "Removed \(removed.institution) \(AccountDisplay(removed).subtitle) from Lana", details: ["account_id": id]) }
+                }) }
         }
         .overlay {
             if showChat {
@@ -64,14 +74,31 @@ public struct LanaRootView: View {
         .safeAreaInset(edge: .bottom, spacing: 0) { LanaDock(tab: $tab, chatOpen: showChat, toggleChat: { setChat(!showChat) }) }
         .tint(Theme.accent)
         .task(id: scenePhase) { await relay.setForeground(scenePhase == .active) }
-        .task { await chat.restore() }
-        .onChange(of: requestStates) { _, states in chat.requestStates = Dictionary(uniqueKeysWithValues: states.map { (name($0.key), $0.value.label) }) }
+        .task {
+            await chat.restore()
+            syncStore()
+            // The Approvals list survives relaunch; anything recorded this session before the read is kept on top.
+            let saved = await chat.approvalLog()
+            log = log.filter { !saved.contains($0) } + saved
+        }
+        .onChange(of: requestStates) { old, states in
+            chat.requestStates = Dictionary(uniqueKeysWithValues: states.map { (name($0.key), $0.value.label) })
+            for (id, state) in states where old[id] != state {
+                chat.journal("request_state", "\(name(id)) request marked \(state.label)", details: ["contact_id": id, "state": state.label])
+            }
+        }
     }
 
     /// Screens that read the store see the session dataset; a reviewed split follows its new version.
     private func syncStore() {
         store.dataset = chat.dataset
         if var split = store.reviewedResult { split.provenance.datasetVersion = chat.dataset.datasetVersion; store.reviewedResult = split }
+    }
+
+    /// Shows an entry in Approvals now and journals it so it is still there after relaunch.
+    private func record(_ kind: String, _ summary: String, details: [String: String] = [:]) {
+        log.insert(summary, at: 0)
+        chat.journal(kind, summary, details: details)
     }
 
     private func name(_ id: String) -> String { store.dataset.contacts?.first { $0.contactId == id }?.reviewedName ?? id }

@@ -69,7 +69,10 @@ final class IntegrationTests: XCTestCase {
         guard ProcessInfo.processInfo.environment["FWM_TEST_MODEL"] == "1" else { throw XCTSkip("Opt in with FWM_TEST_MODEL=1 on a model-ready Mac.") }
         XCTAssertEqual(OnDeviceRouter.status, .ready)
         let ds = try XCTUnwrap(DemoStore.repoSeed()).dataset
-        let assistant = ConversationalAssistant(context: CoreRoutingContext(scope: scope(ds)), tools: FeatureTools(dataset: ds))
+        // As in the app: the ledger tool is offered alongside finance and readPDF.
+        let ledger = try LocalLedger(directory: FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString))
+        try await ledger.sync(ds)
+        let assistant = ConversationalAssistant(context: CoreRoutingContext(scope: scope(ds)), tools: FeatureTools(dataset: ds), ledger: ledger)
         var archive = ConversationArchive(userID: ds.user.userId, datasetVersion: ds.datasetVersion)
         let hi = try await assistant.respond(to: "Hi", archive: archive)
         XCTAssertEqual(hi.source, .onDevice)
@@ -83,5 +86,24 @@ final class IntegrationTests: XCTestCase {
         XCTAssertEqual(pdf.source, .onDevice)
         XCTAssertTrue(pdf.text.contains("220"), pdf.text)
         XCTAssertFalse(pdf.text.contains("650"), pdf.text)
+    }
+    func testActualModelAnswersFromTheLocalLedger() async throws {
+        guard ProcessInfo.processInfo.environment["FWM_TEST_MODEL"] == "1" else { throw XCTSkip("Opt in with FWM_TEST_MODEL=1 on a model-ready Mac.") }
+        XCTAssertEqual(OnDeviceRouter.status, .ready)
+        let ds = try XCTUnwrap(DemoStore.repoSeed()).dataset
+        let ledger = try LocalLedger(directory: FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString))
+        try await ledger.sync(ds)
+        try await ledger.record(.init(kind: "plan_adopted", summary: "Adopted the budget plan after Face ID"), userID: ds.user.userId)
+        let assistant = ConversationalAssistant(context: CoreRoutingContext(scope: scope(ds)), tools: FeatureTools(dataset: ds), ledger: ledger)
+        let archive = ConversationArchive(userID: ds.user.userId, datasetVersion: ds.datasetVersion)
+        let tj = ds.transactions.filter { $0.merchant == "Trader Joe's" && $0.postedAt.hasPrefix("2026-09") }.reduce(0) { $0 - $1.signedAmountCents }
+        let expected = CoreDatasetTools.money(tj)
+        let spend = try await assistant.respond(to: "How much did I spend at Trader Joe's between 2026-09-01 and 2026-09-30?", archive: archive)
+        XCTAssertEqual(spend.source, .onDevice)
+        XCTAssertTrue(spend.evidence.contains { $0.provenance.resultId.hasPrefix("ledger:") && $0.text.contains(expected) }, "\(spend.evidence.map(\.text))")
+        XCTAssertTrue(spend.text.contains(expected.replacingOccurrences(of: "$", with: "")), spend.text)
+        let activity = try await assistant.respond(to: "What have I done in the app recently?", archive: archive)
+        XCTAssertEqual(activity.source, .onDevice)
+        XCTAssertTrue(activity.text.localizedCaseInsensitiveContains("adopt"), activity.text)
     }
 }

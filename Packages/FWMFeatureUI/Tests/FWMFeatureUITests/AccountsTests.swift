@@ -70,4 +70,36 @@ final class AccountsTests: XCTestCase {
         XCTAssertEqual(try MoneyEngine.moneyView(chat.dataset, period: "2026-09").netWorthCents, before.netWorthCents)
         XCTAssertFalse(chat.dataset.transactions.contains { $0.accountId == "csv_ally" })
     }
+
+    @MainActor
+    func testImportedAccountAndApprovalsSurviveRelaunch() async throws {
+        let s = try XCTUnwrap(DemoStore.repoSeed())
+        let dir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        let first = LanaChatController(dataset: s.dataset, directory: dir)
+        XCTAssertNotNil(first.ledger)
+        let out = try StatementImport(institution: try XCTUnwrap(Institution.id("chase")), kind: "credit_card", balanceCents: 1_250,
+                                      csv: "Date,Description,Amount\n2026-09-15,Blue Bottle,-12.50\n", user: s.dataset.user)
+            .run(accountID: "csv_relaunch", asOf: "2026-10-11T12:00:00-07:00")
+        first.addAccount(out.account, transactions: out.transactions)
+        first.journal("account_imported", "Imported Chase card")
+        first.journal("budget_selection", "Budget plan has 3 kept ideas")
+        await first.ledgerSettled()
+
+        // A new controller on the same storage is what the app sees after relaunch.
+        let second = LanaChatController(dataset: s.dataset, directory: dir)
+        XCTAssertFalse(second.dataset.accounts.contains { $0.accountId == "csv_relaunch" })
+        await second.restore()
+        XCTAssertTrue(second.dataset.accounts.contains { $0.accountId == "csv_relaunch" })
+        XCTAssertEqual(second.dataset.transactions.filter { $0.accountId == "csv_relaunch" }.map(\.signedAmountCents), [-1_250])
+        let approvals = await second.approvalLog()
+        XCTAssertEqual(approvals, ["Imported Chase card"]) // budget selections are activity, not approvals
+
+        // The agent's ledger sees the restored account through the conversation's scope.
+        await second.ledgerSettled()
+        let ledger = try XCTUnwrap(second.ledger)
+        let found = try await ledger.query(.init(operation: .search, text: "Blue Bottle"), scope: second.scope)
+        XCTAssertTrue(found.replyText.contains("imported"), found.replyText)
+        let activity = try await ledger.query(.init(operation: .activity), scope: second.scope)
+        XCTAssertTrue(activity.replyText.contains("Budget plan has 3 kept ideas"))
+    }
 }
