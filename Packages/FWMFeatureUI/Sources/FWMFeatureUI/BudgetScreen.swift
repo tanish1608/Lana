@@ -94,6 +94,7 @@ struct BudgetScreen: View {
                     let t = p.target[c.category] ?? c.totalCents
                     GridRow {
                         Text(c.category.replacingOccurrences(of: " and subscriptions", with: " & subs"))
+                            .frame(maxWidth: .infinity, alignment: .leading) // category column takes the slack so amounts sit at the card edge
                         Text(usd(c.totalCents)).foregroundStyle(Theme.ink3)
                         Text(usd(t)).fontWeight(t < c.totalCents ? .semibold : .regular).foregroundStyle(t < c.totalCents ? Theme.accent : Theme.ink)
                     }

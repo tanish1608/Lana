@@ -142,7 +142,7 @@ struct SplitScreen: View {
                 HStack {
                     Text("Tip")
                     if fixed { Tag(text: "Corrected", tone: Theme.accent, fill: Theme.accentSoft) }
-                    else { Tag(text: "Unsure · \(Int(SplitDemo.misreadConfidence * 100))%", tone: Theme.warn, fill: Theme.warnSoft) }
+                    else { Tag(text: "Unsure · \(Int((SplitDemo.misreadConfidence * 100).rounded()))%", tone: Theme.warn, fill: Theme.warnSoft) }
                     Spacer()
                     TextField("Tip", text: $tipText).multilineTextAlignment(.trailing).monospacedDigit().frame(width: 90)
                         .padding(8).background(fixed ? Theme.card : Theme.warnSoft, in: RoundedRectangle(cornerRadius: 10))
@@ -402,10 +402,7 @@ struct StateTrack: View {
         else {
             let order: [RequestState] = [.draft, .readyForReview, .handedOff, .userReportedRequested, .paidReported]
             let idx = order.firstIndex(of: current) ?? 0
-            ViewThatFits {
-                HStack(spacing: 4) { ForEach(Array(order.enumerated()), id: \.offset) { i, s in chip(s, i, idx) } }
-                VStack(alignment: .leading, spacing: 4) { ForEach(Array(order.enumerated()), id: \.offset) { i, s in chip(s, i, idx) } }
-            }
+            WrapLayout(spacing: 4) { ForEach(Array(order.enumerated()), id: \.offset) { i, s in chip(s, i, idx) } }
         }
     }
     private func chip(_ s: RequestState, _ i: Int, _ idx: Int) -> some View {
