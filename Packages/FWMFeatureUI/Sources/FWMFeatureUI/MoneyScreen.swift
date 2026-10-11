@@ -212,6 +212,7 @@ struct TransactionList: View {
             }
             Section { HStack { Text("Total").bold(); Spacer(); Text(usd(total, cents: true)).bold().monospacedDigit() } }
         }
+        .scrollContentBackground(.hidden).background(Theme.bg)
         .navigationTitle(title)
     }
 }
