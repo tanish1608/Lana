@@ -127,15 +127,29 @@ export async function logTiming(runId: string, workflow: string, mode: 'manual' 
   return sendEntity(`timing_${runId}`, [['WorkflowSource', 'measured', t], ['WorkflowName', workflow, t], ['WorkflowMode', mode, t], ['WorkflowSeconds', Math.round(seconds), t]]);
 }
 
-export type ReceiptRow = { workflow: string; manual_seconds: number | null; lana_seconds: number | null; saved_seconds: number | null; manual_runs: number; lana_runs: number };
+export type ReceiptRow = {
+  workflow: string; manual_seconds: number | null; manual_source: 'measured' | 'estimate' | null;
+  lana_seconds: number | null; saved_seconds: number | null; manual_runs: number; lana_runs: number;
+};
 
-export function toReceipt(rows: { workflow: string; mode: string; avg_s: number; runs: number }[]): ReceiptRow[] {
+/** Team estimates for chores nobody timed by hand. Shown as estimates and never sent to Keewano.
+ *  Override with MANUAL_ESTIMATES_SECONDS="month_review=900,budget_swaps=1200". */
+export function manualEstimates(): Record<string, number> {
+  const raw = process.env.MANUAL_ESTIMATES_SECONDS ?? 'month_review=900,budget_swaps=1200';
+  return Object.fromEntries(raw.split(',').filter(Boolean).map((p) => { const [k, v] = p.split('='); return [k.trim(), Number(v)]; }));
+}
+
+export function toReceipt(rows: { workflow: string; mode: string; avg_s: number; runs: number }[], estimates: Record<string, number> = {}): ReceiptRow[] {
   return WORKFLOWS.map((w) => {
     const m = rows.find((r) => r.workflow === w && r.mode === 'manual');
     const l = rows.find((r) => r.workflow === w && r.mode === 'lana');
-    const manual = m ? Math.round(m.avg_s) : null;
-    const lana = l ? Math.round(l.avg_s) : null;
-    return { workflow: w, manual_seconds: manual, lana_seconds: lana, saved_seconds: manual !== null && lana !== null ? manual - lana : null, manual_runs: m?.runs ?? 0, lana_runs: l?.runs ?? 0 };
+    const manual = m ? Math.round(Number(m.avg_s)) : estimates[w] ?? null;
+    const lana = l ? Math.round(Number(l.avg_s)) : null;
+    return {
+      workflow: w, manual_seconds: manual, manual_source: m ? 'measured' : estimates[w] != null ? 'estimate' : null,
+      lana_seconds: lana, saved_seconds: manual !== null && lana !== null ? manual - lana : null,
+      manual_runs: Number(m?.runs ?? 0), lana_runs: Number(l?.runs ?? 0),
+    };
   });
 }
 

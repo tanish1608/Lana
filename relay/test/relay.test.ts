@@ -36,7 +36,7 @@ function approve(actionId: string, payload: unknown, expiresInMs = 60_000) {
 before(async () => {
   const dir = mkdtempSync(join(tmpdir(), 'fwm-relay-'));
   server = spawn(process.execPath, ['src/server.ts'], {
-    env: { ...process.env, DIAL_API_KEY: '', KEEWANO_API_KEY: '', KEEWANO_PAT: '', PORT: String(PORT), RELAY_DEV: '1', RELAY_DB: join(dir, 'relay.db'), PAIRING_CODE: '424242', PAIRED_PHONES: `${PHONE}=user_ashwin` },
+    env: { ...process.env, DIAL_API_KEY: '', KEEWANO_API_KEY: '', KEEWANO_PAT: '', MANUAL_ESTIMATES_SECONDS: 'month_review=900,bill_split=999', PORT: String(PORT), RELAY_DEV: '1', RELAY_DB: join(dir, 'relay.db'), PAIRING_CODE: '424242', PAIRED_PHONES: `${PHONE}=user_ashwin` },
     stdio: 'ignore',
   });
   for (let i = 0; i < 50; i++) {
@@ -112,7 +112,10 @@ test('time receipt averages measured runs per chore and reports minutes saved', 
   const split = r.body.rows.find((x: any) => x.workflow === 'bill_split');
   assert.deepEqual([split.manual_seconds, split.lana_seconds, split.saved_seconds, split.manual_runs], [600, 40, 560, 2]);
   assert.equal(r.body.data_mode, 'local');
-  assert.equal(r.body.rows.find((x: any) => x.workflow === 'month_review').saved_seconds, null);
+  assert.equal(split.manual_source, 'measured'); // a measured run beats the bill_split estimate
+  const review = r.body.rows.find((x: any) => x.workflow === 'month_review');
+  assert.deepEqual([review.manual_seconds, review.manual_source, review.saved_seconds], [900, 'estimate', null]);
+  assert.equal(r.body.rows.find((x: any) => x.workflow === 'budget_swaps').manual_source, null);
 });
 
 test('browser clients get CORS headers and the stopwatch page loads', async () => {

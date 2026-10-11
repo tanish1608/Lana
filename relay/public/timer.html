@@ -70,7 +70,7 @@
     if (!token) return;
     try {
       const r = await api('/v1/time-receipt');
-      $('rows').innerHTML = r.rows.map((x) => `<tr><td>${NAMES[x.workflow]}</td><td>${fmt(x.manual_seconds)}</td><td>${fmt(x.lana_seconds)}</td><td>${fmt(x.saved_seconds)}</td></tr>`).join('');
+      $('rows').innerHTML = r.rows.map((x) => `<tr><td>${NAMES[x.workflow]}</td><td>${fmt(x.manual_seconds)}${x.manual_source === 'estimate' ? ' est.' : ''}</td><td>${fmt(x.lana_seconds)}</td><td>${fmt(x.saved_seconds)}</td></tr>`).join('');
       $('total').textContent = fmt(r.total_saved_seconds);
       $('status').textContent = r.data_mode === 'live' ? 'From Keewano' : 'Saved on the relay. Keewano is still indexing.';
     } catch (e) {

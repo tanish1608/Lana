@@ -5,7 +5,7 @@ import { readFileSync } from 'node:fs';
 import { createHash, createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
 import { db, now, id, demoNow, advanceClock } from './store.ts';
 import { dial, FROM, send, startStream, catchUp, verifyWebhook, type InboundMessage } from './dial.ts';
-import { swapMemory, logTiming, keewanoReceipt, toReceipt, WORKFLOWS } from './keewano.ts';
+import { swapMemory, logTiming, keewanoReceipt, toReceipt, manualEstimates, WORKFLOWS } from './keewano.ts';
 import { canonical } from './canonical.ts';
 
 const PORT = Number(process.env.PORT || 8787);
@@ -239,7 +239,7 @@ const routes: [string, RegExp, (req: IncomingMessage, res: ServerResponse, m: Re
       const localRuns = local.reduce((n, r) => n + Number(r.runs), 0);
       if (kRuns > 0 && kRuns >= localRuns) source = { data_mode: 'live', query: k.query, rows: k.rows };
     } catch {}
-    const rows = toReceipt(source.rows);
+    const rows = toReceipt(source.rows, manualEstimates());
     const saved = rows.reduce((n, r) => n + (r.saved_seconds ?? 0), 0);
     json(res, 200, { rows, total_saved_seconds: saved, data_mode: source.data_mode, as_of: now(), query: source.query });
   }, true],

@@ -51,7 +51,7 @@ Every `/v1/*` call except `/v1/pair` sends `Authorization: Bearer <device_token>
 | `POST /v1/clock/advance` | `{"seconds": 172800}` | `{demo_now}` |
 | `GET /v1/swap-memory?user_id=user_ashwin&groups=a,b` | | `{blocked_groups, evidence_ids, as_of, data_mode: live\|cached, query}` |
 | `POST /v1/timings` | `{workflow: month_review \| budget_swaps \| bill_split, mode: manual \| lana, seconds, run_id?}` | `201 {run_id, keewano}`. Stored locally, then sent to Keewano as a measured run. |
-| `GET /v1/time-receipt` | | `{rows: [{workflow, manual_seconds, lana_seconds, saved_seconds, manual_runs, lana_runs}], total_saved_seconds, data_mode: live\|local, query}`. Averages measured runs only; seeded history is excluded. |
+| `GET /v1/time-receipt` | | `{rows: [{workflow, manual_seconds, manual_source: measured\|estimate, lana_seconds, saved_seconds, manual_runs, lana_runs}], total_saved_seconds, data_mode: live\|local, query}`. Averages measured runs only; seeded history is excluded. A chore with no measured manual run falls back to `MANUAL_ESTIMATES_SECONDS`, labeled `estimate`. |
 | `GET /v1/evidence` | | recent jobs, outbox rows with Dial message IDs, reminders (integration evidence, T09) |
 | `GET /health` | no auth | `{ok, dial, from, demo_now}` |
 

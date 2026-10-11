@@ -28,6 +28,8 @@ public struct TimeReceipt: Codable, Sendable, Equatable {
     public struct Row: Codable, Sendable, Equatable {
         public var workflow: String
         public var manualSeconds: Int?
+        /// "measured" (stopwatch runs) or "estimate" (team estimate, shown as such). Nil when neither exists.
+        public var manualSource: String?
         public var lanaSeconds: Int?
         public var savedSeconds: Int?
         public var manualRuns: Int
