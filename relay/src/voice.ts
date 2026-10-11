@@ -10,6 +10,8 @@ import { db, now, id } from './store.ts';
 const SECRET = process.env.DIAL_SELF_HOSTED_SECRET || '';
 const TURN_MS = 25_000;
 const answers = new Map<string, (text: string) => void>();
+const greeted = new Set<string>(); // a reconnect sends call_connected again; greet once per call
+const GREETING = 'Hi, this is Lana. Ask me about your money.';
 
 type Deps = {
   pairedUser: (phone: string) => string | undefined;
@@ -87,11 +89,16 @@ function onCall(ws: WebSocket, callId: string, deps: Deps) {
       caller = msg.from;
       user = deps.pairedUser(msg.from);
       console.log(`[voice] call ${callId} from ${msg.from} ${user ? `as ${user}` : '(unpaired)'}`);
+      // Dial waits for the caller to speak first; greet on pickup so the line isn't silent.
+      if (user && !greeted.has(callId)) {
+        greeted.add(callId);
+        ws.send(serializeServerMessage({ type: 'interrupt', content: GREETING, content_complete: true }));
+      }
     } else if (msg.type === 'response_required') {
       const turn = (latest = msg.response_id);
       const heard = [...msg.transcript].reverse().find((t) => t.role === 'user')?.content.trim();
       if (!user) return say(turn, "This number isn't paired with Lana yet. Pair it in the Lana app, then call back.", true, true);
-      if (!heard) return say(turn, 'Hi, this is Lana. Ask me about your money.');
+      if (!heard || /^(hello|hi|hey)\b[\s?!.,]*(lana)?[\s?!.]*$/i.test(heard)) return say(turn, GREETING);
       // Dial marks noise as "(unintelligible audio)"; don't send that to the phone as a question.
       if (/^\(.*\)$/.test(heard)) return say(turn, "Sorry, I didn't catch that. Ask me again?");
       if (!deps.phoneOpen(user)) return say(turn, 'Open Lana on your iPhone, then ask me again. Your phone works out the answer, not me.');
