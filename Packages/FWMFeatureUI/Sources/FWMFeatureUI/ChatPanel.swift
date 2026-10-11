@@ -18,7 +18,7 @@ struct ChatPanel: View {
     var body: some View {
         VStack(spacing: 0) {
             HStack(spacing: 10) {
-                LanaOrb(size: 36)
+                LanaMark(size: 34)
                 VStack(alignment: .leading, spacing: 1) {
                     Text("Lana").font(.headline)
                     Text(OnDeviceRouter.status == .ready ? "On-device AI · demo financial data" : "Local model unavailable · basic answers")

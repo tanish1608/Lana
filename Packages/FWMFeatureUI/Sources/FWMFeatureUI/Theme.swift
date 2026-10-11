@@ -68,6 +68,8 @@ enum Theme {
     /// The one emphasis fill: a deep blue for the selected category and the "owed to you" card.
     static let deepBlue = Color(light: 0x1F5FE0, dark: 0x2A6BF0)
     static let deepBlueFill = LinearGradient(colors: [Color(light: 0x3B8BFF, dark: 0x3B8BFF), Color(light: 0x1B49C8, dark: 0x1D45B8)], startPoint: .topLeading, endPoint: .bottomTrailing)
+    /// Wordmark colour: the logo's navy on light, near-white on dark.
+    static let logoInk = Color(light: 0x0C2E4B, dark: 0xFFFFFF)
     static let inkCardFill = LinearGradient(colors: [Color(light: 0x2C2C30, dark: 0x2C2C30), Color(light: 0x0B0B0D, dark: 0x0B0B0D)], startPoint: .top, endPoint: .bottom)
     /// Screen background: a slow ambient gradient behind everything.
     static var backdrop: some View { Aurora() }

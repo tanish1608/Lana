@@ -30,7 +30,14 @@ struct HomeScreen: View {
                 .padding(.horizontal, 16).padding(.bottom, 24)
             }
             .scrollIndicators(.hidden).background { Theme.backdrop }
-            .toolbar { DemoDataBadge() }
+            .toolbar {
+                #if os(iOS)
+                ToolbarItem(placement: .topBarLeading) { LanaLogo().fixedSize() }.sharedBackgroundVisibility(.hidden)
+                ToolbarItem(placement: .topBarTrailing) { DemoDataBadge() }
+                #else
+                ToolbarItem { DemoDataBadge() }
+                #endif
+            }
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
             #endif
