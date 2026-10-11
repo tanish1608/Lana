@@ -6,6 +6,8 @@ The product gives people time back by reducing the work of understanding their m
 
 **Start here:** [Technical architecture and collaboration guide](docs/README.md). It covers ownership, shared interfaces, setup, tests, branches, commits, and merge procedures.
 
+**Assign next work:** [Team task list](TODO.md) tracks suggested owners, dependencies, acceptance criteria, and version 1 follow-ups.
+
 **AI branch handoff:** [Concrete Swift integration and verification](docs/AI_INTEGRATION.md) describes the canonical agent, adapter protocols, local receipt/voice APIs, and approval gate.
 
 ## Version 1
