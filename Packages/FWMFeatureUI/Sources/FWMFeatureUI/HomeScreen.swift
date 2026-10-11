@@ -70,8 +70,9 @@ struct HomeScreen: View {
         .foregroundStyle(Theme.skyInk)
         .padding(20).frame(maxWidth: .infinity, alignment: .leading)
         .background {
-            LinearGradient(colors: [Theme.sky, Theme.skyDeep], startPoint: .topLeading, endPoint: .bottomTrailing)
+            LinearGradient(colors: [Theme.sky, Theme.skyDeep, Theme.auraViolet.opacity(0.55)], startPoint: .topLeading, endPoint: .bottomTrailing)
                 .overlay(alignment: .topTrailing) { Circle().fill(.white.opacity(0.18)).frame(width: 220, height: 220).offset(x: 70, y: -110).blur(radius: 8) }
+                .overlay(alignment: .bottomLeading) { Circle().fill(Theme.auraTeal.opacity(0.28)).frame(width: 200, height: 200).offset(x: -70, y: 110).blur(radius: 30) }
                 .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
         }
         .raised(24, tint: Theme.accent, strength: 1.6)
@@ -106,7 +107,7 @@ struct HomeScreen: View {
             GeometryReader { g in
                 let w = g.size.width - CGFloat(parts.count - 1) * 3, total = CGFloat(max(f.netIncomeCents, 1))
                 HStack(spacing: 3) {
-                    ForEach(parts) { p in Capsule().fill(p.color).frame(width: max(4, w * CGFloat(p.cents) / total)) }
+                    ForEach(parts) { p in Capsule().fill(p.color.gradient).frame(width: max(4, w * CGFloat(p.cents) / total)) }
                 }
             }
             .frame(height: 12)

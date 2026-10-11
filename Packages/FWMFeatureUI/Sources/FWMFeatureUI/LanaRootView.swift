@@ -80,26 +80,30 @@ struct LanaDock: View {
     var body: some View {
         HStack(spacing: 0) {
             // Two equal halves so the orb's gap stays centred whichever pill is open.
-            HStack(spacing: 0) { button(.home); button(.budget) }.frame(maxWidth: .infinity)
-            Color.clear.frame(width: 76, height: 1)
-            HStack(spacing: 0) { button(.split); button(.accounts) }.frame(maxWidth: .infinity)
+            HStack(spacing: 0) { button(.home); button(.budget) }.frame(width: 146)
+            Color.clear.frame(width: 70, height: 1)
+            HStack(spacing: 0) { button(.split); button(.accounts) }.frame(width: 146)
         }
-        .padding(.horizontal, 7).frame(height: 64).frame(maxWidth: .infinity)
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 32, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 32, style: .continuous).strokeBorder(Theme.edge))
-        .shadow(color: .black.opacity(0.06), radius: 2, y: 1)
-        .shadow(color: .black.opacity(0.18), radius: 22, y: 12)
+        .padding(.horizontal, 6).frame(height: 64)
+        // Floating glass: thin material, a soft top sheen, a bright top edge and a wide soft shadow.
+        .background {
+            Capsule().fill(.ultraThinMaterial)
+                .overlay(Capsule().fill(LinearGradient(colors: [.white.opacity(0.16), .white.opacity(0.02)], startPoint: .top, endPoint: .bottom)))
+        }
+        .overlay(Capsule().strokeBorder(Theme.glassEdge, lineWidth: 1))
+        .shadow(color: .black.opacity(0.08), radius: 2, y: 1)
+        .shadow(color: .black.opacity(0.22), radius: 28, y: 16)
         .overlay(alignment: .top) {
             Button(action: toggleChat) {
                 LanaOrb(size: 62, symbol: chatOpen ? "xmark" : "sparkles")
-                    .padding(4).background(Theme.bg, in: Circle())
+                    .padding(4).background(.ultraThinMaterial, in: Circle()).overlay(Circle().strokeBorder(Theme.glassEdge, lineWidth: 1))
                     .shadow(color: Color(red: 0.37, green: 0.36, blue: 0.9).opacity(0.5), radius: 14, y: 8)
             }
             .buttonStyle(PressScaleStyle())
             .offset(y: -26)
             .accessibilityLabel(chatOpen ? "Close chat with Lana" : "Chat with Lana")
         }
-        .padding(.horizontal, 12).padding(.top, 34).padding(.bottom, 4)
+        .frame(maxWidth: .infinity).padding(.top, 34).padding(.bottom, 8)
     }
 
     private func button(_ t: LanaTab) -> some View {
