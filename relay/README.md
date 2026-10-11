@@ -59,7 +59,7 @@ Every `/v1/*` call except `/v1/pair` sends `Authorization: Bearer <device_token>
 
 **Foreground.** A device that polled in the last 20 s counts as open. If no device is open 6 s after a message arrives, the sender gets one nudge: `Got it. Open FWM to finish: fwm://job/<job_id>`. The job waits in the queue until the app opens.
 
-**Attachments.** The relay keeps only Dial's media URL and proxies it to the paired device. It does not cache bytes, so fetch on claim. How long Dial keeps media has not been verified.
+**Attachments.** The relay keeps only Dial's media URL and proxies it to the paired device. Dial media URLs are stable and do not expire (Dial docs, confirmed by the Dial team on Oct 11), so the relay does not cache bytes.
 
 **Approvals (ACT-02).** An approval binds the exact payload, a nonce and an expiry, and the device signs it after MFA:
 
@@ -77,7 +77,7 @@ For reminders, `payload = {action_id, contact_id, to, body, due_at}`. A changed 
 |---|---|
 | Job queue, pairing, idempotent replies, approvals, reminders, demo clock | `npm test` passes (5 end-to-end tests) |
 | Swift client | `swift test` passes; `testLiveRelayLoop` ran against a local relay (pair, job, result, signed reminder, forged approval rejected) |
-| Dial send/receive | Code complete. Not yet verified live: our number is SMS/voice only, and iMessage needs Dial to enable it. |
+| Dial send/receive | Code complete. Our number is SMS/voice. Inbound SMS from any phone works. Outbound SMS to US numbers is blocked until 10DLC registration ($25, 3 to 5 days), and iMessage costs $250 up front, so the demo shows replies in the app. |
 | Dial webhook | Signature check written. Not exercised; the event stream is the primary path. |
-| Keewano swap memory | Query and seed script written. Waiting on the project ingest key to backfill and verify. |
+| Keewano swap memory | Events registered and history ingested (`npm run seed:keewano`). Query verification pending ingest processing. |
 | Sparta Worlds runner | Not started |

@@ -86,12 +86,13 @@ export function entityUuid(name: string): string {
 }
 
 /** A group is blocked when this user's history rejects it more often than it accepts it. Falls back to the last good answer, labeled cached. */
-// count(col) FILTER counts decision occurrences; GROUP BY reads the group that was in effect at each decision.
+// FILTER names the instants where SwapDecision has that value, so count(*) counts decisions (not carried-forward rows).
+// GROUP BY reads the group in effect at each decision. count(col) FILTER is rejected as an unsupported aggregate.
 export async function swapMemory(userId: string, groups: string[]): Promise<SwapMemory> {
   const userUuid = entityUuid(userId);
   const query = `SELECT "SwapGroup",
-  count("SwapDecision") FILTER (WHERE "SwapDecision" = 'rejected') AS rejected,
-  count("SwapDecision") FILTER (WHERE "SwapDecision" = 'accepted') AS accepted
+  count(*) FILTER (WHERE "SwapDecision" = 'rejected') AS rejected,
+  count(*) FILTER (WHERE "SwapDecision" = 'accepted') AS accepted
 FROM events
 WHERE user_id = '${userUuid}' AND "SwapGroup" IN (${groups.map(quote).join(', ')})
 GROUP BY "SwapGroup"`;
