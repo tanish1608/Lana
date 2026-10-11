@@ -109,6 +109,7 @@
       { label: "Kept", v: f.retained_cash_cents, c: "var(--ok)" }
     ];
     const stays = f.to_savings_cents + f.to_investments_cents + f.retained_cash_cents;
+    const pcts = E.allocate(100, parts.map((p) => p.v)); // largest remainder, so the column sums to 100
     const { unpaid, unpaidCents } = owedSummary();
     return `<div class="home-top"><div><div class="muted small">Sunday, Oct 11</div><h1 style="margin:2px 0 0">Hi, ${esc(DS.user.display_name || "there")}</h1></div>
         <button class="msgbtn" data-messages>${MSG_ICON}Messages</button></div>
@@ -118,10 +119,11 @@
         <div class="split-bar"><span style="flex:${snap.assets_cents}"></span><span style="flex:${snap.liabilities_cents}"></span></div>
         <div class="row small"><span><b class="num">${fmt(snap.assets_cents)}</b> owned</span><span><b class="num">${fmt(snap.liabilities_cents)}</b> owed</span></div>
       </div>
-      <button class="card ring-card" data-tab="money">
+      <button class="card flow-card" data-tab="money" aria-label="${mon} breakdown">
         <div class="row"><span class="eyebrow">${mon}</span><span class="chev">›</span></div>
-        <div class="ring-wrap">${ring(parts, f.net_income_cents, `<div class="muted small">Stayed</div><div class="ring-num num">${fmt(stays)}</div><div class="muted small">of ${fmt(f.net_income_cents)}</div>`)}</div>
-        <div class="tiles">${parts.map((p) => `<div class="tile"><i class="dot" style="background:${p.c}"></i><span class="muted small">${p.label}</span><b class="num">${fmt(p.v)}</b></div>`).join("")}</div>
+        <div class="fc-head"><div>${big(stays, "md")}<div class="small muted">stayed with you</div></div><div class="fc-in"><div class="small muted">Came in</div><b class="num">${fmt(f.net_income_cents)}</b></div></div>
+        <div class="seg-bar" role="img" aria-label="${esc(parts.map((p) => p.label + " " + fmt(p.v)).join(", "))}">${parts.map((p) => `<span style="flex:${p.v};background:${p.c}"></span>`).join("")}</div>
+        <div class="fc-rows">${parts.map((p, i) => `<div class="fc-row"><i class="dot" style="background:${p.c}"></i><span class="grow">${p.label}</span><span class="pct num">${pcts[i]}%</span><b class="num">${fmt(p.v)}</b></div>`).join("")}</div>
       </button>
       <div class="duo">
         <button class="card ink-card" data-tab="split"><div class="ink-num num">${fmt(unpaidCents, { cents: true })}</div><div class="small">owed to you</div><div class="tiny">${unpaid.length ? unpaid.map((q) => esc(q.reviewed_name)).join(", ") : "All settled"}</div></button>
