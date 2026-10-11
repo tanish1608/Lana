@@ -9,12 +9,12 @@
   --bg:#0E0E0D; --surface:#161614; --card:#1F1E1B; --ink:#F3F0EA; --ink-2:#B5B0A6; --ink-3:#7F7A71;
   --line:#2D2B27; --accent:#5CC29F; --accent-2:#3E9C7D; --accent-3:#2B6E58; --accent-soft:#16302A;
   --goes:#5A5650; --goes-2:#3A3834; --warn:#E8A65C; --warn-soft:#33261A; --bad:#EE8A80; --bad-soft:#3A1F1C;
-  --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.3);}}
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.3);color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#0E0E0D; --surface:#161614; --card:#1F1E1B; --ink:#F3F0EA; --ink-2:#B5B0A6; --ink-3:#7F7A71;
   --line:#2D2B27; --accent:#5CC29F; --accent-2:#3E9C7D; --accent-3:#2B6E58; --accent-soft:#16302A;
   --goes:#5A5650; --goes-2:#3A3834; --warn:#E8A65C; --warn-soft:#33261A; --bad:#EE8A80; --bad-soft:#3A1F1C;
-  --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.3);}
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.3);color-scheme:dark}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;height:100%}
 body{background:var(--bg);color:var(--ink);font-family:var(--font);font-size:15px;line-height:1.4;-webkit-font-smoothing:antialiased}
@@ -23,7 +23,7 @@ input{font:inherit;color:inherit}
 .num{font-variant-numeric:tabular-nums}
 .phone{max-width:430px;margin:0 auto;min-height:100dvh;background:var(--surface);position:relative;display:flex;flex-direction:column}
 @media (min-width:600px){body{padding:24px 0}.phone{min-height:880px;height:880px;border-radius:44px;box-shadow:0 30px 80px rgba(0,0,0,.18);overflow:hidden;border:10px solid #111}}
-.topbar{display:flex;align-items:center;justify-content:space-between;padding:14px 20px 6px;position:sticky;top:0;background:var(--surface);z-index:5}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:14px 20px 6px;position:sticky;top:env(safe-area-inset-top,0px);background:var(--surface);z-index:5}
 .brand{font-family:var(--display);font-size:22px;font-weight:600;letter-spacing:-.01em;display:flex;align-items:center;gap:8px}
 .brand i{width:10px;height:10px;border-radius:50%;background:var(--accent);display:inline-block}
 .pill{font-size:11.5px;font-weight:600;letter-spacing:.02em;padding:6px 10px;border-radius:999px;background:var(--warn-soft);color:var(--warn);min-height:28px;display:inline-flex;align-items:center;gap:6px}
@@ -139,3 +139,6 @@ h3{font-size:17px;font-weight:650;margin:0}
 .sim{font-size:11.5px;color:var(--warn);font-weight:600;display:flex;gap:6px;align-items:center;margin-top:8px}
 .big-num{font-family:var(--display);font-size:34px;font-weight:500;letter-spacing:-.02em}
 .empty{text-align:center;padding:26px 10px;color:var(--ink-2)}
+
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
