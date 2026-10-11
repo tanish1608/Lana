@@ -59,11 +59,15 @@ struct BudgetScreen: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 12) {
-                    if let p = plan() { content(p) } else { Card { Text("Couldn’t load September totals.") } }
+            ScrollViewReader { proxy in
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 12) {
+                        if let p = plan() { content(p) } else { Card { Text("Couldn’t load September totals.") } }
+                    }
+                    .padding(.horizontal, 16).padding(.bottom, 24)
                 }
-                .padding(.horizontal, 16).padding(.bottom, 24)
+                // The adopt button is at the bottom and its confirmation banner at the top; show the banner.
+                .onChange(of: adoptedSignature) { _, _ in withAnimation { proxy.scrollTo("adopted", anchor: .center) } }
             }
             .background(Theme.bg)
             .navigationTitle("Budget")
@@ -85,6 +89,7 @@ struct BudgetScreen: View {
             Label(changed ? "Edited since adopting. Review and adopt again." : "Adopted. Balances and purchases are unchanged.", systemImage: "checkmark.circle.fill")
                 .font(.subheadline).foregroundStyle(Theme.accent).padding(14).frame(maxWidth: .infinity, alignment: .leading)
                 .background(Theme.accentSoft, in: RoundedRectangle(cornerRadius: 16))
+                .id("adopted")
         }
         Card {
             Grid(alignment: .leading, horizontalSpacing: 14, verticalSpacing: 8) {
@@ -160,9 +165,12 @@ struct BudgetScreen: View {
                 }
             }
             .navigationTitle("Why these suggestions?")
+            #if os(iOS)
+            .navigationBarTitleDisplayMode(.inline) // the large title truncates at phone width
+            #endif
             .toolbar { Button("Done") { showWhy = false } }
         }
-        .presentationDetents([.medium, .large])
+        .presentationDetents([.large])
     }
 }
 

@@ -13,7 +13,7 @@ enum Theme {
     static let card = Color(uiColor: .secondarySystemGroupedBackground)
     static let ink = Color(uiColor: .label)
     static let ink2 = Color(uiColor: .secondaryLabel)
-    static let ink3 = Color(uiColor: .tertiaryLabel)
+    static let ink3 = Color(uiColor: .systemGray) // tertiaryLabel was too faint for captions and amounts on white cards
     static let line = Color(uiColor: .tertiarySystemFill)
     #else
     static let bg = Color(nsColor: .windowBackgroundColor)
