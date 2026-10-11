@@ -35,7 +35,7 @@ for (const a of actions) {
     ticket: {
       status: 'solved',
       tags: ['lana', 'swap', 'swap_applied'],
-      comment: { body: `Switched ${a.subscription} to Essentials. You save $${(a.saving_cents / 100).toFixed(2)}/mo.`, public: true },
+      comment: { body: `Switched ${a.subscription} to the 30 GB plan. You save $${(a.saving_cents / 100).toFixed(2)}/mo.`, public: true },
     },
   });
 }

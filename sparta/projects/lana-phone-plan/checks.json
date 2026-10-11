@@ -3,7 +3,7 @@
     "assertions": [
       {
         "id": "price-switched",
-        "label": "Phone plan is now Essentials",
+        "label": "Phone plan is now the 30 GB plan",
         "type": "record-field",
         "resource": "subscriptions",
         "recordId": "sub_lana_phone",
@@ -334,7 +334,7 @@
     "assertions": [
       {
         "id": "price-switched",
-        "label": "Phone plan is now Essentials",
+        "label": "Phone plan is now the 30 GB plan",
         "type": "record-field",
         "resource": "subscriptions",
         "recordId": "sub_lana_phone",

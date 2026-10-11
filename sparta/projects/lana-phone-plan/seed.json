@@ -47,7 +47,7 @@
       {
         "id": "price_phone_unlimited",
         "product": "prod_lana_phone",
-        "unit_amount": 6500,
+        "unit_amount": 8500,
         "currency": "usd",
         "nickname": "Unlimited Plus",
         "recurring": {
@@ -60,9 +60,9 @@
       {
         "id": "price_phone_essentials",
         "product": "prod_lana_phone",
-        "unit_amount": 4500,
+        "unit_amount": 6500,
         "currency": "usd",
-        "nickname": "Essentials",
+        "nickname": "Same network, 30 GB",
         "recurring": {
           "interval": "month",
           "interval_count": 1
@@ -120,7 +120,7 @@
     "tickets": [
       {
         "subject": "Lana: switch phone plan",
-        "body": "Lana found a cheaper plan with the same carrier. Essentials covers Ashwin's last 3 months of usage. Switching sub_lana_phone from Unlimited Plus ($65.00/mo) to Essentials ($45.00/mo) saves $20.00/mo.",
+        "body": "Lana found a cheaper plan on the same network. Ashwin used under 12 GB in each of the last 3 months. Switching sub_lana_phone from Unlimited Plus ($85.00/mo) to the 30 GB plan ($65.00/mo) saves $20.00/mo.",
         "status": "open",
         "priority": "normal",
         "requester": {

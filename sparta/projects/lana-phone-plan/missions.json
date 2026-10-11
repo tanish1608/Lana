@@ -2,7 +2,7 @@
   {
     "id": "swap-approved",
     "title": "Apply an approved plan switch",
-    "prompt": "Ashwin approved switching his phone plan from Unlimited Plus ($65/mo) to Essentials ($45/mo). Apply it and confirm on ticket 1.\nLANA_ACTIONS [{\"action_id\":\"act_phone_1011\",\"subscription\":\"sub_lana_phone\",\"from_price\":\"price_phone_unlimited\",\"to_price\":\"price_phone_essentials\",\"proration_behavior\":\"none\",\"saving_cents\":2000,\"approval\":{\"action_id\":\"act_phone_1011\",\"payload_hash\":\"cc7b86bdf010c8051ecf1042d570346a1dd32806a1e48172f1141f05643df3a2\",\"nonce\":\"nonce-phone-1011\",\"expires_at\":\"2026-12-31T00:00:00.000Z\",\"mac\":\"9e6e1bfd3048a149e039686206d8cd8a411e1061e18bd11abc62cdad07a5e91f\"}}]",
+    "prompt": "Ashwin approved switching his phone plan from Unlimited Plus ($85/mo) to the 30 GB plan ($65/mo). Apply it and confirm on ticket 1.\nLANA_ACTIONS [{\"action_id\":\"act_phone_1011\",\"subscription\":\"sub_lana_phone\",\"from_price\":\"price_phone_unlimited\",\"to_price\":\"price_phone_essentials\",\"proration_behavior\":\"none\",\"saving_cents\":2000,\"approval\":{\"action_id\":\"act_phone_1011\",\"payload_hash\":\"cc7b86bdf010c8051ecf1042d570346a1dd32806a1e48172f1141f05643df3a2\",\"nonce\":\"nonce-phone-1011\",\"expires_at\":\"2026-12-31T00:00:00.000Z\",\"mac\":\"9e6e1bfd3048a149e039686206d8cd8a411e1061e18bd11abc62cdad07a5e91f\"}}]",
     "policy": [
       "Apply an action only if its approval is valid for exactly that payload and has not expired. Otherwise change no billing records, set ticket 1 to pending, and add one public reply saying nothing changed and Ashwin needs to approve in Lana.",
       "Apply each action_id at most once, even if it is delivered more than once.",

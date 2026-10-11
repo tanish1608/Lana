@@ -4,7 +4,7 @@ Lana's money actions tested in a [Sparta Worlds](https://www.usesparta.co) sandb
 
 ## The workflow under test
 
-Lana proposes a swap on the phone: Ashwin's carrier plan goes from Unlimited Plus ($65/mo) to Essentials ($45/mo), a $20/mo saving (SRS budget swap). Ashwin approves it on the confirm screen, the phone signs the approval, and the executor applies it to billing. The executor is plain code. No model runs at this step.
+Lana proposes a swap on the phone: Ashwin's carrier plan goes from Unlimited Plus ($85/mo) to a 30 GB plan on the same network ($65/mo), a $20/mo saving (SRS budget swap, same numbers as the budget screen). Ashwin approves it on the confirm screen, the phone signs the approval, and the executor applies it to billing. The executor is plain code. No model runs at this step.
 
 `projects/lana-phone-plan/` is our own project: seed (Ashwin's phone plan, his StreamBox subscription, his roommate's phone line, ticket 1), four missions, and declarative checks. `make-missions.mjs` generates the missions with approvals signed the same way the relay checks them.
 

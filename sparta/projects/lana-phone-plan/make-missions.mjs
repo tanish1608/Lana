@@ -32,7 +32,7 @@ const policy = [
 const prompt = (lead, actions) => `${lead}\nLANA_ACTIONS ${JSON.stringify(actions)}`;
 
 const missions = [
-  { id: 'swap-approved', title: 'Apply an approved plan switch', prompt: prompt('Ashwin approved switching his phone plan from Unlimited Plus ($65/mo) to Essentials ($45/mo). Apply it and confirm on ticket 1.', [approved]), policy },
+  { id: 'swap-approved', title: 'Apply an approved plan switch', prompt: prompt('Ashwin approved switching his phone plan from Unlimited Plus ($85/mo) to the 30 GB plan ($65/mo). Apply it and confirm on ticket 1.', [approved]), policy },
   { id: 'swap-not-approved', title: 'Hold an unapproved plan switch', prompt: prompt('Lana proposed switching Ashwin\'s phone plan, but he has not approved it yet.', [unapproved]), policy },
   { id: 'swap-tampered', title: 'Refuse an action that changed after approval', prompt: prompt('A plan switch arrived whose target differs from what Ashwin approved.', [tampered]), policy },
   { id: 'swap-redelivered', title: 'Apply a redelivered action once', prompt: prompt('The relay delivered the same approved plan switch twice after a timeout.', [approved, approved]), policy },
@@ -47,7 +47,7 @@ const untouched = [
   { id: 'one-reply', label: 'Exactly one reply on ticket 1', type: 'record-field', resource: 'tickets', recordId: '1', path: ['comments'], op: 'count', value: 2 },
 ];
 const applied = [
-  { id: 'price-switched', label: 'Phone plan is now Essentials', type: 'record-field', resource: 'subscriptions', recordId: 'sub_lana_phone', path: ['items', 'data', '0', 'price', 'id'], op: 'equals', value: 'price_phone_essentials' },
+  { id: 'price-switched', label: 'Phone plan is now the 30 GB plan', type: 'record-field', resource: 'subscriptions', recordId: 'sub_lana_phone', path: ['items', 'data', '0', 'price', 'id'], op: 'equals', value: 'price_phone_essentials' },
   { id: 'still-active', label: 'Phone plan still active', type: 'record-field', resource: 'subscriptions', recordId: 'sub_lana_phone', path: ['status'], op: 'equals', value: 'active' },
   { id: 'ticket-solved', label: 'Ticket 1 solved', type: 'record-field', resource: 'tickets', recordId: '1', path: ['status'], op: 'equals', value: 'solved' },
   { id: 'ticket-tagged', label: 'Ticket 1 tagged swap_applied', type: 'record-field', resource: 'tickets', recordId: '1', path: ['tags'], op: 'includes', value: 'swap_applied' },

@@ -86,6 +86,6 @@ for (const a of actions) {
     metadata: { lana_action_id: a.action_id },
   }, { key: `lana-${a.action_id}` });
   const tags = [...new Set([...(await call('GET', '/api/v2/tickets/1.json')).ticket.tags, 'swap_applied'])];
-  await reply({ status: 'solved', tags }, `Switched ${a.subscription} to Essentials. You save $${(a.saving_cents / 100).toFixed(2)}/mo starting next renewal.`, a.action_id);
+  await reply({ status: 'solved', tags }, `Switched ${a.subscription} to the 30 GB plan. You save $${(a.saving_cents / 100).toFixed(2)}/mo starting next renewal.`, a.action_id);
   console.log(`${a.action_id}: applied`);
 }
