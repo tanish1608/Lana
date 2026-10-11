@@ -6,3 +6,5 @@ DerivedData/
 node_modules/
 .env
 relay/data/
+__pycache__/
+*.pyc

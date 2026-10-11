@@ -82,6 +82,133 @@
     "source_id": "fixture:full_financial_world_keewano_fixture",
     "synthetic": true
   },
+  "purchase_evidence": [
+    {
+      "currency": "USD",
+      "dataset_version": "synthetic-world-v1",
+      "extended_cost_cents": 12000,
+      "product": "Pantry staples",
+      "quantity": 4,
+      "record_id": "full_financial_world_swap_pantry_purchase",
+      "scenario_id": "full_financial_world",
+      "source_id": "fixture:full_financial_world_swap_pantry_purchase",
+      "source_type": "synthetic_itemization_of_referenced_purchases",
+      "synthetic": true,
+      "transaction_ids": [
+        "fw_2026-09_0040",
+        "fw_2026-09_0041",
+        "fw_2026-09_0042",
+        "fw_2026-09_0043"
+      ],
+      "unit_cost_cents": 3000,
+      "unit_size": "four 1 kg baskets"
+    },
+    {
+      "currency": "USD",
+      "dataset_version": "synthetic-world-v1",
+      "extended_cost_cents": 4800,
+      "product": "Preferred detergent",
+      "quantity": 2,
+      "record_id": "full_financial_world_swap_detergent_purchase",
+      "scenario_id": "full_financial_world",
+      "source_id": "fixture:full_financial_world_swap_detergent_purchase",
+      "source_type": "synthetic_itemization_of_referenced_purchases",
+      "synthetic": true,
+      "transaction_ids": [
+        "fw_2026-09_0047"
+      ],
+      "unit_cost_cents": 2400,
+      "unit_size": "two 32 load bottles"
+    },
+    {
+      "currency": "USD",
+      "dataset_version": "synthetic-world-v1",
+      "extended_cost_cents": 4000,
+      "product": "Preferred coffee beans",
+      "quantity": 2,
+      "record_id": "full_financial_world_swap_beans_purchase",
+      "scenario_id": "full_financial_world",
+      "source_id": "fixture:full_financial_world_swap_beans_purchase",
+      "source_type": "synthetic_itemization_of_referenced_purchases",
+      "synthetic": true,
+      "transaction_ids": [
+        "fw_2026-09_0048"
+      ],
+      "unit_cost_cents": 2000,
+      "unit_size": "two 340 g bags"
+    },
+    {
+      "currency": "USD",
+      "dataset_version": "synthetic-world-v1",
+      "extended_cost_cents": 8500,
+      "product": "Fictional coverage phone plan",
+      "quantity": 1,
+      "record_id": "full_financial_world_swap_phone_purchase",
+      "scenario_id": "full_financial_world",
+      "source_id": "fixture:full_financial_world_swap_phone_purchase",
+      "source_type": "synthetic_itemization_of_referenced_purchases",
+      "synthetic": true,
+      "transaction_ids": [
+        "fw_2026-09_0014"
+      ],
+      "unit_cost_cents": 8500,
+      "unit_size": "one monthly line"
+    },
+    {
+      "currency": "USD",
+      "dataset_version": "synthetic-world-v1",
+      "extended_cost_cents": 13983,
+      "product": "Two restaurant visits",
+      "quantity": 1,
+      "record_id": "full_financial_world_swap_dining_purchase",
+      "scenario_id": "full_financial_world",
+      "source_id": "fixture:full_financial_world_swap_dining_purchase",
+      "source_type": "synthetic_itemization_of_referenced_purchases",
+      "synthetic": true,
+      "transaction_ids": [
+        "fw_2026-09_0061",
+        "fw_2026-09_0062"
+      ],
+      "unit_cost_cents": 13983,
+      "unit_size": "one monthly bundle containing two meals"
+    },
+    {
+      "currency": "USD",
+      "dataset_version": "synthetic-world-v1",
+      "extended_cost_cents": 5600,
+      "product": "Two rideshare trips",
+      "quantity": 2,
+      "record_id": "full_financial_world_swap_transit_purchase",
+      "scenario_id": "full_financial_world",
+      "source_id": "fixture:full_financial_world_swap_transit_purchase",
+      "source_type": "synthetic_itemization_of_referenced_purchases",
+      "synthetic": true,
+      "transaction_ids": [
+        "fw_2026-09_0067",
+        "fw_2026-09_0068"
+      ],
+      "unit_cost_cents": 2800,
+      "unit_size": "two comparable trips"
+    },
+    {
+      "currency": "USD",
+      "dataset_version": "synthetic-world-v1",
+      "extended_cost_cents": 3771,
+      "product": "Discretionary shopping",
+      "quantity": 1,
+      "record_id": "full_financial_world_swap_other_purchase",
+      "scenario_id": "full_financial_world",
+      "source_id": "fixture:full_financial_world_swap_other_purchase",
+      "source_type": "synthetic_itemization_of_referenced_purchases",
+      "synthetic": true,
+      "transaction_ids": [
+        "fw_2026-09_0069",
+        "fw_2026-09_0070"
+      ],
+      "unit_cost_cents": 3771,
+      "unit_size": "one monthly bundle containing two shopping baskets"
+    }
+  ],
   "recommendations": [
     {
       "alternative_product": "Comparable store pantry staples",
@@ -109,6 +236,7 @@
       "projected_savings_cents": 3600,
       "proposed_monthly_cost_cents": 8400,
       "proposed_unit_cost_cents": 2100,
+      "purchase_evidence_id": "full_financial_world_swap_pantry_purchase",
       "recommendation_id": "full_financial_world_swap_pantry",
       "record_id": "full_financial_world_swap_pantry",
       "scenario_id": "full_financial_world",
@@ -140,6 +268,7 @@
       "projected_savings_cents": 2400,
       "proposed_monthly_cost_cents": 2400,
       "proposed_unit_cost_cents": 1200,
+      "purchase_evidence_id": "full_financial_world_swap_detergent_purchase",
       "recommendation_id": "full_financial_world_swap_detergent",
       "record_id": "full_financial_world_swap_detergent",
       "scenario_id": "full_financial_world",
@@ -171,6 +300,7 @@
       "projected_savings_cents": 2000,
       "proposed_monthly_cost_cents": 2000,
       "proposed_unit_cost_cents": 1000,
+      "purchase_evidence_id": "full_financial_world_swap_beans_purchase",
       "recommendation_id": "full_financial_world_swap_beans",
       "record_id": "full_financial_world_swap_beans",
       "scenario_id": "full_financial_world",
@@ -202,6 +332,7 @@
       "projected_savings_cents": 2000,
       "proposed_monthly_cost_cents": 6500,
       "proposed_unit_cost_cents": 6500,
+      "purchase_evidence_id": "full_financial_world_swap_phone_purchase",
       "recommendation_id": "full_financial_world_swap_phone",
       "record_id": "full_financial_world_swap_phone",
       "scenario_id": "full_financial_world",
@@ -219,38 +350,29 @@
         "Instant coffee rejected"
       ],
       "currency": "USD",
-      "current_monthly_cost_cents": 13000,
+      "current_monthly_cost_cents": 13983,
       "current_product": "Two restaurant visits",
-      "current_unit_cost_cents": 6500,
+      "current_unit_cost_cents": 13983,
       "dataset_version": "synthetic-world-v1",
       "eligibility": "synthetic_person_eligible_assumption",
       "evidence_transaction_ids": [
-        "fw_2026-09_0049",
-        "fw_2026-09_0050",
-        "fw_2026-09_0051",
-        "fw_2026-09_0052",
-        "fw_2026-09_0053",
-        "fw_2026-09_0054",
-        "fw_2026-09_0055",
-        "fw_2026-09_0056",
-        "fw_2026-09_0057",
-        "fw_2026-09_0058",
-        "fw_2026-09_0059",
-        "fw_2026-09_0060"
+        "fw_2026-09_0061",
+        "fw_2026-09_0062"
       ],
-      "monthly_quantity": 2,
+      "monthly_quantity": 1,
       "portion_of_bundled_purchase": false,
       "price_provenance": "synthetic_comparison_catalog_2026-09-30",
       "projected_savings_cents": 2000,
-      "proposed_monthly_cost_cents": 11000,
-      "proposed_unit_cost_cents": 5500,
+      "proposed_monthly_cost_cents": 11983,
+      "proposed_unit_cost_cents": 11983,
+      "purchase_evidence_id": "full_financial_world_swap_dining_purchase",
       "recommendation_id": "full_financial_world_swap_dining",
       "record_id": "full_financial_world_swap_dining",
       "scenario_id": "full_financial_world",
       "source_id": "fixture:full_financial_world_swap_dining",
       "status": "projected",
       "synthetic": true,
-      "unit_size": "two comparable meals"
+      "unit_size": "one monthly bundle containing two meals"
     },
     {
       "alternative_product": "Transit for two discretionary trips",
@@ -267,10 +389,8 @@
       "dataset_version": "synthetic-world-v1",
       "eligibility": "synthetic_person_eligible_assumption",
       "evidence_transaction_ids": [
-        "fw_2026-09_0063",
-        "fw_2026-09_0064",
-        "fw_2026-09_0065",
-        "fw_2026-09_0066"
+        "fw_2026-09_0067",
+        "fw_2026-09_0068"
       ],
       "monthly_quantity": 2,
       "portion_of_bundled_purchase": false,
@@ -278,6 +398,7 @@
       "projected_savings_cents": 1000,
       "proposed_monthly_cost_cents": 4600,
       "proposed_unit_cost_cents": 2300,
+      "purchase_evidence_id": "full_financial_world_swap_transit_purchase",
       "recommendation_id": "full_financial_world_swap_transit",
       "record_id": "full_financial_world_swap_transit",
       "scenario_id": "full_financial_world",
@@ -295,32 +416,29 @@
         "Instant coffee rejected"
       ],
       "currency": "USD",
-      "current_monthly_cost_cents": 7000,
+      "current_monthly_cost_cents": 3771,
       "current_product": "Discretionary shopping",
-      "current_unit_cost_cents": 3500,
+      "current_unit_cost_cents": 3771,
       "dataset_version": "synthetic-world-v1",
       "eligibility": "synthetic_person_eligible_assumption",
       "evidence_transaction_ids": [
         "fw_2026-09_0069",
-        "fw_2026-09_0070",
-        "fw_2026-09_0071",
-        "fw_2026-09_0072",
-        "fw_2026-09_0073",
-        "fw_2026-09_0074"
+        "fw_2026-09_0070"
       ],
-      "monthly_quantity": 2,
+      "monthly_quantity": 1,
       "portion_of_bundled_purchase": false,
       "price_provenance": "synthetic_comparison_catalog_2026-09-30",
       "projected_savings_cents": 2000,
-      "proposed_monthly_cost_cents": 5000,
-      "proposed_unit_cost_cents": 2500,
+      "proposed_monthly_cost_cents": 1771,
+      "proposed_unit_cost_cents": 1771,
+      "purchase_evidence_id": "full_financial_world_swap_other_purchase",
       "recommendation_id": "full_financial_world_swap_other",
       "record_id": "full_financial_world_swap_other",
       "scenario_id": "full_financial_world",
       "source_id": "fixture:full_financial_world_swap_other",
       "status": "projected",
       "synthetic": true,
-      "unit_size": "two comparable baskets"
+      "unit_size": "one monthly bundle containing two shopping baskets"
     }
   ],
   "scenario_id": "full_financial_world",

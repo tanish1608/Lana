@@ -1,0 +1,541 @@
+{
+  "cases": [
+    {
+      "case_id": "duplicate_ingestion",
+      "currency": "USD",
+      "dataset_version": "synthetic-world-v1",
+      "execution_scope": "fixture_contract_only; app/relay delivery not implemented",
+      "expected_outcome": "one_source_effect_9000_cents",
+      "input": {
+        "ingestion_count": 2,
+        "source_id": "fixture:e9"
+      },
+      "record_id": "edge_duplicate_ingestion",
+      "scenario_id": "edge_cases",
+      "source_id": "fixture:edge_duplicate_ingestion",
+      "synthetic": true
+    },
+    {
+      "case_id": "pending_becomes_posted",
+      "currency": "USD",
+      "dataset_version": "synthetic-world-v1",
+      "execution_scope": "fixture_contract_only; app/relay delivery not implemented",
+      "expected_outcome": "posted_supersedes_pending_no_double_count",
+      "input": {
+        "source_id": "fixture:e2",
+        "updates": [
+          "pending",
+          "posted"
+        ]
+      },
+      "record_id": "edge_pending_becomes_posted",
+      "scenario_id": "edge_cases",
+      "source_id": "fixture:edge_pending_becomes_posted",
+      "synthetic": true
+    },
+    {
+      "case_id": "internal_transfer",
+      "currency": "USD",
+      "dataset_version": "synthetic-world-v1",
+      "execution_scope": "fixture_contract_only; app/relay delivery not implemented",
+      "expected_outcome": "zero_income_expense_wealth_change",
+      "input": {
+        "legs_cents": [
+          -10000,
+          10000
+        ],
+        "pair_id": "p_sav"
+      },
+      "record_id": "edge_internal_transfer",
+      "scenario_id": "edge_cases",
+      "source_id": "fixture:edge_internal_transfer",
+      "synthetic": true
+    },
+    {
+      "case_id": "card_payment",
+      "currency": "USD",
+      "dataset_version": "synthetic-world-v1",
+      "execution_scope": "fixture_contract_only; app/relay delivery not implemented",
+      "expected_outcome": "cash_and_liability_reduce_no_consumption",
+      "input": {
+        "legs_cents": [
+          -27000,
+          27000
+        ],
+        "pair_id": "p_card"
+      },
+      "record_id": "edge_card_payment",
+      "scenario_id": "edge_cases",
+      "source_id": "fixture:edge_card_payment",
+      "synthetic": true
+    },
+    {
+      "case_id": "refund",
+      "currency": "USD",
+      "dataset_version": "synthetic-world-v1",
+      "execution_scope": "fixture_contract_only; app/relay delivery not implemented",
+      "expected_outcome": "category_net_9000_cents",
+      "input": {
+        "original_id": "e2",
+        "purchase_cents": 12000,
+        "refund_cents": 3000,
+        "refund_id": "e3"
+      },
+      "record_id": "edge_refund",
+      "scenario_id": "edge_cases",
+      "source_id": "fixture:edge_refund",
+      "synthetic": true
+    },
+    {
+      "case_id": "unknown_merchant_category",
+      "currency": "USD",
+      "dataset_version": "synthetic-world-v1",
+      "execution_scope": "fixture_contract_only; app/relay delivery not implemented",
+      "expected_outcome": "display_uncategorized_require_review",
+      "input": {
+        "category": null,
+        "merchant_id": null,
+        "signed_amount_cents": -100
+      },
+      "record_id": "edge_unknown_merchant_category",
+      "scenario_id": "edge_cases",
+      "source_id": "fixture:edge_unknown_merchant_category",
+      "synthetic": true
+    },
+    {
+      "case_id": "stale_valuation",
+      "currency": "USD",
+      "dataset_version": "synthetic-world-v1",
+      "execution_scope": "fixture_contract_only; app/relay delivery not implemented",
+      "expected_outcome": "show_stale_do_not_offer_position_as_cash",
+      "input": {
+        "mark_id": "mark_polymarket_2026-09_sports",
+        "observed_on": "2026-09-30",
+        "valuation_as_of": "2026-08-31"
+      },
+      "record_id": "edge_stale_valuation",
+      "scenario_id": "edge_cases",
+      "source_id": "fixture:edge_stale_valuation",
+      "synthetic": true
+    },
+    {
+      "case_id": "missing_statement",
+      "currency": "USD",
+      "dataset_version": "synthetic-world-v1",
+      "execution_scope": "fixture_contract_only; app/relay delivery not implemented",
+      "expected_outcome": "STATEMENT_COVERAGE_validation_failure",
+      "input": {
+        "remove_record_id": "statement_chase_checking_2023-10"
+      },
+      "record_id": "edge_missing_statement",
+      "scenario_id": "edge_cases",
+      "source_id": "fixture:edge_missing_statement",
+      "synthetic": true
+    },
+    {
+      "case_id": "unresolved_market",
+      "currency": "USD",
+      "dataset_version": "synthetic-world-v1",
+      "execution_scope": "fixture_contract_only; app/relay delivery not implemented",
+      "expected_outcome": "keep_position_mark_no_settlement",
+      "input": {
+        "market_id": "kalshi_2026-09_sports",
+        "outcome": "unresolved"
+      },
+      "record_id": "edge_unresolved_market",
+      "scenario_id": "edge_cases",
+      "source_id": "fixture:edge_unresolved_market",
+      "synthetic": true
+    },
+    {
+      "case_id": "property_fraction",
+      "currency": "USD",
+      "dataset_version": "synthetic-world-v1",
+      "execution_scope": "fixture_contract_only; app/relay delivery not implemented",
+      "expected_outcome": "attributable_asset_20000000_loan_15000000_equity_5000000",
+      "input": {
+        "gross_loan_cents": 30000000,
+        "gross_value_cents": 40000000,
+        "loan_ownership_fraction": "0.50",
+        "ownership_fraction": "0.50"
+      },
+      "record_id": "edge_property_fraction",
+      "scenario_id": "edge_cases",
+      "source_id": "fixture:edge_property_fraction",
+      "synthetic": true
+    },
+    {
+      "case_id": "principal_interest",
+      "currency": "USD",
+      "dataset_version": "synthetic-world-v1",
+      "execution_scope": "fixture_contract_only; app/relay delivery not implemented",
+      "expected_outcome": "principal_reduces_debt_interest_consumption",
+      "input": {
+        "interest_cents": 117292,
+        "payment_cents": 160000,
+        "principal_cents": 42708
+      },
+      "record_id": "edge_principal_interest",
+      "scenario_id": "edge_cases",
+      "source_id": "fixture:edge_principal_interest",
+      "synthetic": true
+    },
+    {
+      "case_id": "receipt_mismatch",
+      "currency": "USD",
+      "dataset_version": "synthetic-world-v1",
+      "execution_scope": "fixture_contract_only; app/relay delivery not implemented",
+      "expected_outcome": "RECEIPT_MISMATCH",
+      "input": {
+        "subtotal_cents": 8400,
+        "tax_cents": 840,
+        "tip_cents": 1680,
+        "total_cents": 10922
+      },
+      "record_id": "edge_receipt_mismatch",
+      "scenario_id": "edge_cases",
+      "source_id": "fixture:edge_receipt_mismatch",
+      "synthetic": true
+    },
+    {
+      "case_id": "ambiguous_participant",
+      "currency": "USD",
+      "dataset_version": "synthetic-world-v1",
+      "execution_scope": "fixture_contract_only; app/relay delivery not implemented",
+      "expected_outcome": "AMBIGUOUS_CONTACT_no_dispatch",
+      "input": {
+        "candidates": [
+          "c_tanish",
+          "synthetic_tanya"
+        ],
+        "label": "Tan"
+      },
+      "record_id": "edge_ambiguous_participant",
+      "scenario_id": "edge_cases",
+      "source_id": "fixture:edge_ambiguous_participant",
+      "synthetic": true
+    },
+    {
+      "case_id": "rounding_remainder",
+      "currency": "USD",
+      "dataset_version": "synthetic-world-v1",
+      "execution_scope": "fixture_contract_only; app/relay delivery not implemented",
+      "expected_outcome": "shares_1_0_0_sorted_tie_break",
+      "input": {
+        "participant_ids": [
+          "a",
+          "b",
+          "c"
+        ],
+        "total_cents": 1,
+        "weights": [
+          1,
+          1,
+          1
+        ]
+      },
+      "record_id": "edge_rounding_remainder",
+      "scenario_id": "edge_cases",
+      "source_id": "fixture:edge_rounding_remainder",
+      "synthetic": true
+    },
+    {
+      "case_id": "duplicate_approval",
+      "currency": "USD",
+      "dataset_version": "synthetic-world-v1",
+      "execution_scope": "fixture_contract_only; app/relay delivery not implemented",
+      "expected_outcome": "one_effect_contract_expectation",
+      "input": {
+        "action_id": "synthetic_split_approval",
+        "deliveries": 2
+      },
+      "record_id": "edge_duplicate_approval",
+      "scenario_id": "edge_cases",
+      "source_id": "fixture:edge_duplicate_approval",
+      "synthetic": true
+    },
+    {
+      "case_id": "unknown_delivery",
+      "currency": "USD",
+      "dataset_version": "synthetic-world-v1",
+      "execution_scope": "fixture_contract_only; app/relay delivery not implemented",
+      "expected_outcome": "not_settled_no_blind_redispatch",
+      "input": {
+        "delivery_status": "unknown",
+        "request_status": "sent"
+      },
+      "record_id": "edge_unknown_delivery",
+      "scenario_id": "edge_cases",
+      "source_id": "fixture:edge_unknown_delivery",
+      "synthetic": true
+    },
+    {
+      "case_id": "reminder_cancelled_payment",
+      "currency": "USD",
+      "dataset_version": "synthetic-world-v1",
+      "execution_scope": "fixture_contract_only; app/relay delivery not implemented",
+      "expected_outcome": "cancel_tanish_reminder_not_verified_settlement",
+      "input": {
+        "contact_id": "c_tanish",
+        "event": "payment_reported",
+        "verification": "user_reported"
+      },
+      "record_id": "edge_reminder_cancelled_payment",
+      "scenario_id": "edge_cases",
+      "source_id": "fixture:edge_reminder_cancelled_payment",
+      "synthetic": true
+    },
+    {
+      "case_id": "reminder_cancelled_dispute",
+      "currency": "USD",
+      "dataset_version": "synthetic-world-v1",
+      "execution_scope": "fixture_contract_only; app/relay delivery not implemented",
+      "expected_outcome": "cancel_aryan_reminder_keep_dispute_visible",
+      "input": {
+        "contact_id": "c_aryan",
+        "event": "dispute_opened"
+      },
+      "record_id": "edge_reminder_cancelled_dispute",
+      "scenario_id": "edge_cases",
+      "source_id": "fixture:edge_reminder_cancelled_dispute",
+      "synthetic": true
+    }
+  ],
+  "currency": "USD",
+  "data_mode": "fixture",
+  "dataset_version": "synthetic-world-v1",
+  "demo_clock": "2026-10-11T21:00:00-07:00",
+  "ingestion_dataset": {
+    "accounts": [
+      {
+        "account_id": "acct_checking",
+        "as_of": "2026-09-30T23:59:59-07:00",
+        "asset_or_liability": "asset",
+        "balance_cents": 104000,
+        "institution": "Demo Bank",
+        "kind": "checking",
+        "opening_balance_cents": 100000,
+        "scenario_id": "edge_cases",
+        "source_id": "fixture:acct_checking",
+        "synthetic": true,
+        "user_id": "user_ashwin"
+      },
+      {
+        "account_id": "acct_card",
+        "as_of": "2026-09-30T23:59:59-07:00",
+        "asset_or_liability": "liability",
+        "balance_cents": 2000,
+        "institution": "Demo Card",
+        "kind": "credit_card",
+        "opening_balance_cents": 20000,
+        "scenario_id": "edge_cases",
+        "source_id": "fixture:acct_card",
+        "synthetic": true,
+        "user_id": "user_ashwin"
+      },
+      {
+        "account_id": "acct_savings",
+        "as_of": "2026-09-30T23:59:59-07:00",
+        "asset_or_liability": "asset",
+        "balance_cents": 10000,
+        "institution": "Demo Bank",
+        "kind": "savings",
+        "opening_balance_cents": 0,
+        "scenario_id": "edge_cases",
+        "source_id": "fixture:acct_savings",
+        "synthetic": true,
+        "user_id": "user_ashwin"
+      }
+    ],
+    "as_of": "2026-09-30T23:59:59-07:00",
+    "data_mode": "fixture",
+    "dataset_version": "edge-v1",
+    "expected": {
+      "card_repayment_cents": 27000,
+      "categories_cents": {
+        "Groceries": 9000,
+        "Other": 9000
+      },
+      "expenses_cents": 18000,
+      "net_income_cents": 50000,
+      "pending_cents": 6500,
+      "to_investments_cents": 0,
+      "to_savings_cents": 10000
+    },
+    "scenario_id": "edge_cases",
+    "synthetic": true,
+    "transactions": [
+      {
+        "account_id": "acct_card",
+        "category": "Other",
+        "merchant": "REI",
+        "pending": true,
+        "posted_at": "2026-09-03T12:00:00-07:00",
+        "refund_of": null,
+        "scenario_id": "edge_cases",
+        "signed_amount_cents": -12000,
+        "source_id": "fixture:e2",
+        "synthetic": true,
+        "transaction_id": "e2_pending_ingestion",
+        "transfer_pair_id": null
+      },
+      {
+        "account_id": "acct_checking",
+        "category": "Income",
+        "merchant": "Acme Inc payroll",
+        "pending": false,
+        "posted_at": "2026-09-01T12:00:00-07:00",
+        "refund_of": null,
+        "scenario_id": "edge_cases",
+        "signed_amount_cents": 50000,
+        "source_id": "fixture:e1",
+        "synthetic": true,
+        "transaction_id": "e1",
+        "transfer_pair_id": null
+      },
+      {
+        "account_id": "acct_card",
+        "category": "Other",
+        "merchant": "REI",
+        "pending": false,
+        "posted_at": "2026-09-03T12:00:00-07:00",
+        "refund_of": null,
+        "scenario_id": "edge_cases",
+        "signed_amount_cents": -12000,
+        "source_id": "fixture:e2",
+        "synthetic": true,
+        "transaction_id": "e2",
+        "transfer_pair_id": null
+      },
+      {
+        "account_id": "acct_card",
+        "category": "Other",
+        "merchant": "REI refund",
+        "pending": false,
+        "posted_at": "2026-09-09T12:00:00-07:00",
+        "refund_of": "e2",
+        "scenario_id": "edge_cases",
+        "signed_amount_cents": 3000,
+        "source_id": "fixture:e3",
+        "synthetic": true,
+        "transaction_id": "e3",
+        "transfer_pair_id": null
+      },
+      {
+        "account_id": "acct_checking",
+        "category": "Transfer",
+        "merchant": "Card payment",
+        "pending": false,
+        "posted_at": "2026-09-20T12:00:00-07:00",
+        "refund_of": null,
+        "scenario_id": "edge_cases",
+        "signed_amount_cents": -27000,
+        "source_id": "fixture:e4",
+        "synthetic": true,
+        "transaction_id": "e4",
+        "transfer_pair_id": "p_card"
+      },
+      {
+        "account_id": "acct_card",
+        "category": "Transfer",
+        "merchant": "Payment received",
+        "pending": false,
+        "posted_at": "2026-09-20T12:00:00-07:00",
+        "refund_of": null,
+        "scenario_id": "edge_cases",
+        "signed_amount_cents": 27000,
+        "source_id": "fixture:e5",
+        "synthetic": true,
+        "transaction_id": "e5",
+        "transfer_pair_id": "p_card"
+      },
+      {
+        "account_id": "acct_checking",
+        "category": "Transfer",
+        "merchant": "Transfer to savings",
+        "pending": false,
+        "posted_at": "2026-09-21T12:00:00-07:00",
+        "refund_of": null,
+        "scenario_id": "edge_cases",
+        "signed_amount_cents": -10000,
+        "source_id": "fixture:e6",
+        "synthetic": true,
+        "transaction_id": "e6",
+        "transfer_pair_id": "p_sav"
+      },
+      {
+        "account_id": "acct_savings",
+        "category": "Transfer",
+        "merchant": "Transfer from checking",
+        "pending": false,
+        "posted_at": "2026-09-21T12:00:00-07:00",
+        "refund_of": null,
+        "scenario_id": "edge_cases",
+        "signed_amount_cents": 10000,
+        "source_id": "fixture:e7",
+        "synthetic": true,
+        "transaction_id": "e7",
+        "transfer_pair_id": "p_sav"
+      },
+      {
+        "account_id": "acct_checking",
+        "category": "Dining",
+        "merchant": "Nopa",
+        "pending": true,
+        "posted_at": "2026-09-29T12:00:00-07:00",
+        "refund_of": null,
+        "scenario_id": "edge_cases",
+        "signed_amount_cents": -6500,
+        "source_id": "fixture:e8",
+        "synthetic": true,
+        "transaction_id": "e8",
+        "transfer_pair_id": null
+      },
+      {
+        "account_id": "acct_checking",
+        "category": "Groceries",
+        "merchant": "Safeway",
+        "pending": false,
+        "posted_at": "2026-09-25T12:00:00-07:00",
+        "refund_of": null,
+        "scenario_id": "edge_cases",
+        "signed_amount_cents": -9000,
+        "source_id": "fixture:e9",
+        "synthetic": true,
+        "transaction_id": "e9",
+        "transfer_pair_id": null
+      },
+      {
+        "account_id": "acct_checking",
+        "category": "Groceries",
+        "merchant": "Safeway",
+        "pending": false,
+        "posted_at": "2026-09-25T12:00:00-07:00",
+        "refund_of": null,
+        "scenario_id": "edge_cases",
+        "signed_amount_cents": -9000,
+        "source_id": "fixture:e9",
+        "synthetic": true,
+        "transaction_id": "e9_duplicate_ingestion",
+        "transfer_pair_id": null
+      }
+    ],
+    "user": {
+      "brand_locks": [
+        "oat_milk"
+      ],
+      "currency": "USD",
+      "dietary_rules": [],
+      "display_name": "Ashwin",
+      "preferences_version": 1,
+      "savings_goal_cents": 15000,
+      "synthetic": true,
+      "timezone": "America/Los_Angeles",
+      "user_id": "user_ashwin"
+    }
+  },
+  "scenario_id": "edge_cases",
+  "seed": 261011,
+  "synthetic": true,
+  "timezone": "America/Los_Angeles"
+}

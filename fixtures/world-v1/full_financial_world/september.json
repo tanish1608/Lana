@@ -922,6 +922,7 @@
     "observation_as_of": "2026-09-30T12:00:00-07:00",
     "period": "2026-09",
     "prediction_equity_cents": 362140,
+    "prediction_return_cents": 11460,
     "property_equity_cents": 10048151,
     "record_id": "summary_2026-09",
     "reimbursements_cents": 0,

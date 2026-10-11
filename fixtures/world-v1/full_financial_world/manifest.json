@@ -1,0 +1,86 @@
+{
+  "completed_period": null,
+  "currency": "USD",
+  "data_mode": "fixture",
+  "dataset_version": "synthetic-world-v1",
+  "demo_clock": "2026-10-11T21:00:00-07:00",
+  "do_not_merge_ledgers": true,
+  "entrypoint": "snapshot.json",
+  "files": [
+    {
+      "path": "accounts.json",
+      "sha256": "b1bab21f7143d8b42918a3c99f6a87838302dde608c8d01cfa8d608b3bdd4b91",
+      "synthetic": true
+    },
+    {
+      "path": "annual.json",
+      "sha256": "f30c89ea4bb54f2364adfb7b6fe075be8ff26d09eab0062ed3e6b66cd4bc15c5",
+      "synthetic": true
+    },
+    {
+      "path": "core-september.json",
+      "sha256": "6e563dc5c89ee1ccc53816b9fded77342a8159568e67b0feae4b516dd83f8957",
+      "synthetic": true
+    },
+    {
+      "path": "events.json",
+      "sha256": "93a522f65f86f504afe27ba505fe1a2f8a061eec6b5e114d5f5b9f15ddedb183",
+      "synthetic": true
+    },
+    {
+      "path": "ledger.json",
+      "sha256": "694d2a159f503dacc0ac0b55b5b1667c82f8dd81b269798d787174c8b4eaaeae",
+      "synthetic": true
+    },
+    {
+      "path": "portfolio.json",
+      "sha256": "6e80af27724531a4e6131418a5127497d9a7eb231b34534dfb66383ed13cfab3",
+      "synthetic": true
+    },
+    {
+      "path": "prediction-markets.json",
+      "sha256": "8e5cbab8ec4838336ce2243b3b0181ddbc02023838f3dfd2354f153afdf24cc7",
+      "synthetic": true
+    },
+    {
+      "path": "property-debt.json",
+      "sha256": "33d05b06325bfcb2a128215012821738e76c9d96919859b5fc4d87ab6977fb88",
+      "synthetic": true
+    },
+    {
+      "path": "recurring.json",
+      "sha256": "36b0ffbaae6aaf38134cf3ea45fa69cb19ed9529b904feed07f67dc51ee9b4d1",
+      "synthetic": true
+    },
+    {
+      "path": "september.json",
+      "sha256": "9ebe3d0e27d2a2b11136489a6cd4940d5887e10ef82b4cb76b63f14d8fd4d4e6",
+      "synthetic": true
+    },
+    {
+      "path": "snapshot.json",
+      "sha256": "f392b68a5c046edac65241c4a91b413e4c7492044731d0940c3c62422977fd0b",
+      "synthetic": true
+    },
+    {
+      "path": "statements.json",
+      "sha256": "f518ef741a3134266d68d567f9000c9828bc246cc36b1d606f96a7a91d334443",
+      "synthetic": true
+    },
+    {
+      "path": "summaries.json",
+      "sha256": "d513ab853b5941d888e4be4d8b1597e8dab09ea084127615de1202308658d9c4",
+      "synthetic": true
+    },
+    {
+      "path": "swaps.json",
+      "sha256": "e74140c8375338808e9607d4afb7860584c481954b63123e47e4fb7a523cb934",
+      "synthetic": true
+    }
+  ],
+  "scenario_id": "full_financial_world",
+  "seed": 261011,
+  "supplementary_profile": "../profile.json",
+  "synthetic": true,
+  "timezone": "America/Los_Angeles"
+}

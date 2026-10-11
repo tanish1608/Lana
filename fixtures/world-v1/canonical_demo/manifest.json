@@ -1,0 +1,26 @@
+{
+  "completed_period": "2026-09",
+  "currency": "USD",
+  "data_mode": "fixture",
+  "dataset_version": "synthetic-world-v1",
+  "demo_clock": "2026-10-11T21:00:00-07:00",
+  "do_not_merge_ledgers": true,
+  "entrypoint": "dataset.json",
+  "files": [
+    {
+      "path": "dataset.json",
+      "sha256": "ed8d2aaa82f652c72e6c47e0fcbb18c1fd2a2af457c19926e7e57b33a24025fd",
+      "synthetic": true
+    },
+    {
+      "path": "swaps.json",
+      "sha256": "cbcacee0176d527f603a938fb2527928f0482b2ba860869b68e4f99f27232894",
+      "synthetic": true
+    }
+  ],
+  "scenario_id": "canonical_demo",
+  "seed": 261011,
+  "supplementary_profile": null,
+  "synthetic": true,
+  "timezone": "America/Los_Angeles"
+}

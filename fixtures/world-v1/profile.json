@@ -27,6 +27,7 @@
     ],
     "currency": "USD",
     "dataset_version": "synthetic-world-v1",
+    "dinner_demo_self_alias": "Ashwin is a synthetic payer label for Morgan Cedar in this demo, not a verified real person or contact.",
     "fictional_name": "Morgan Cedar",
     "goals": [
       {
@@ -48,6 +49,17 @@
         "source_id": "fixture:goal_annual",
         "synthetic": true,
         "target_cents": 500000
+      },
+      {
+        "currency": "USD",
+        "dataset_version": "synthetic-world-v1",
+        "purpose": "future home upgrade; deliberately keeps excess payroll cash in checking",
+        "record_id": "goal_future_home",
+        "scenario_id": "full_financial_world",
+        "source_id": "fixture:goal_future_home",
+        "synthetic": true,
+        "target_cents": 15000000,
+        "target_date": "2028-06-01"
       }
     ],
     "housing": "100% owner-occupied condo; HOA, tax and insurance paid directly. No escrow, rent or rental income.",

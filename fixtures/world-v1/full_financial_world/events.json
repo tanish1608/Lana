@@ -1,0 +1,326 @@
+{
+  "currency": "USD",
+  "data_mode": "fixture",
+  "dataset_version": "synthetic-world-v1",
+  "demo_clock": "2026-10-11T21:00:00-07:00",
+  "events": [
+    {
+      "currency": "USD",
+      "dataset_version": "synthetic-world-v1",
+      "event_label": "holiday_gifts",
+      "evidence_ids": [
+        "fw_2023-12_0069"
+      ],
+      "occurred_at": "2023-12-19T12:00:00-08:00",
+      "record_id": "narrative_fw_2023-12_0069",
+      "scenario_id": "full_financial_world",
+      "signed_amount_cents": -42000,
+      "source_id": "fixture:narrative_fw_2023-12_0069",
+      "source_ids": [
+        "fixture:fw_2023-12_0069"
+      ],
+      "synthetic": true
+    },
+    {
+      "currency": "USD",
+      "dataset_version": "synthetic-world-v1",
+      "event_label": "annual_trip",
+      "evidence_ids": [
+        "fw_2024-08_0076"
+      ],
+      "occurred_at": "2024-08-18T12:00:00-07:00",
+      "record_id": "narrative_fw_2024-08_0076",
+      "scenario_id": "full_financial_world",
+      "signed_amount_cents": -96000,
+      "source_id": "fixture:narrative_fw_2024-08_0076",
+      "source_ids": [
+        "fixture:fw_2024-08_0076"
+      ],
+      "synthetic": true
+    },
+    {
+      "currency": "USD",
+      "dataset_version": "synthetic-world-v1",
+      "event_label": "one_time_laptop",
+      "evidence_ids": [
+        "fw_2024-09_0076"
+      ],
+      "occurred_at": "2024-09-18T12:00:00-07:00",
+      "record_id": "narrative_fw_2024-09_0076",
+      "scenario_id": "full_financial_world",
+      "signed_amount_cents": -180000,
+      "source_id": "fixture:narrative_fw_2024-09_0076",
+      "source_ids": [
+        "fixture:fw_2024-09_0076"
+      ],
+      "synthetic": true
+    },
+    {
+      "currency": "USD",
+      "dataset_version": "synthetic-world-v1",
+      "event_label": "holiday_gifts",
+      "evidence_ids": [
+        "fw_2024-12_0076"
+      ],
+      "occurred_at": "2024-12-19T12:00:00-08:00",
+      "record_id": "narrative_fw_2024-12_0076",
+      "scenario_id": "full_financial_world",
+      "signed_amount_cents": -42000,
+      "source_id": "fixture:narrative_fw_2024-12_0076",
+      "source_ids": [
+        "fixture:fw_2024-12_0076"
+      ],
+      "synthetic": true
+    },
+    {
+      "currency": "USD",
+      "dataset_version": "synthetic-world-v1",
+      "event_label": "returned_coat",
+      "evidence_ids": [
+        "fw_2025-02_0076"
+      ],
+      "occurred_at": "2025-02-10T12:00:00-08:00",
+      "record_id": "narrative_fw_2025-02_0076",
+      "scenario_id": "full_financial_world",
+      "signed_amount_cents": -14500,
+      "source_id": "fixture:narrative_fw_2025-02_0076",
+      "source_ids": [
+        "fixture:fw_2025-02_0076"
+      ],
+      "synthetic": true
+    },
+    {
+      "currency": "USD",
+      "dataset_version": "synthetic-world-v1",
+      "event_label": "annual_trip",
+      "evidence_ids": [
+        "fw_2025-08_0075"
+      ],
+      "occurred_at": "2025-08-18T12:00:00-07:00",
+      "record_id": "narrative_fw_2025-08_0075",
+      "scenario_id": "full_financial_world",
+      "signed_amount_cents": -96000,
+      "source_id": "fixture:narrative_fw_2025-08_0075",
+      "source_ids": [
+        "fixture:fw_2025-08_0075"
+      ],
+      "synthetic": true
+    },
+    {
+      "currency": "USD",
+      "dataset_version": "synthetic-world-v1",
+      "event_label": "unusually_expensive_condo_repair",
+      "evidence_ids": [
+        "fw_2025-11_0075"
+      ],
+      "occurred_at": "2025-11-18T12:00:00-08:00",
+      "record_id": "narrative_fw_2025-11_0075",
+      "scenario_id": "full_financial_world",
+      "signed_amount_cents": -235000,
+      "source_id": "fixture:narrative_fw_2025-11_0075",
+      "source_ids": [
+        "fixture:fw_2025-11_0075"
+      ],
+      "synthetic": true
+    },
+    {
+      "currency": "USD",
+      "dataset_version": "synthetic-world-v1",
+      "event_label": "holiday_gifts",
+      "evidence_ids": [
+        "fw_2025-12_0075"
+      ],
+      "occurred_at": "2025-12-19T12:00:00-08:00",
+      "record_id": "narrative_fw_2025-12_0075",
+      "scenario_id": "full_financial_world",
+      "signed_amount_cents": -42000,
+      "source_id": "fixture:narrative_fw_2025-12_0075",
+      "source_ids": [
+        "fixture:fw_2025-12_0075"
+      ],
+      "synthetic": true
+    },
+    {
+      "currency": "USD",
+      "dataset_version": "synthetic-world-v1",
+      "event_label": "employer_trip",
+      "evidence_ids": [
+        "fw_2026-04_0075"
+      ],
+      "occurred_at": "2026-04-08T12:00:00-07:00",
+      "record_id": "narrative_fw_2026-04_0075",
+      "scenario_id": "full_financial_world",
+      "signed_amount_cents": -18000,
+      "source_id": "fixture:narrative_fw_2026-04_0075",
+      "source_ids": [
+        "fixture:fw_2026-04_0075"
+      ],
+      "synthetic": true
+    },
+    {
+      "currency": "USD",
+      "dataset_version": "synthetic-world-v1",
+      "event_label": "annual_trip",
+      "evidence_ids": [
+        "fw_2026-08_0075"
+      ],
+      "occurred_at": "2026-08-18T12:00:00-07:00",
+      "record_id": "narrative_fw_2026-08_0075",
+      "scenario_id": "full_financial_world",
+      "signed_amount_cents": -96000,
+      "source_id": "fixture:narrative_fw_2026-08_0075",
+      "source_ids": [
+        "fixture:fw_2026-08_0075"
+      ],
+      "synthetic": true
+    }
+  ],
+  "income_changes": [
+    {
+      "currency": "USD",
+      "dataset_version": "synthetic-world-v1",
+      "evidence_ids": [
+        "fw_2023-10_0001",
+        "fw_2023-10_0002"
+      ],
+      "monthly_payroll_cents": 720000,
+      "period": "2023-10",
+      "record_id": "income_change_2023-10",
+      "scenario_id": "full_financial_world",
+      "source_id": "fixture:income_change_2023-10",
+      "synthetic": true
+    },
+    {
+      "currency": "USD",
+      "dataset_version": "synthetic-world-v1",
+      "evidence_ids": [
+        "fw_2024-07_0001",
+        "fw_2024-07_0002"
+      ],
+      "monthly_payroll_cents": 820000,
+      "period": "2024-07",
+      "record_id": "income_change_2024-07",
+      "scenario_id": "full_financial_world",
+      "source_id": "fixture:income_change_2024-07",
+      "synthetic": true
+    },
+    {
+      "currency": "USD",
+      "dataset_version": "synthetic-world-v1",
+      "evidence_ids": [
+        "fw_2025-07_0001",
+        "fw_2025-07_0002"
+      ],
+      "monthly_payroll_cents": 900000,
+      "period": "2025-07",
+      "record_id": "income_change_2025-07",
+      "scenario_id": "full_financial_world",
+      "source_id": "fixture:income_change_2025-07",
+      "synthetic": true
+    }
+  ],
+  "investment_events": [
+    {
+      "currency": "USD",
+      "dataset_version": "synthetic-world-v1",
+      "event_label": "synthetic_April_2025_drawdown",
+      "evidence_ids": [
+        "position_2025-03_VTI",
+        "position_2025-03_VXUS",
+        "position_2025-03_BND",
+        "position_2025-03_AAPL",
+        "position_2025-04_VTI",
+        "position_2025-04_VXUS",
+        "position_2025-04_BND",
+        "position_2025-04_AAPL"
+      ],
+      "period": "2025-04",
+      "record_id": "narrative_market_drawdown",
+      "return_cents": -100892,
+      "scenario_id": "full_financial_world",
+      "source_id": "fixture:narrative_market_drawdown",
+      "synthetic": true
+    }
+  ],
+  "prediction_activity": [
+    {
+      "currency": "USD",
+      "dataset_version": "synthetic-world-v1",
+      "event_count": 12,
+      "event_label": "higher_prediction_activity",
+      "evidence_ids": [
+        "me_2026-06-03_kalshi_0310",
+        "me_2026-06-08_kalshi_0311",
+        "me_2026-06-24_kalshi_0312",
+        "me_2026-06-08_kalshi_0313",
+        "me_2026-06-24_kalshi_0314",
+        "me_2026-06-08_kalshi_0315",
+        "me_2026-06-03_polymarket_0316",
+        "me_2026-06-08_polymarket_0317",
+        "me_2026-06-24_polymarket_0318",
+        "me_2026-06-08_polymarket_0319",
+        "me_2026-06-24_polymarket_0320",
+        "me_2026-06-08_polymarket_0321"
+      ],
+      "period": "2026-06",
+      "record_id": "narrative_prediction_2026-06",
+      "scenario_id": "full_financial_world",
+      "source_id": "fixture:narrative_prediction_2026-06",
+      "synthetic": true
+    },
+    {
+      "currency": "USD",
+      "dataset_version": "synthetic-world-v1",
+      "event_count": 12,
+      "event_label": "higher_prediction_activity",
+      "evidence_ids": [
+        "me_2026-07-03_kalshi_0322",
+        "me_2026-07-08_kalshi_0323",
+        "me_2026-07-24_kalshi_0324",
+        "me_2026-07-08_kalshi_0325",
+        "me_2026-07-24_kalshi_0326",
+        "me_2026-07-08_kalshi_0327",
+        "me_2026-07-03_polymarket_0328",
+        "me_2026-07-08_polymarket_0329",
+        "me_2026-07-24_polymarket_0330",
+        "me_2026-07-08_polymarket_0331",
+        "me_2026-07-24_polymarket_0332",
+        "me_2026-07-08_polymarket_0333"
+      ],
+      "period": "2026-07",
+      "record_id": "narrative_prediction_2026-07",
+      "scenario_id": "full_financial_world",
+      "source_id": "fixture:narrative_prediction_2026-07",
+      "synthetic": true
+    },
+    {
+      "currency": "USD",
+      "dataset_version": "synthetic-world-v1",
+      "event_count": 12,
+      "event_label": "higher_prediction_activity",
+      "evidence_ids": [
+        "me_2026-08-03_kalshi_0334",
+        "me_2026-08-08_kalshi_0335",
+        "me_2026-08-24_kalshi_0336",
+        "me_2026-08-08_kalshi_0337",
+        "me_2026-08-24_kalshi_0338",
+        "me_2026-08-08_kalshi_0339",
+        "me_2026-08-03_polymarket_0340",
+        "me_2026-08-08_polymarket_0341",
+        "me_2026-08-24_polymarket_0342",
+        "me_2026-08-08_polymarket_0343",
+        "me_2026-08-24_polymarket_0344",
+        "me_2026-08-08_polymarket_0345"
+      ],
+      "period": "2026-08",
+      "record_id": "narrative_prediction_2026-08",
+      "scenario_id": "full_financial_world",
+      "source_id": "fixture:narrative_prediction_2026-08",
+      "synthetic": true
+    }
+  ],
+  "scenario_id": "full_financial_world",
+  "seed": 261011,
+  "synthetic": true,
+  "timezone": "America/Los_Angeles"
+}

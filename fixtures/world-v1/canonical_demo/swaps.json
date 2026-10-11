@@ -82,6 +82,128 @@
     "source_id": "fixture:canonical_demo_keewano_fixture",
     "synthetic": true
   },
+  "purchase_evidence": [
+    {
+      "currency": "USD",
+      "dataset_version": "synthetic-world-v1",
+      "extended_cost_cents": 12000,
+      "product": "Pantry staples",
+      "quantity": 4,
+      "record_id": "canonical_demo_swap_pantry_purchase",
+      "scenario_id": "canonical_demo",
+      "source_id": "fixture:canonical_demo_swap_pantry_purchase",
+      "source_type": "synthetic_itemization_of_referenced_purchases",
+      "synthetic": true,
+      "transaction_ids": [
+        "txn_sep_004",
+        "txn_sep_006"
+      ],
+      "unit_cost_cents": 3000,
+      "unit_size": "four 1 kg baskets"
+    },
+    {
+      "currency": "USD",
+      "dataset_version": "synthetic-world-v1",
+      "extended_cost_cents": 2765,
+      "product": "Preferred detergent",
+      "quantity": 1,
+      "record_id": "canonical_demo_swap_detergent_purchase",
+      "scenario_id": "canonical_demo",
+      "source_id": "fixture:canonical_demo_swap_detergent_purchase",
+      "source_type": "synthetic_itemization_of_referenced_purchases",
+      "synthetic": true,
+      "transaction_ids": [
+        "txn_sep_025"
+      ],
+      "unit_cost_cents": 2765,
+      "unit_size": "two 32 load bottles"
+    },
+    {
+      "currency": "USD",
+      "dataset_version": "synthetic-world-v1",
+      "extended_cost_cents": 4000,
+      "product": "Preferred coffee beans",
+      "quantity": 2,
+      "record_id": "canonical_demo_swap_beans_purchase",
+      "scenario_id": "canonical_demo",
+      "source_id": "fixture:canonical_demo_swap_beans_purchase",
+      "source_type": "synthetic_itemization_of_referenced_purchases",
+      "synthetic": true,
+      "transaction_ids": [
+        "txn_sep_021"
+      ],
+      "unit_cost_cents": 2000,
+      "unit_size": "two 340 g bags"
+    },
+    {
+      "currency": "USD",
+      "dataset_version": "synthetic-world-v1",
+      "extended_cost_cents": 8500,
+      "product": "Fictional coverage phone plan",
+      "quantity": 1,
+      "record_id": "canonical_demo_swap_phone_purchase",
+      "scenario_id": "canonical_demo",
+      "source_id": "fixture:canonical_demo_swap_phone_purchase",
+      "source_type": "synthetic_itemization_of_referenced_purchases",
+      "synthetic": true,
+      "transaction_ids": [
+        "txn_sep_016"
+      ],
+      "unit_cost_cents": 8500,
+      "unit_size": "one monthly line"
+    },
+    {
+      "currency": "USD",
+      "dataset_version": "synthetic-world-v1",
+      "extended_cost_cents": 9650,
+      "product": "Two restaurant visits",
+      "quantity": 1,
+      "record_id": "canonical_demo_swap_dining_purchase",
+      "scenario_id": "canonical_demo",
+      "source_id": "fixture:canonical_demo_swap_dining_purchase",
+      "source_type": "synthetic_itemization_of_referenced_purchases",
+      "synthetic": true,
+      "transaction_ids": [
+        "txn_sep_009"
+      ],
+      "unit_cost_cents": 9650,
+      "unit_size": "two comparable meals"
+    },
+    {
+      "currency": "USD",
+      "dataset_version": "synthetic-world-v1",
+      "extended_cost_cents": 4320,
+      "product": "Two rideshare trips",
+      "quantity": 1,
+      "record_id": "canonical_demo_swap_transit_purchase",
+      "scenario_id": "canonical_demo",
+      "source_id": "fixture:canonical_demo_swap_transit_purchase",
+      "source_type": "synthetic_itemization_of_referenced_purchases",
+      "synthetic": true,
+      "transaction_ids": [
+        "txn_sep_013"
+      ],
+      "unit_cost_cents": 4320,
+      "unit_size": "two comparable trips"
+    },
+    {
+      "currency": "USD",
+      "dataset_version": "synthetic-world-v1",
+      "extended_cost_cents": 6890,
+      "product": "Discretionary shopping",
+      "quantity": 1,
+      "record_id": "canonical_demo_swap_other_purchase",
+      "scenario_id": "canonical_demo",
+      "source_id": "fixture:canonical_demo_swap_other_purchase",
+      "source_type": "synthetic_itemization_of_referenced_purchases",
+      "synthetic": true,
+      "transaction_ids": [
+        "txn_sep_022"
+      ],
+      "unit_cost_cents": 6890,
+      "unit_size": "two comparable baskets"
+    }
+  ],
   "recommendations": [
     {
       "alternative_product": "Comparable store pantry staples",
@@ -107,6 +229,7 @@
       "projected_savings_cents": 3600,
       "proposed_monthly_cost_cents": 8400,
       "proposed_unit_cost_cents": 2100,
+      "purchase_evidence_id": "canonical_demo_swap_pantry_purchase",
       "recommendation_id": "canonical_demo_swap_pantry",
       "record_id": "canonical_demo_swap_pantry",
       "scenario_id": "canonical_demo",
@@ -138,6 +261,7 @@
       "projected_savings_cents": 2400,
       "proposed_monthly_cost_cents": 365,
       "proposed_unit_cost_cents": 365,
+      "purchase_evidence_id": "canonical_demo_swap_detergent_purchase",
       "recommendation_id": "canonical_demo_swap_detergent",
       "record_id": "canonical_demo_swap_detergent",
       "scenario_id": "canonical_demo",
@@ -169,6 +293,7 @@
       "projected_savings_cents": 2000,
       "proposed_monthly_cost_cents": 2000,
       "proposed_unit_cost_cents": 1000,
+      "purchase_evidence_id": "canonical_demo_swap_beans_purchase",
       "recommendation_id": "canonical_demo_swap_beans",
       "record_id": "canonical_demo_swap_beans",
       "scenario_id": "canonical_demo",
@@ -200,6 +325,7 @@
       "projected_savings_cents": 2000,
       "proposed_monthly_cost_cents": 6500,
       "proposed_unit_cost_cents": 6500,
+      "purchase_evidence_id": "canonical_demo_swap_phone_purchase",
       "recommendation_id": "canonical_demo_swap_phone",
       "record_id": "canonical_demo_swap_phone",
       "scenario_id": "canonical_demo",
@@ -231,6 +357,7 @@
       "projected_savings_cents": 2000,
       "proposed_monthly_cost_cents": 7650,
       "proposed_unit_cost_cents": 7650,
+      "purchase_evidence_id": "canonical_demo_swap_dining_purchase",
       "recommendation_id": "canonical_demo_swap_dining",
       "record_id": "canonical_demo_swap_dining",
       "scenario_id": "canonical_demo",
@@ -262,6 +389,7 @@
       "projected_savings_cents": 1000,
       "proposed_monthly_cost_cents": 3320,
       "proposed_unit_cost_cents": 3320,
+      "purchase_evidence_id": "canonical_demo_swap_transit_purchase",
       "recommendation_id": "canonical_demo_swap_transit",
       "record_id": "canonical_demo_swap_transit",
       "scenario_id": "canonical_demo",
@@ -293,6 +421,7 @@
       "projected_savings_cents": 2000,
       "proposed_monthly_cost_cents": 4890,
       "proposed_unit_cost_cents": 4890,
+      "purchase_evidence_id": "canonical_demo_swap_other_purchase",
       "recommendation_id": "canonical_demo_swap_other",
       "record_id": "canonical_demo_swap_other",
       "scenario_id": "canonical_demo",

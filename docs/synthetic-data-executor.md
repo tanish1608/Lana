@@ -4,11 +4,11 @@ The user's complete delivery request authorizes continuous execution of all five
 stages. This scoped specification applies only to synthetic data; it does not
 implement the team's budget, provider, messaging, or application engines.
 
-1. [ ] Publish supplementary schema, manifest, biography and current snapshot.
-2. [ ] Publish full-world September ledger and derived summary.
-3. [ ] Publish isolated canonical September and October dinner evidence.
-4. [ ] Export 36 completed months, exact activity and reconciled statements.
-5. [ ] Add documents, edge expectations, validation and handoff; commit data branch.
+1. [x] Publish supplementary schema, manifest, biography and current snapshot.
+2. [x] Publish full-world September ledger and derived summary.
+3. [x] Publish isolated canonical September and October dinner evidence.
+4. [x] Export 36 completed months, exact activity and reconciled statements.
+5. [x] Add documents, edge expectations, validation and handoff; commit data branch.
 
 ## Contracts
 

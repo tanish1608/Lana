@@ -17,12 +17,30 @@
       "synthetic": true
     },
     {
-      "bytes": 10694,
+      "bytes": 696,
+      "consumer": "FWMCore canonical regression / original demo",
+      "path": "canonical_demo/manifest.json",
+      "scenario_id": "canonical_demo",
+      "schema": "world.schema.json",
+      "sha256": "2f0fc0d4b30893b71eca6e253dd13f7faaa64cefe7e87d26379f4f7526b08381",
+      "synthetic": true
+    },
+    {
+      "bytes": 15224,
       "consumer": "FWMCore canonical regression / original demo",
       "path": "canonical_demo/swaps.json",
       "scenario_id": "canonical_demo",
       "schema": "world.schema.json",
-      "sha256": "fee443fc5152312684cda4f82566f43ac79b8c7333ff45317da4d8ac8fd3b421",
+      "sha256": "cbcacee0176d527f603a938fb2527928f0482b2ba860869b68e4f99f27232894",
+      "synthetic": true
+    },
+    {
+      "bytes": 1156,
+      "consumer": "Claude UI / Aryan adapters / Tanish fixture tools",
+      "path": "dinner_2026_10_11/manifest.json",
+      "scenario_id": "dinner_2026_10_11",
+      "schema": "world.schema.json",
+      "sha256": "3b838f118b5daafdead3909ed7692d4229dd6e95f5d047388199697849deb941",
       "synthetic": true
     },
     {
@@ -35,6 +53,24 @@
       "synthetic": true
     },
     {
+      "bytes": 38878,
+      "consumer": "Claude UI / Aryan adapters / Tanish fixture tools",
+      "path": "dinner_2026_10_11/receipt.png",
+      "scenario_id": "dinner_2026_10_11",
+      "schema": "human_readable_synthetic_asset",
+      "sha256": "2c246d6f5820f9e8ddcb1f49e34ab88ce17fe64b2992220aee8628819a8a5819",
+      "synthetic": true
+    },
+    {
+      "bytes": 1345,
+      "consumer": "Claude UI / Aryan adapters / Tanish fixture tools",
+      "path": "dinner_2026_10_11/receipt.svg",
+      "scenario_id": "dinner_2026_10_11",
+      "schema": "human_readable_synthetic_asset",
+      "sha256": "6f2487a9751503ffb432c72fc28de86bc7e33dfa0b1c679b1de09c9259f09147",
+      "synthetic": true
+    },
+    {
       "bytes": 1644,
       "consumer": "Claude UI / Aryan adapters / Tanish fixture tools",
       "path": "dinner_2026_10_11/reviewed-extraction.json",
@@ -44,12 +80,111 @@
       "synthetic": true
     },
     {
-      "bytes": 10661,
+      "bytes": 11523,
       "consumer": "Claude UI / Aryan adapters / Tanish fixture tools",
       "path": "dinner_2026_10_11/scenario.json",
       "scenario_id": "dinner_2026_10_11",
       "schema": "world.schema.json",
-      "sha256": "617cd82625c9724879eb5d8bb6ce4bff380ca3d2ebe23e2d64eb0eb53429b77c",
+      "sha256": "fe7cef48d76049e92609bae2c5b41da8485b10849e8ecc10cf53554610849119",
+      "synthetic": true
+    },
+    {
+      "bytes": 5158,
+      "consumer": "Claude UI / Aryan adapters / Tanish fixture tools",
+      "path": "documents/capital_one_card-2025-02.pdf",
+      "scenario_id": "documents",
+      "schema": "human_readable_synthetic_asset",
+      "sha256": "807d5f7a91c867610d3ae9af9d26b671a507fecc701b666acfd199fe12d0bc86",
+      "synthetic": true
+    },
+    {
+      "bytes": 4760,
+      "consumer": "Claude UI / Aryan adapters / Tanish fixture tools",
+      "path": "documents/chase_card-2025-01.pdf",
+      "scenario_id": "documents",
+      "schema": "human_readable_synthetic_asset",
+      "sha256": "8684a133676da22492b3d4ca4e669dd801292457acbe566827422afc9a4a1717",
+      "synthetic": true
+    },
+    {
+      "bytes": 3542,
+      "consumer": "Claude UI / Aryan adapters / Tanish fixture tools",
+      "path": "documents/chase_checking-2023-11.pdf",
+      "scenario_id": "documents",
+      "schema": "human_readable_synthetic_asset",
+      "sha256": "3291803190ace66c7e2e0ad4d8373990c921b6ecec1fb1562ec14a1e6e34eeef",
+      "synthetic": true
+    },
+    {
+      "bytes": 3579,
+      "consumer": "Claude UI / Aryan adapters / Tanish fixture tools",
+      "path": "documents/chase_checking-2026-09.pdf",
+      "scenario_id": "documents",
+      "schema": "human_readable_synthetic_asset",
+      "sha256": "c7a42893beec6caa4d64e0da8bf8d65e4ccbf17b039fb44cdb4062244d4b66d4",
+      "synthetic": true
+    },
+    {
+      "bytes": 17584,
+      "consumer": "Claude UI / Aryan adapters / Tanish fixture tools",
+      "path": "documents/expected-extraction.json",
+      "scenario_id": "documents",
+      "schema": "world.schema.json",
+      "sha256": "57eae0ca3ccfa49b56a93712e9b7279a562795aa73161d17572bde6f0ba6a4a4",
+      "synthetic": true
+    },
+    {
+      "bytes": 3325,
+      "consumer": "Claude UI / Aryan adapters / Tanish fixture tools",
+      "path": "documents/kalshi-2026-09.pdf",
+      "scenario_id": "documents",
+      "schema": "human_readable_synthetic_asset",
+      "sha256": "d7a94cf6c6306e3582b2c973ee2ff0197e5b8d6a76da4d5e10006b1d11fa7a25",
+      "synthetic": true
+    },
+    {
+      "bytes": 3395,
+      "consumer": "Claude UI / Aryan adapters / Tanish fixture tools",
+      "path": "documents/polymarket-2026-09.pdf",
+      "scenario_id": "documents",
+      "schema": "human_readable_synthetic_asset",
+      "sha256": "c0fc03742dca6d935c69f4b2eb80ed7c63e8c63491575ade366a1b3ebb2458f4",
+      "synthetic": true
+    },
+    {
+      "bytes": 3633,
+      "consumer": "Claude UI / Aryan adapters / Tanish fixture tools",
+      "path": "documents/robinhood-2026-09.pdf",
+      "scenario_id": "documents",
+      "schema": "human_readable_synthetic_asset",
+      "sha256": "22a98b9a0274b9958032618addcb3f58aefe8f71dfe71db7c920c15d29ea727f",
+      "synthetic": true
+    },
+    {
+      "bytes": 17225,
+      "consumer": "Claude UI / Aryan adapters / Tanish fixture tools",
+      "path": "edge-cases.json",
+      "scenario_id": "shared",
+      "schema": "world.schema.json",
+      "sha256": "a1ddc111eef9ecbb12935b93568acf95221eb9ec4401708b59c4f0e058dc417d",
+      "synthetic": true
+    },
+    {
+      "bytes": 17847,
+      "consumer": "Claude UI / Aryan adapters / Tanish fixture tools",
+      "path": "full_financial_world/accounts.json",
+      "scenario_id": "full_financial_world",
+      "schema": "world.schema.json",
+      "sha256": "b1bab21f7143d8b42918a3c99f6a87838302dde608c8d01cfa8d608b3bdd4b91",
+      "synthetic": true
+    },
+    {
+      "bytes": 4783,
+      "consumer": "Claude UI / Aryan adapters / Tanish fixture tools",
+      "path": "full_financial_world/annual.json",
+      "scenario_id": "full_financial_world",
+      "schema": "world.schema.json",
+      "sha256": "f30c89ea4bb54f2364adfb7b6fe075be8ff26d09eab0062ed3e6b66cd4bc15c5",
       "synthetic": true
     },
     {
@@ -62,6 +197,60 @@
       "synthetic": true
     },
     {
+      "bytes": 9915,
+      "consumer": "Claude UI / Aryan adapters / Tanish fixture tools",
+      "path": "full_financial_world/events.json",
+      "scenario_id": "full_financial_world",
+      "schema": "world.schema.json",
+      "sha256": "93a522f65f86f504afe27ba505fe1a2f8a061eec6b5e114d5f5b9f15ddedb183",
+      "synthetic": true
+    },
+    {
+      "bytes": 2302608,
+      "consumer": "Claude UI / Aryan adapters / Tanish fixture tools",
+      "path": "full_financial_world/ledger.json",
+      "scenario_id": "full_financial_world",
+      "schema": "world.schema.json",
+      "sha256": "694d2a159f503dacc0ac0b55b5b1667c82f8dd81b269798d787174c8b4eaaeae",
+      "synthetic": true
+    },
+    {
+      "bytes": 2557,
+      "consumer": "Claude UI / Aryan adapters / Tanish fixture tools",
+      "path": "full_financial_world/manifest.json",
+      "scenario_id": "full_financial_world",
+      "schema": "world.schema.json",
+      "sha256": "997be831eb779f1897a055bfe91409f74f7d973ad4de3bcf4804575970ae58a0",
+      "synthetic": true
+    },
+    {
+      "bytes": 626706,
+      "consumer": "Claude UI / Aryan adapters / Tanish fixture tools",
+      "path": "full_financial_world/portfolio.json",
+      "scenario_id": "full_financial_world",
+      "schema": "world.schema.json",
+      "sha256": "6e80af27724531a4e6131418a5127497d9a7eb231b34534dfb66383ed13cfab3",
+      "synthetic": true
+    },
+    {
+      "bytes": 476299,
+      "consumer": "Claude UI / Aryan adapters / Tanish fixture tools",
+      "path": "full_financial_world/prediction-markets.json",
+      "scenario_id": "full_financial_world",
+      "schema": "world.schema.json",
+      "sha256": "8e5cbab8ec4838336ce2243b3b0181ddbc02023838f3dfd2354f153afdf24cc7",
+      "synthetic": true
+    },
+    {
+      "bytes": 82285,
+      "consumer": "Claude UI / Aryan adapters / Tanish fixture tools",
+      "path": "full_financial_world/property-debt.json",
+      "scenario_id": "full_financial_world",
+      "schema": "world.schema.json",
+      "sha256": "33d05b06325bfcb2a128215012821738e76c9d96919859b5fc4d87ab6977fb88",
+      "synthetic": true
+    },
+    {
       "bytes": 4239,
       "consumer": "Claude UI / Aryan adapters / Tanish fixture tools",
       "path": "full_financial_world/recurring.json",
@@ -71,48 +260,66 @@
       "synthetic": true
     },
     {
-      "bytes": 99261,
+      "bytes": 99299,
       "consumer": "Claude UI / Aryan adapters / Tanish fixture tools",
       "path": "full_financial_world/september.json",
       "scenario_id": "full_financial_world",
       "schema": "world.schema.json",
-      "sha256": "535571f11ef21bc0e23e18c1d2fdd7970666a9891d182eeeb62b10044a1cdf9f",
+      "sha256": "9ebe3d0e27d2a2b11136489a6cd4940d5887e10ef82b4cb76b63f14d8fd4d4e6",
       "synthetic": true
     },
     {
-      "bytes": 9685,
+      "bytes": 21025,
       "consumer": "Claude UI / Aryan adapters / Tanish fixture tools",
       "path": "full_financial_world/snapshot.json",
       "scenario_id": "full_financial_world",
       "schema": "world.schema.json",
-      "sha256": "c229ba168d0dda5afd40f7a62f0733f5f314f4306cfcbbe12aecfd63c53c4eb4",
+      "sha256": "f392b68a5c046edac65241c4a91b413e4c7492044731d0940c3c62422977fd0b",
       "synthetic": true
     },
     {
-      "bytes": 11550,
+      "bytes": 533728,
+      "consumer": "Claude UI / Aryan adapters / Tanish fixture tools",
+      "path": "full_financial_world/statements.json",
+      "scenario_id": "full_financial_world",
+      "schema": "world.schema.json",
+      "sha256": "f518ef741a3134266d68d567f9000c9828bc246cc36b1d606f96a7a91d334443",
+      "synthetic": true
+    },
+    {
+      "bytes": 244761,
+      "consumer": "Claude UI / Aryan adapters / Tanish fixture tools",
+      "path": "full_financial_world/summaries.json",
+      "scenario_id": "full_financial_world",
+      "schema": "world.schema.json",
+      "sha256": "d513ab853b5941d888e4be4d8b1597e8dab09ea084127615de1202308658d9c4",
+      "synthetic": true
+    },
+    {
+      "bytes": 16081,
       "consumer": "Claude UI / Aryan adapters / Tanish fixture tools",
       "path": "full_financial_world/swaps.json",
       "scenario_id": "full_financial_world",
       "schema": "world.schema.json",
-      "sha256": "9d4807b0357661ad36dd4ec4d09993baf085823237dd0abdff8802dbff0b495f",
+      "sha256": "e74140c8375338808e9607d4afb7860584c481954b63123e47e4fb7a523cb934",
       "synthetic": true
     },
     {
-      "bytes": 4415,
+      "bytes": 4973,
       "consumer": "Claude UI / Aryan adapters / Tanish fixture tools",
       "path": "profile.json",
       "scenario_id": "shared",
       "schema": "world.schema.json",
-      "sha256": "2d9830090b53704363984e3df56b12aa1bedff6df5dec4a7d226242361571c9e",
+      "sha256": "02159172ea316bffd707c5af2af8dcd233cd3f1280522436cea3e709e6c7d207",
       "synthetic": true
     },
     {
-      "bytes": 10350,
+      "bytes": 10418,
       "consumer": "Claude UI / Aryan adapters / Tanish fixture tools",
       "path": "world.schema.json",
       "scenario_id": "shared",
       "schema": "world.schema.json",
-      "sha256": "2833075dddd2ed993719a6451509dbefdc9aa30bbb02d2e06237e0b63fc099e2",
+      "sha256": "41855a9bc3e04fdd8382f5eac67a8a9b86f1be9d77b4bc5a9b79c64db70ab65b",
       "synthetic": true
     }
   ],
@@ -136,7 +343,7 @@
     }
   ],
   "seed": 261011,
-  "stage": "demo",
+  "stage": "full",
   "synthetic": true,
   "timezone": "America/Los_Angeles"
 }

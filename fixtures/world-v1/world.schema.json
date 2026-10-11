@@ -35,6 +35,7 @@
             "balance_cents": {
               "type": "integer"
             },
+            "opened_on": false,
             "synthetic": {
               "const": true
             }
@@ -312,6 +313,7 @@
         },
         {
           "properties": {
+            "activity_kind": false,
             "pending": {
               "type": "boolean"
             },
