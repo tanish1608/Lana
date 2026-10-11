@@ -449,3 +449,12 @@ main::-webkit-scrollbar,.chat-log::-webkit-scrollbar,.sheet::-webkit-scrollbar{d
 .wordmark{display:block;width:58px;height:26px;background:var(--brand-ink);-webkit-mask:url("brand/lana-wordmark.png") left center/contain no-repeat;mask:url("brand/lana-wordmark.png") left center/contain no-repeat}
 .lana-av{background:none;padding:0}
 .lana-av{width:34px;height:34px;border-radius:0;outline:0}
+/* Tappable "from Messages" chip and the thread sheet */
+button.askchip{min-height:40px;transition-property:transform;transition-duration:.12s}
+button.askchip:active{transform:scale(.97)}
+.askchip .chev{color:inherit;opacity:.6;font-size:16px;margin-left:-2px}
+.thread-head{display:flex;align-items:center;gap:10px;padding-bottom:10px;border-bottom:.5px solid var(--sep)}
+.thread-av{width:36px;height:36px;outline:0}
+.msg.thread{margin:12px 0}
+.link-card{align-self:flex-start;display:flex;align-items:center;gap:10px;width:84%;padding:10px 12px;border-radius:18px;background:var(--bubble-in);text-align:left}
+.link-card img{width:30px;height:30px;outline:0}

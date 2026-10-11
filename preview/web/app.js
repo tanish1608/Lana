@@ -86,7 +86,8 @@
   function closeSheet() { const s = $("#sheet"); if (s) s.remove(); }
   const MSG_ICON = '<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M12 3C6.5 3 2 6.8 2 11.5c0 2.6 1.4 4.9 3.6 6.5L5 21.5l4.1-2.1c.9.2 1.9.3 2.9.3 5.5 0 10-3.8 10-8.5S17.5 3 12 3z"/></svg>';
   // The conversation lives in Messages; screens only show which question they answer.
-  const bubbles = (me) => `<div class="askchip">${MSG_ICON}<span>“${esc(me)}”</span></div>`;
+  // Tapping it opens the Messages thread the screen came from.
+  const bubbles = (me, thread) => `<button class="askchip" data-thread="${thread}" aria-label="Open this conversation in Messages">${MSG_ICON}<span>“${esc(me)}”</span><b class="chev">›</b></button>`;
   // Hero amount: small currency sign and cents, big dollars.
   function big(c, cls = "") {
     const a = Math.abs(c), d = Math.floor(a / 100).toLocaleString("en-US"), ct = String(a % 100).padStart(2, "0");
@@ -136,6 +137,22 @@
     const owed = fixtureSplit();
     const unpaid = owed.ok ? people().map((p) => owed.r.requests.find((q) => q.contact_id === p.contact_id)).filter(Boolean).filter((q) => reqState(q.contact_id) !== "paid_reported" && reqState(q.contact_id) !== "cancelled") : [];
     return { unpaid, unpaidCents: sum(unpaid, (q) => q.amount_cents) };
+  }
+  // The Messages thread behind each screen. Lana's lines are written from the same engine numbers.
+  function threadSheet(kind) {
+    const p = snapshotMonth(), v = mv(p), f = v.flow, mon = monthLabel(p).split(" ")[0];
+    const stays = f.to_savings_cents + f.to_investments_cents + f.retained_cash_cents;
+    const all = budgetPlan(true), ex = fixtureSplit(), rq = ex.ok ? people().map((x) => ex.r.requests.find((q) => q.contact_id === x.contact_id)).filter(Boolean) : [];
+    const T = {
+      money: { tab: "money", title: `${mon} breakdown`, msgs: [["me", `Where did my money go in ${mon}?`], ["lana", `You kept ${fmt(stays)} of ${fmt(f.net_income_cents)}. ${v.categories[0].category} was the biggest cost at ${fmt(v.categories[0].total_cents)}, then ${v.categories[1].category.toLowerCase()} at ${fmt(v.categories[1].total_cents)}.`]] },
+      budget: { tab: "budget", title: `${P.budget.period} plan`, msgs: [["me", "Help me save $150 next month without changing my rent."], ["lana", `I found ${budgetItems().length} ideas worth up to ${fmt(all.reduction)} a month, and rent stays at ${fmt(all.current.Rent)}. I left out instant coffee since you’ve passed on it before.`], ["lana", "Swipe through them in the app. I’ll ask before buying anything."]] },
+      split: { tab: "split", title: `Dinner at ${receipt().merchant}`, msgs: [["me", P.split.transcript], ["me", "📎 Receipt photo"], ["lana", rq.length ? `You’re owed ${fmt(sum(rq, (q) => q.amount_cents), { cents: true })}: ${rq.map((q) => `${q.reviewed_name} ${fmt(q.amount_cents, { cents: true })}`).join(", ")}. Review before I draft the requests?` : "I read the receipt. Review the split in the app?"]] }
+    }[kind];
+    sheet(`<div class="thread-head"><img src="brand/lana-mark.png" alt="" class="thread-av"><div><b>Lana</b><div class="tiny">iMessage · Today</div></div></div>
+      <div class="msg thread">${T.msgs.map(([who, t]) => `<div class="bubble ${who}">${esc(t)}</div>`).join("")}
+        <button class="link-card" data-tab="${T.tab}"><img src="brand/lana-mark.png" alt=""><div class="grow"><b>${esc(T.title)}</b><div class="tiny">Open in Lana</div></div><span class="chev">›</span></button></div>
+      <div class="sim">◆ Preview of the thread. On iPhone this jumps straight back to your Lana conversation in Messages.</div>
+      <div class="btns" style="margin-top:12px"><button class="btn ghost" data-close>Stay here</button><button class="btn accent" data-open-messages>Open Messages</button></div>`);
   }
   function messagesSheet() {
     sheet(`<h3>Lana lives in Messages</h3><p class="small muted" style="margin:6px 0 12px">Ask anything there. This app is for the details.</p>
@@ -202,7 +219,7 @@
     const biggest = v.categories[0];
     const answer = `In ${mon} you brought in <b>${fmt(f.net_income_cents)}</b> and spent <b>${fmt(f.expenses_cents)}</b>. ${esc(biggest.category)} was the biggest cost at ${fmt(biggest.total_cents)}. You moved ${fmt(f.to_savings_cents)} to savings and ${fmt(f.to_investments_cents)} to investing, and ${fmt(f.retained_cash_cents)} stayed in checking.`;
     const head = `<button class="back" data-tab="home">‹ Home</button>
-      ${bubbles(`Where did my money go in ${mon}?`)}
+      ${bubbles(`Where did my money go in ${mon}?`, "money")}
       <div class="eyebrow" style="margin:14px 4px 0">Stayed with you</div>
       <div style="margin:0 4px 14px">${big(stays)}</div>
       ${seg}
@@ -342,7 +359,7 @@
         ? `<div class="deck">${cur.pending.slice(0, 3).map(ideaCard).reverse().join("")}</div>
            <div class="deck-btns"><button class="round skip" data-swipe="skip" aria-label="Skip">✕</button><span class="small muted num">${cur.ideas.length - cur.pending.length + 1} of ${cur.ideas.length}</span><button class="round keep" data-swipe="keep" aria-label="Keep">✓</button></div>`
         : `<div class="deck-done"><div class="big-ic">✓</div><b>${shortCat(cur.name)} reviewed</b><div class="small muted">${cur.kept ? `Saving ${fmt(cur.kept)}/mo here` : "Nothing kept here"}</div>${next ? `<button class="btn small accent" data-bcat="${esc(next.name)}" style="margin-top:12px">Next: ${shortCat(next.name)} ›</button>` : ""}</div>`;
-    return `${bubbles("Help me save $150 next month without changing my rent.")}
+    return `${bubbles("Help me save $150 next month without changing my rent.", "budget")}
       <div class="card sky goal-card">
         <div class="row"><span class="eyebrow">${b.period} plan</span>${S.budget.adopted && !changed ? '<span class="pillok">Adopted</span>' : `<span class="tiny">${left ? `${left} ideas left` : "All reviewed"}</span>`}</div>
         <div class="goal-num">${big(PL.reduction, "md")}<span class="small"> of ${fmt(goal)}/mo</span></div>
@@ -431,12 +448,12 @@
     const rc = receipt(), st = S.split, merchant = rc.merchant, dateStr = dateLabel(rc.date + "T12:00:00-07:00");
     const stepper = `<div class="stepper">${STEPS.map((_, i) => `<span class="${i <= st.step ? "on" : ""}"></span>`).join("")}</div>`;
     const nav = (next, label, dis) => `<div class="btns" style="margin-top:14px">${st.step > 0 ? '<button class="btn ghost" data-back style="width:auto;padding:0 18px">Back</button>' : ""}<button class="btn accent" data-next="${next}" ${dis ? "disabled" : ""}>${label}</button></div>`;
-    const head = (t, s) => `${stepper}<p class="muted small" style="margin:0 4px">Step ${st.step + 1} of ${STEPS.length} · ${STEPS[st.step]}</p><h1>${t}</h1>${s ? `<p class="sub">${s}</p>` : ""}`;
+    const head = (t, s) => `${bubbles("I paid for dinner with Tanish and Aryan…", "split")}${stepper}<p class="muted small" style="margin:0 4px">Step ${st.step + 1} of ${STEPS.length} · ${STEPS[st.step]}</p><h1>${t}</h1>${s ? `<p class="sub">${s}</p>` : ""}`;
 
     if (st.step === 0) {
       const wave = Array.from({ length: 34 }, (_, i) => `<i style="height:${6 + Math.round(Math.abs(Math.sin(i * 1.7) * 18 + Math.cos(i * 0.6) * 4))}px"></i>`).join("");
       const both = st.receipt && st.voice;
-      return head("Split dinner", "") + bubbles("I paid for dinner with Tanish and Aryan…") + `
+      return head("Split dinner", "") + `
         <div class="card"><div class="row"><h3>Receipt</h3>${st.receipt ? '<span class="tag acc">Received</span>' : '<span class="tag">Waiting</span>'}</div>
           ${st.upload ? `<img src="${st.upload}" alt="Your uploaded receipt" style="width:100%;max-height:160px;object-fit:cover;border-radius:12px;margin-top:10px">` : ""}
           ${st.receipt ? `<p class="small muted" style="margin:8px 0 0">${st.upload ? "Your photo is shown. This preview reads the sample receipt; on iPhone the photo is read on-device." : `${esc(merchant)} · ${dateStr}`}</p>` : ""}
@@ -750,6 +767,8 @@
     if ("connect" in d) return toast("Simulated. Linking a new account isn’t in this preview.");
     if (t.id === "demoPill") return demoSheet();
     if ("messages" in d) return messagesSheet();
+    if (d.thread) return threadSheet(d.thread);
+    if ("openMessages" in d) { closeSheet(); return toast("Simulated. On iPhone this opens your Lana thread in Messages."); }
     if ("close" in d) return closeSheet();
     if ("reset" in d) { closeSheet(); clearInterval(vaultTimer); S = initialState(); toast("Demo reset"); top(); renderChat(); return render(); }
     if ("themeToggle" in d) { const r = document.documentElement; const dark = r.dataset.theme ? r.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches; r.dataset.theme = dark ? "light" : "dark"; return; }
