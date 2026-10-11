@@ -1,0 +1,453 @@
+{
+  "$defs": {
+    "account": {
+      "anyOf": [
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/common"
+            },
+            {
+              "properties": {
+                "asset_or_liability": {
+                  "enum": [
+                    "asset",
+                    "liability"
+                  ]
+                },
+                "opening_balance_cents": {
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "account_id",
+                "opened_on",
+                "opening_balance_cents",
+                "kind",
+                "asset_or_liability"
+              ],
+              "type": "object"
+            }
+          ]
+        },
+        {
+          "properties": {
+            "balance_cents": {
+              "type": "integer"
+            },
+            "synthetic": {
+              "const": true
+            }
+          },
+          "required": [
+            "account_id",
+            "institution",
+            "kind",
+            "asset_or_liability",
+            "balance_cents",
+            "as_of",
+            "synthetic"
+          ],
+          "type": "object"
+        }
+      ]
+    },
+    "common": {
+      "properties": {
+        "currency": {
+          "const": "USD"
+        },
+        "scenario_id": {
+          "enum": [
+            "full_financial_world",
+            "canonical_demo",
+            "dinner_2026_10_11"
+          ]
+        },
+        "synthetic": {
+          "const": true
+        }
+      },
+      "required": [
+        "record_id",
+        "synthetic",
+        "scenario_id",
+        "dataset_version",
+        "currency",
+        "source_id"
+      ],
+      "type": "object"
+    },
+    "loan": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/common"
+        },
+        {
+          "properties": {
+            "annual_rate": {
+              "pattern": "^\\d+(\\.\\d+)?$",
+              "type": "string"
+            },
+            "escrow_cents": {
+              "const": 0
+            },
+            "interest_cents": {
+              "type": "integer"
+            },
+            "principal_cents": {
+              "type": "integer"
+            }
+          },
+          "required": [
+            "account_id",
+            "period",
+            "opening_principal_cents",
+            "closing_principal_cents",
+            "interest_cents",
+            "principal_cents",
+            "payment_cents",
+            "annual_rate"
+          ],
+          "type": "object"
+        }
+      ]
+    },
+    "mark": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/common"
+        },
+        {
+          "properties": {
+            "price_usd": {
+              "pattern": "^\\d+(\\.\\d+)?$",
+              "type": "string"
+            },
+            "quantity": {
+              "pattern": "^\\d+(\\.\\d+)?$",
+              "type": "string"
+            },
+            "value_cents": {
+              "type": "integer"
+            }
+          },
+          "required": [
+            "quantity",
+            "price_usd",
+            "value_cents",
+            "valuation_as_of"
+          ],
+          "type": "object"
+        }
+      ]
+    },
+    "statement": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/common"
+        },
+        {
+          "properties": {
+            "closing_balance_cents": {
+              "type": "integer"
+            },
+            "opening_balance_cents": {
+              "type": "integer"
+            },
+            "transaction_ids": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          },
+          "required": [
+            "account_id",
+            "period",
+            "opening_balance_cents",
+            "closing_balance_cents",
+            "transaction_ids",
+            "closing_date"
+          ],
+          "type": "object"
+        }
+      ]
+    },
+    "summary": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/common"
+        },
+        {
+          "properties": {
+            "assets_cents": {
+              "type": "integer"
+            },
+            "consumption_spending_cents": {
+              "type": "integer"
+            },
+            "income_cents": {
+              "type": "integer"
+            },
+            "liabilities_cents": {
+              "type": "integer"
+            },
+            "net_worth_cents": {
+              "type": "integer"
+            }
+          },
+          "required": [
+            "period",
+            "income_cents",
+            "consumption_spending_cents",
+            "assets_cents",
+            "liabilities_cents",
+            "net_worth_cents",
+            "account_balances_cents",
+            "evidence_ids",
+            "valuation_ids"
+          ],
+          "type": "object"
+        }
+      ]
+    },
+    "trade": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/common"
+        },
+        {
+          "properties": {
+            "gross_cents": {
+              "type": "integer"
+            },
+            "price_usd": {
+              "pattern": "^\\d+(\\.\\d+)?$",
+              "type": "string"
+            },
+            "quantity": {
+              "pattern": "^\\d+(\\.\\d+)?$",
+              "type": "string"
+            },
+            "side": {
+              "enum": [
+                "buy",
+                "sell"
+              ]
+            }
+          },
+          "required": [
+            "trade_id",
+            "account_id",
+            "instrument_id",
+            "quantity",
+            "price_usd",
+            "side",
+            "gross_cents",
+            "cash_transaction_id"
+          ],
+          "type": "object"
+        }
+      ]
+    },
+    "transaction": {
+      "anyOf": [
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/common"
+            },
+            {
+              "properties": {
+                "activity_kind": {
+                  "enum": [
+                    "income",
+                    "consumption",
+                    "interest",
+                    "fee",
+                    "refund",
+                    "reimbursement",
+                    "internal_transfer",
+                    "investment_funding",
+                    "investment_proceeds",
+                    "card_payment",
+                    "debt_principal",
+                    "security_trade",
+                    "dividend",
+                    "market_trade",
+                    "market_settlement"
+                  ]
+                },
+                "pending": {
+                  "type": "boolean"
+                },
+                "posted_at": {
+                  "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}[+-]\\d{2}:\\d{2}$",
+                  "type": "string"
+                },
+                "signed_amount_cents": {
+                  "type": "integer"
+                },
+                "status": {
+                  "enum": [
+                    "observed",
+                    "projected",
+                    "user_reported"
+                  ]
+                }
+              },
+              "required": [
+                "transaction_id",
+                "account_id",
+                "posted_at",
+                "signed_amount_cents",
+                "activity_kind",
+                "pending",
+                "status"
+              ],
+              "type": "object"
+            }
+          ]
+        },
+        {
+          "properties": {
+            "pending": {
+              "type": "boolean"
+            },
+            "signed_amount_cents": {
+              "type": "integer"
+            },
+            "synthetic": {
+              "const": true
+            }
+          },
+          "required": [
+            "transaction_id",
+            "account_id",
+            "posted_at",
+            "signed_amount_cents",
+            "merchant",
+            "pending",
+            "synthetic"
+          ],
+          "type": "object"
+        }
+      ]
+    },
+    "valuation": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/common"
+        },
+        {
+          "properties": {
+            "equity_cents": {
+              "type": "integer"
+            },
+            "gross_value_cents": {
+              "type": "integer"
+            },
+            "ownership_fraction": {
+              "pattern": "^\\d+(\\.\\d+)?$",
+              "type": "string"
+            }
+          },
+          "required": [
+            "property_id",
+            "gross_value_cents",
+            "ownership_fraction",
+            "attributable_value_cents",
+            "attributable_loan_principal_cents",
+            "equity_cents",
+            "valuation_as_of"
+          ],
+          "type": "object"
+        }
+      ]
+    }
+  },
+  "$id": "urn:fwm:synthetic-world-v1",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "properties": {
+    "accounts": {
+      "items": {
+        "$ref": "#/$defs/account"
+      },
+      "type": "array"
+    },
+    "amortization": {
+      "items": {
+        "$ref": "#/$defs/loan"
+      },
+      "type": "array"
+    },
+    "currency": {
+      "const": "USD"
+    },
+    "monthly_summaries": {
+      "items": {
+        "$ref": "#/$defs/summary"
+      },
+      "type": "array"
+    },
+    "october_activity": {
+      "items": {
+        "$ref": "#/$defs/transaction"
+      },
+      "type": "array"
+    },
+    "position_marks": {
+      "items": {
+        "$ref": "#/$defs/mark"
+      },
+      "type": "array"
+    },
+    "scenario_id": {
+      "enum": [
+        "shared",
+        "canonical_demo",
+        "full_financial_world",
+        "dinner_2026_10_11",
+        "edge_cases"
+      ]
+    },
+    "statements": {
+      "items": {
+        "$ref": "#/$defs/statement"
+      },
+      "type": "array"
+    },
+    "summary": {
+      "$ref": "#/$defs/summary"
+    },
+    "synthetic": {
+      "const": true
+    },
+    "trades": {
+      "items": {
+        "$ref": "#/$defs/trade"
+      },
+      "type": "array"
+    },
+    "transactions": {
+      "items": {
+        "$ref": "#/$defs/transaction"
+      },
+      "type": "array"
+    },
+    "valuations": {
+      "items": {
+        "$ref": "#/$defs/valuation"
+      },
+      "type": "array"
+    }
+  },
+  "required": [
+    "synthetic",
+    "scenario_id",
+    "dataset_version"
+  ],
+  "title": "Synthetic financial world envelopes and record schemas",
+  "type": "object"
+}

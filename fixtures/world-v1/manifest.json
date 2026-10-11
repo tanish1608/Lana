@@ -1,0 +1,79 @@
+{
+  "completed_end": "2026-09-30",
+  "completed_start": "2023-10-01",
+  "currency": "USD",
+  "data_mode": "fixture",
+  "dataset_version": "synthetic-world-v1",
+  "default_scenario": "full_financial_world",
+  "demo_clock": "2026-10-11T21:00:00-07:00",
+  "files": [
+    {
+      "bytes": 77732,
+      "consumer": "Dataset decoder only; supplemental MoneyView required",
+      "path": "full_financial_world/core-september.json",
+      "scenario_id": "full_financial_world",
+      "schema": "world.schema.json",
+      "sha256": "6e563dc5c89ee1ccc53816b9fded77342a8159568e67b0feae4b516dd83f8957",
+      "synthetic": true
+    },
+    {
+      "bytes": 99261,
+      "consumer": "Claude UI / Aryan adapters / Tanish fixture tools",
+      "path": "full_financial_world/september.json",
+      "scenario_id": "full_financial_world",
+      "schema": "world.schema.json",
+      "sha256": "535571f11ef21bc0e23e18c1d2fdd7970666a9891d182eeeb62b10044a1cdf9f",
+      "synthetic": true
+    },
+    {
+      "bytes": 9685,
+      "consumer": "Claude UI / Aryan adapters / Tanish fixture tools",
+      "path": "full_financial_world/snapshot.json",
+      "scenario_id": "full_financial_world",
+      "schema": "world.schema.json",
+      "sha256": "c229ba168d0dda5afd40f7a62f0733f5f314f4306cfcbbe12aecfd63c53c4eb4",
+      "synthetic": true
+    },
+    {
+      "bytes": 4415,
+      "consumer": "Claude UI / Aryan adapters / Tanish fixture tools",
+      "path": "profile.json",
+      "scenario_id": "shared",
+      "schema": "world.schema.json",
+      "sha256": "2d9830090b53704363984e3df56b12aa1bedff6df5dec4a7d226242361571c9e",
+      "synthetic": true
+    },
+    {
+      "bytes": 10350,
+      "consumer": "Claude UI / Aryan adapters / Tanish fixture tools",
+      "path": "world.schema.json",
+      "scenario_id": "shared",
+      "schema": "world.schema.json",
+      "sha256": "2833075dddd2ed993719a6451509dbefdc9aa30bbb02d2e06237e0b63fc099e2",
+      "synthetic": true
+    }
+  ],
+  "scenario_id": "shared",
+  "scenario_selection_required": true,
+  "scenarios": [
+    {
+      "entrypoint": "full_financial_world/snapshot.json",
+      "scenario_id": "full_financial_world",
+      "synthetic": true
+    },
+    {
+      "entrypoint": "canonical_demo/dataset.json",
+      "scenario_id": "canonical_demo",
+      "synthetic": true
+    },
+    {
+      "entrypoint": "dinner_2026_10_11/scenario.json",
+      "scenario_id": "dinner_2026_10_11",
+      "synthetic": true
+    }
+  ],
+  "seed": 261011,
+  "stage": "snapshot",
+  "synthetic": true,
+  "timezone": "America/Los_Angeles"
+}

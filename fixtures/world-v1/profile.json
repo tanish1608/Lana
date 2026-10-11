@@ -1,0 +1,106 @@
+{
+  "currency": "USD",
+  "data_mode": "fixture",
+  "dataset_version": "synthetic-world-v1",
+  "demo_clock": "2026-10-11T21:00:00-07:00",
+  "opening_provenance": "Opening balances are synthetic boundary conditions on 2023-10-01. Pre-coverage acquisition and amortization not reproduced.",
+  "person": {
+    "age_at_demo": 32,
+    "bank_roles": {
+      "capital_one_checking": "bill envelope opened July 2024",
+      "capital_one_savings": "annual expenses and travel sinking fund",
+      "chase_checking": "payroll, housing, card payments and investments",
+      "chase_savings": "emergency fund"
+    },
+    "biography": "Fictional software engineer living alone in an owner-occupied condo in fictional Cedar District, Northern California. No rental business.",
+    "card_policy": "Every month pay prior month opening balance. December 2024 leaves 100 USD; cure next month. Purchases recognized when posted.",
+    "changes": [
+      "2024-07 promotion and second bank for bill sinking funds",
+      "2024-09 laptop purchase",
+      "2024-12 short-paid card; January synthetic interest/fee",
+      "2025-02 coat refund",
+      "2025-03 video subscription cancelled",
+      "2025-04 synthetic market drawdown",
+      "2025-07 raise and extra student principal",
+      "2025-11 condo repair",
+      "2026-06 through 2026-08 more prediction-market activity"
+    ],
+    "currency": "USD",
+    "dataset_version": "synthetic-world-v1",
+    "fictional_name": "Morgan Cedar",
+    "goals": [
+      {
+        "currency": "USD",
+        "dataset_version": "synthetic-world-v1",
+        "purpose": "emergency cash in Chase savings",
+        "record_id": "goal_emergency",
+        "scenario_id": "full_financial_world",
+        "source_id": "fixture:goal_emergency",
+        "synthetic": true,
+        "target_cents": 1500000
+      },
+      {
+        "currency": "USD",
+        "dataset_version": "synthetic-world-v1",
+        "purpose": "travel and annual expenses in Capital One savings",
+        "record_id": "goal_annual",
+        "scenario_id": "full_financial_world",
+        "source_id": "fixture:goal_annual",
+        "synthetic": true,
+        "target_cents": 500000
+      }
+    ],
+    "housing": "100% owner-occupied condo; HOA, tax and insurance paid directly. No escrow, rent or rental income.",
+    "income_schedule": "Net payroll twice monthly on the 15th and 28th; synthetic amounts after withheld tax.",
+    "investing": "Initial cash seeds four instruments; monthly deposits, long-only buys, quarterly dividends and occasional FIFO sales/withdrawals.",
+    "monthly_net_pay_cents": {
+      "2023-10": 720000,
+      "2024-07": 820000,
+      "2025-07": 900000
+    },
+    "prediction_policy": "Small fictional weather/economics/sports binary markets; illustrative risk, not actual provider mechanics.",
+    "preferences": {
+      "accepted": [
+        "alternate_coffee_beans"
+      ],
+      "brand_locks": [
+        "oat_milk"
+      ],
+      "phone_coverage": "must retain necessary coverage",
+      "rejected": [
+        "instant_coffee"
+      ]
+    },
+    "record_id": "person_cedar",
+    "scenario_id": "full_financial_world",
+    "source_id": "fixture:person_cedar",
+    "synthetic": true
+  },
+  "property": {
+    "acquisition_date": "2022-06-01",
+    "currency": "USD",
+    "dataset_version": "synthetic-world-v1",
+    "liquid": false,
+    "loan_account_id": "mortgage",
+    "loan_ownership_fraction": "1.00",
+    "location": "Fictional Cedar District, Northern California (no street address)",
+    "original_mortgage_cents": 28800000,
+    "ownership_fraction": "1.00",
+    "property_id": "property_cedar_condo",
+    "purchase_price_cents": 36000000,
+    "record_id": "property_cedar_condo",
+    "scenario_id": "full_financial_world",
+    "source_id": "fixture:property_cedar_condo",
+    "source_type": "synthetic_manual_estimate",
+    "synthetic": true
+  },
+  "provider_assumptions": {
+    "kalshi": "USD cash; binary contracts; 20 cent fee on each buy; settlement no fee; reserved order cash is a subset of cash.",
+    "polymarket": "SYNTHETIC_USDC collateral, exact quantity; fixed synthetic 1.00 USD per unit. Zero fees; binary share ledger; no wallets, chain, or actual protocol mechanics.",
+    "robinhood": "Long-only, zero trade fee, FIFO basis, synthetic prices; no tax forms."
+  },
+  "scenario_id": "full_financial_world",
+  "seed": 261011,
+  "synthetic": true,
+  "timezone": "America/Los_Angeles"
+}
