@@ -54,7 +54,7 @@ The shared product plan uses **local inference, without a cloud LLM**. The relay
 
 | Path | Responsibility | Status at documentation baseline |
 |---|---|---|
-| `Packages/FWMCore/` | Shared records/contracts; money and split engines; golden tests | Implemented on `main` |
+| `Packages/FWMCore/` | Shared records/contracts; money and split engines; provider adapters (fixture, bank CSV import); golden tests | Engines on `main`; adapters in PR #3 |
 | `fixtures/` | Canonical and edge inputs, generator | Drafted on `main`; Ashwin owns subsequent changes |
 | `ios/` | Integrated iPhone host and feature screens | Intended app location; not yet present at this baseline |
 | `relay/` | Dial inbox/outbox, job transport, reminders, Keewano | Aryan's lane; not yet present at this baseline |
