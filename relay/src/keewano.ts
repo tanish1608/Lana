@@ -59,7 +59,8 @@ export async function sql(query: string): Promise<Record<string, unknown>[]> {
   const res: any = await (await client()).callTool({ name: 'run_sql_query', arguments: { projectId: PROJECT, sqlQuery: query } });
   const text = res.content?.find((c: any) => c.type === 'text')?.text || '';
   if (res.isError) throw new Error(text.slice(0, 300));
-  const out = JSON.parse(text);
+  // The rows come back in structuredContent; the text part is a human summary ("SQL result for project ...").
+  const out = res.structuredContent ?? JSON.parse(text);
   const cols: string[] = (out.columns || []).map((c: any) => c.name ?? c);
   return (out.rows || []).map((r: any) => (Array.isArray(r) ? Object.fromEntries(cols.map((c, i) => [c, r[i]])) : r));
 }
