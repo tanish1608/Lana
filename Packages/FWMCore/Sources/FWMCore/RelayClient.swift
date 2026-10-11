@@ -170,6 +170,7 @@ public struct RelayClient: Sendable {
     func request(_ method: String, _ path: String, auth: Bool = true) -> URLRequest {
         var req = URLRequest(url: URL(string: path, relativeTo: baseURL)!)
         req.httpMethod = method
+        req.setValue("1", forHTTPHeaderField: "ngrok-skip-browser-warning") // demo relay runs behind an ngrok tunnel
         if auth { req.setValue("Bearer \(deviceToken)", forHTTPHeaderField: "Authorization") }
         return req
     }
