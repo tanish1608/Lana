@@ -1,10 +1,13 @@
 import SwiftUI
 
-/// Entry point the iOS host embeds. Tabs: Money, Budget, Split, Vault.
+/// Entry point the iOS host embeds. Tabs: Home, Budget, Split, Vault. Money is pushed from Home.
 public struct LanaRootView: View {
     let store: DemoStore
     let unlocker: VaultUnlocking
     @State private var log: [String] = []
+    @State private var tab = LanaTab.home
+    @State private var requestStates: [String: RequestState] = [:]
+    @State private var budgetAdopted = false
 
     public init(store: DemoStore, unlocker: VaultUnlocking = SimulatedVaultUnlocker()) {
         self.store = store
@@ -12,11 +15,14 @@ public struct LanaRootView: View {
     }
 
     public var body: some View {
-        TabView {
-            MoneyScreen(store: store).tabItem { Label("Money", systemImage: "chart.bar") }
-            BudgetScreen(store: store, onAdopt: { log.insert($0, at: 0) }).tabItem { Label("Budget", systemImage: "chart.pie") }
-            SplitScreen(store: store, onAction: { log.insert($0, at: 0) }).tabItem { Label("Split", systemImage: "receipt") }
-            VaultScreen(unlocker: unlocker, log: log).tabItem { Label("Vault", systemImage: "lock") }
+        TabView(selection: $tab) {
+            HomeScreen(store: store, tab: $tab, requestStates: requestStates, budgetAdopted: budgetAdopted)
+                .tabItem { Label("Home", systemImage: "house") }.tag(LanaTab.home)
+            BudgetScreen(store: store, onAdopt: { log.insert($0, at: 0); budgetAdopted = true })
+                .tabItem { Label("Budget", systemImage: "chart.pie") }.tag(LanaTab.budget)
+            SplitScreen(store: store, onAction: { log.insert($0, at: 0) }, states: $requestStates)
+                .tabItem { Label("Split", systemImage: "receipt") }.tag(LanaTab.split)
+            VaultScreen(unlocker: unlocker, log: log).tabItem { Label("Vault", systemImage: "lock") }.tag(LanaTab.vault)
         }
         .tint(Theme.accent)
     }

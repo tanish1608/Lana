@@ -14,40 +14,37 @@ struct MoneyScreen: View {
         _period = State(initialValue: store.snapshotPeriod)
     }
 
+    // Pushed from Home, so it uses Home's navigation stack.
     var body: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 12) {
-                    switch store.moneyView(period) {
-                    case .failure(let e): Card { Tag(text: "Couldn’t load", tone: Theme.bad); Text(e.userMessage) }
-                    case .success(let v):
-                        if period > store.snapshotPeriod { inProgress } else { content(v) }
-                    }
+        ScrollView {
+            VStack(alignment: .leading, spacing: 12) {
+                switch store.moneyView(period) {
+                case .failure(let e): Card { Tag(text: "Couldn’t load", tone: Theme.bad); Text(e.userMessage) }
+                case .success(let v):
+                    if period > store.snapshotPeriod { inProgress } else { content(v) }
                 }
-                .padding(.horizontal, 16).padding(.bottom, 24)
             }
-            .background(Theme.bg)
-            .navigationTitle("Money")
-            .toolbar { DemoDataBadge() }
+            .padding(.horizontal, 16).padding(.bottom, 24)
         }
+        .background(Theme.bg)
+        .navigationTitle("Money")
+        #if os(iOS)
+        .navigationBarTitleDisplayMode(.inline)
+        #endif
+        .toolbar { DemoDataBadge() }
     }
 
     private var periodPicker: some View {
-        Picker("Month", selection: $period) {
-            ForEach(store.periods, id: \.self) { Text(DemoStore.monthName($0, short: true)).tag($0) }
-        }
-        .pickerStyle(.segmented)
+        PillPicker(options: store.periods.map { ($0, DemoStore.monthName($0, short: true)) }, selection: $period)
     }
 
     private var inProgress: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("\(DemoStore.monthName(period).components(separatedBy: " ").first ?? "") so far").font(Theme.display(30))
-            Text("The month is still open, so nothing here is estimated.").foregroundStyle(Theme.ink2)
             periodPicker
             Card {
                 Text("No posted totals yet").font(Theme.display(24))
-                Text("Lana charts the month once its transactions post. The Oct 11 dinner receipt is tracked in Split and never changes September.")
-                    .font(.subheadline).foregroundStyle(Theme.ink2)
+                Text("Nothing is estimated. The Oct 11 dinner is in Split.").font(.subheadline).foregroundStyle(Theme.ink2)
             }
         }
     }
@@ -56,15 +53,14 @@ struct MoneyScreen: View {
         let f = v.flow
         let stays = f.toSavingsCents + f.toInvestmentsCents + f.retainedCashCents
         let month = DemoStore.monthName(period).components(separatedBy: " ").first ?? period
-        let biggest = v.categories.first
-        MessagePreview(question: "Where did my money go in \(month)?",
-                       answer: "In \(month) you brought in \(usd(f.netIncomeCents)) and spent \(usd(f.expensesCents)). \(biggest?.category ?? "Rent") was the biggest cost at \(usd(biggest?.totalCents ?? 0)). You moved \(usd(f.toSavingsCents)) to savings and \(usd(f.toInvestmentsCents)) to investing, and \(usd(f.retainedCashCents)) stayed in checking.")
-        Text("\(usd(stays)) stayed with you").font(Theme.display(32)).padding(.top, 6)
-        Text("\(usd(f.netIncomeCents)) came in during \(DemoStore.monthName(period)). \(usd(f.expensesCents)) went to expenses.")
-            .foregroundStyle(Theme.ink2)
+        AskChip("Where did my money go in \(month)?")
+        VStack(alignment: .leading, spacing: 4) {
+            Eyebrow("Stayed with you · \(month)")
+            HeroAmount(cents: stays)
+        }
+        .padding(.horizontal, 4).padding(.vertical, 4)
         periodPicker
-        Picker("View", selection: $showBalances) { Text("Money in & out").tag(false); Text("Where it sits").tag(true) }
-            .pickerStyle(.segmented)
+        PillPicker(options: [(false, "Money in & out"), (true, "Where it sits")], selection: $showBalances)
         if showBalances { balances } else { flows(v) }
     }
 
@@ -77,19 +73,13 @@ struct MoneyScreen: View {
         } else {
             Card {
                 FlowBar(segments: [
-                    .init(label: "Expenses", cents: f.expensesCents, color: Theme.goes),
+                    .init(label: "Expenses", cents: f.expensesCents, color: Theme.spent),
                     .init(label: "Savings", cents: f.toSavingsCents, color: Theme.accent),
                     .init(label: "Investing", cents: f.toInvestmentsCents, color: Theme.accent2),
-                    .init(label: "Kept in checking", cents: f.retainedCashCents, color: Theme.accent3),
+                    .init(label: "Kept in checking", cents: f.retainedCashCents, color: Theme.ok),
                 ], total: f.netIncomeCents)
             }
-            VStack(alignment: .leading, spacing: 6) {
-                Label("Adds up", systemImage: "checkmark").font(.caption.weight(.bold)).foregroundStyle(Theme.accent)
-                Text("\(usd(f.netIncomeCents)) = \(usd(f.expensesCents)) spent + \(usd(f.toSavingsCents)) saved + \(usd(f.toInvestmentsCents)) invested + \(usd(f.retainedCashCents)) kept.")
-                    .monospacedDigit()
-            }
-            .padding(16).frame(maxWidth: .infinity, alignment: .leading)
-            .background(Theme.accentSoft, in: RoundedRectangle(cornerRadius: 20))
+            CheckLine("\(usd(f.netIncomeCents)) = \(usd(f.expensesCents)) + \(usd(f.toSavingsCents)) + \(usd(f.toInvestmentsCents)) + \(usd(f.retainedCashCents))")
 
             SectionLabel("Spending by category")
             Card {
@@ -118,7 +108,7 @@ struct MoneyScreen: View {
             Card {
                 row("To savings", "Transfer, not spending", f.toSavingsCents, Theme.accent)
                 row("To investing", "Transfer, not spending", f.toInvestmentsCents, Theme.accent2)
-                row("Kept in checking", "Left in checking this month", f.retainedCashCents, Theme.accent3)
+                row("Kept in checking", "Left in checking this month", f.retainedCashCents, Theme.ok)
             }
             if v.pendingCents != 0 {
                 Text("\(usd(v.pendingCents, cents: true)) pending, not included above.").font(.caption).foregroundStyle(Theme.ink3)
@@ -139,16 +129,15 @@ struct MoneyScreen: View {
     @ViewBuilder private var balances: some View {
         if case .success(let snap) = store.moneyView(store.snapshotPeriod) {
             Card {
-                Text("Net worth on \(DemoStore.day(store.dataset.asOf))").font(.caption).foregroundStyle(Theme.ink3)
-                Text(usd(snap.netWorthCents)).font(Theme.display(44)).monospacedDigit()
-                Text("\(usd(snap.assetsCents)) in assets minus \(usd(snap.liabilitiesCents)) owed").foregroundStyle(Theme.ink2)
+                Eyebrow("Net worth · \(DemoStore.day(store.dataset.asOf))")
+                HeroAmount(cents: snap.netWorthCents, size: 44)
+                Text("\(usd(snap.assetsCents)) owned − \(usd(snap.liabilitiesCents)) owed").font(.footnote).foregroundStyle(Theme.ink2).monospacedDigit()
             }
             SectionLabel("What you own")
             Card { ForEach(snap.accounts.filter { $0.assetOrLiability == .asset }, id: \.accountId) { accountRow($0) } }
             SectionLabel("What you owe")
             Card { ForEach(snap.accounts.filter { $0.assetOrLiability == .liability }, id: \.accountId) { accountRow($0) } }
-            Text("Balances are a snapshot at the end of \(DemoStore.day(store.dataset.asOf)). Monthly income and spending are under Money in & out.")
-                .font(.caption).foregroundStyle(Theme.ink3)
+            Text("Snapshot at the end of \(DemoStore.day(store.dataset.asOf)).").font(.caption).foregroundStyle(Theme.ink3).padding(.horizontal, 4)
         }
     }
 

@@ -70,6 +70,23 @@ public final class DemoStore {
         return f.string(from: d)
     }
 
+    /// The seed's own split (`split_example` on the first receipt), for the Home summary.
+    func fixtureSplit() -> SplitResult? {
+        guard let r = dataset.receipts?.first, let ex = splitExample else { return nil }
+        return try? SplitEngine.prepareSplit(receipt: r, assignments: ex.assignments, payerId: ex.payerId, contacts: dataset.contacts ?? [],
+                                             datasetVersion: dataset.datasetVersion, dataMode: dataset.dataMode)
+    }
+
+    static func weekday(_ iso: String) -> String {
+        let f = ISO8601DateFormatter()
+        f.formatOptions = [.withInternetDateTime]
+        guard let d = f.date(from: iso) else { return iso }
+        let o = DateFormatter()
+        o.dateFormat = "EEEE, MMM d"
+        o.timeZone = TimeZone(identifier: "America/Los_Angeles")
+        return o.string(from: d)
+    }
+
     static func day(_ iso: String) -> String {
         let f = ISO8601DateFormatter()
         f.formatOptions = [.withInternetDateTime]

@@ -1,6 +1,6 @@
 # FWMFeatureUI
 
-Ashwin's SwiftUI feature screens: Money, Budget, Split and Vault, composed in `LanaRootView`. Screens read `FWMCore` results (`MoneyEngine`, `SplitEngine`) from a `DemoStore` loaded with `fixtures/seed-v1.json`. No engines, model, relay or provider code lives here.
+Ashwin's SwiftUI feature screens: Home, Money (pushed from Home), Budget, Split and Vault, composed in `LanaRootView`. Screens read `FWMCore` results (`MoneyEngine`, `SplitEngine`) from a `DemoStore` loaded with `fixtures/seed-v1.json`. No engines, model, relay or provider code lives here.
 
 ```bash
 swift test --package-path Packages/FWMFeatureUI          # fixture wiring + budget stand-in checks

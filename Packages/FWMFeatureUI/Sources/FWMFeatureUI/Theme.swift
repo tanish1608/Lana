@@ -32,6 +32,15 @@ enum Theme {
     static let warnSoft = Color.orange.opacity(0.15)
     static let bad = Color.red
     static let bubbleIn = Color(light: 0xE9E9EB, dark: 0x26252A)
+    // Home and number-first layout; mirrors the block at the end of preview/web/styles.css.
+    static let spent = Color(light: 0xAEAEB2, dark: 0x636366)
+    static let ok = Color(light: 0x248A3D, dark: 0x30D158)
+    static let okSoft = Color.green.opacity(0.15)
+    static let sky = Color(light: 0xD6EAFB, dark: 0x12324F)
+    static let skyInk = Color(light: 0x0B2A45, dark: 0xEAF4FF)
+    static let sky2 = Color(light: 0xE7F0FA, dark: 0x1A2633)
+    static let inkCard = Color(light: 0x111113, dark: 0x1C1C1E)
+    static let pillOnText = Color(light: 0xFFFFFF, dark: 0x000000)
 
     static func display(_ size: CGFloat) -> Font { .system(size: size, weight: .bold) }
 }
@@ -145,21 +154,6 @@ struct WrapLayout: Layout {
             }
             y += (row.map(\.size.height).max() ?? 0) + spacing
         }
-    }
-}
-
-struct MessagePreview: View {
-    let question: String
-    let answer: String
-    var body: some View {
-        VStack(spacing: 6) {
-            Text("From Messages").font(.caption2).foregroundStyle(Theme.ink3)
-            HStack { Spacer(minLength: 50); Text(question).padding(.horizontal, 13).padding(.vertical, 9).foregroundStyle(.white)
-                .background(Color.blue, in: RoundedRectangle(cornerRadius: 18)) }
-            HStack { Text(answer).padding(.horizontal, 13).padding(.vertical, 9).foregroundStyle(Theme.ink)
-                .background(Theme.bubbleIn, in: RoundedRectangle(cornerRadius: 18)); Spacer(minLength: 40) }
-        }
-        .font(.subheadline)
     }
 }
 

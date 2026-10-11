@@ -32,7 +32,7 @@ struct SplitScreen: View {
     @State private var haveVoice = false
     @State private var tipText = String(format: "%.2f", Double(SplitDemo.misreadTipCents) / 100)
     @State private var owners: [String: String] = [:] // item → contact id or "shared"
-    @State private var states: [String: RequestState] = [:]
+    @Binding var states: [String: RequestState] // held by the root so Home can show who still owes
     @State private var reminders: Set<String> = []
     @State private var disputed: Set<String> = []
     @State private var tomorrow = false
@@ -113,7 +113,6 @@ struct SplitScreen: View {
 
     @ViewBuilder private var inputs: some View {
         Text("Split dinner").font(Theme.display(30))
-        Text("Send a receipt and a voice note to Lana in Messages, or add them here.").foregroundStyle(Theme.ink2)
         Card {
             HStack { Text("Receipt").font(.headline); Spacer(); Tag(text: haveReceipt ? "Received" : "Waiting", tone: haveReceipt ? Theme.accent : Theme.ink2, fill: haveReceipt ? Theme.accentSoft : Theme.line) }
             if haveReceipt, let r = receipt { Text("\(r.merchant ?? "Receipt") · \(r.date ?? "")").font(.caption).foregroundStyle(Theme.ink3) }
@@ -123,14 +122,14 @@ struct SplitScreen: View {
             HStack { Text("Voice note").font(.headline); Spacer(); Tag(text: haveVoice ? "Transcribed" : "Waiting", tone: haveVoice ? Theme.accent : Theme.ink2, fill: haveVoice ? Theme.accentSoft : Theme.line) }
             if haveVoice {
                 Text("“\(SplitDemo.transcript)”")
-                SimulatedNote("Sample transcript. On iPhone, speech is transcribed on-device.")
+                SimulatedNote("Sample · on-device on iPhone")
             }
             Button("Use sample voice note") { haveVoice = true }.buttonStyle(GhostButtonStyle())
         }
         Card(padding: 14) {
             HStack { Text("Messages delivery").font(.subheadline); Spacer()
                 Tag(text: haveReceipt && haveVoice ? "Completed · 2 of 2" : (haveReceipt || haveVoice ? "Pending · 1 of 2" : "Waiting")) }
-            SimulatedNote("Simulated delivery states. The messaging line isn’t connected here.")
+            SimulatedNote("Simulated")
         }
         nav("Read receipt", enabled: haveReceipt && haveVoice)
     }
@@ -140,7 +139,6 @@ struct SplitScreen: View {
         let mismatch: Bool = { if case .failure(let e) = res, e.code == .receiptMismatch { return true }; return tipCents == nil }()
         let fixed = tipCents == receipt?.tipCents
         Text("Check what Lana read").font(Theme.display(30))
-        Text(mismatch ? "One field looks off. Fix it before anything is sent." : "Everything adds up to the receipt total.").foregroundStyle(Theme.ink2)
         if let r = receipt {
             Card {
                 ForEach(r.items, id: \.itemId) { i in
@@ -167,11 +165,11 @@ struct SplitScreen: View {
                 Divider()
                 HStack { Text("Receipt total").bold(); Spacer(); Text(usd(r.totalCents, cents: true)).bold().monospacedDigit() }
                 if mismatch {
-                    Label("Doesn’t match the total yet. Requests stay blocked until it does.", systemImage: "xmark.circle").font(.caption.weight(.semibold)).foregroundStyle(Theme.bad)
+                    Label("Doesn’t match the total yet", systemImage: "xmark.circle").font(.caption.weight(.semibold)).foregroundStyle(Theme.bad)
                 } else {
                     Label("Items, tax and tip match the total", systemImage: "checkmark.circle").font(.caption.weight(.semibold)).foregroundStyle(Theme.accent)
                 }
-                SimulatedNote("The low-confidence tip is staged to show the correction step.")
+                SimulatedNote("Staged misread")
             }
         }
         nav("Assign items", enabled: !mismatch)
@@ -179,7 +177,6 @@ struct SplitScreen: View {
 
     @ViewBuilder private var assign: some View {
         Text("Who had what").font(Theme.display(30))
-        Text("Filled in from your voice note. Tap to change.").foregroundStyle(Theme.ink2)
         SectionLabel("People")
         Card {
             ForEach(participants, id: \.contactId) { c in
@@ -223,8 +220,11 @@ struct SplitScreen: View {
     @ViewBuilder private func shares(_ r: SplitResult) -> some View {
         let ordered = participants.compactMap { p in r.shares.first { $0.contactId == p.contactId } }
         let total = r.shares.reduce(0) { $0 + $1.totalCents }
-        Text("You’re owed \(usd(r.outstandingCents, cents: true))").font(Theme.display(30))
-        Text("The appetizer is split evenly. Tax and tip follow what each person ordered.").foregroundStyle(Theme.ink2)
+        VStack(alignment: .leading, spacing: 4) {
+            Eyebrow("You’re owed")
+            HeroAmount(cents: r.outstandingCents)
+        }
+        .padding(.horizontal, 4)
         ForEach(ordered, id: \.contactId) { s in
             Card(padding: 16) {
                 HStack {
@@ -239,10 +239,8 @@ struct SplitScreen: View {
                 if s.contactId == payerId { Text("Your share. You paid the bill.").font(.caption).foregroundStyle(Theme.ink3) }
             }
         }
-        Label("\(ordered.map { usd($0.totalCents, cents: true) }.joined(separator: " + ")) = \(usd(total, cents: true)), the receipt total.", systemImage: "checkmark")
-            .font(.subheadline).monospacedDigit().padding(14).frame(maxWidth: .infinity, alignment: .leading)
-            .background(Theme.accentSoft, in: RoundedRectangle(cornerRadius: 16))
-        Text("Dated Oct 11, so it isn’t added to September’s spending.").font(.caption).foregroundStyle(Theme.ink3)
+        CheckLine("\(ordered.map { usd($0.totalCents, cents: true) }.joined(separator: " + ")) = \(usd(total, cents: true))")
+        Text("Oct 11 · not in September’s spending").font(.caption).foregroundStyle(Theme.ink3).padding(.horizontal, 4)
         nav("Prepare requests", enabled: total == receipt?.totalCents)
     }
 
@@ -253,7 +251,6 @@ struct SplitScreen: View {
 
     @ViewBuilder private func requests(_ r: SplitResult) -> some View {
         Text("Payment requests").font(Theme.display(30))
-        Text("Nothing is sent without your review. Opening Venmo isn’t the same as sending a request.").foregroundStyle(Theme.ink2)
         ForEach(ordered(r), id: \.contactId) { q in
             Card(padding: 16) {
                 HStack { Avatar(name: q.reviewedName); VStack(alignment: .leading) { Text(q.reviewedName).fontWeight(.semibold); Text(q.venmoHandle ?? "").font(.caption).foregroundStyle(Theme.ink3) }
@@ -275,7 +272,7 @@ struct SplitScreen: View {
                 }
             }
         }
-        Text("Lana can’t see inside Venmo. “You sent it” and “Paid” are what you tell Lana.").font(.caption).foregroundStyle(Theme.ink3)
+        Text("“Sent” and “Paid” are what you tell Lana.").font(.caption).foregroundStyle(Theme.ink3).padding(.horizontal, 4)
         nav("Set up follow-ups")
     }
 
@@ -300,8 +297,8 @@ struct SplitScreen: View {
                     LabeledContent("How", value: "Open Venmo with details filled in")
                 }
                 Section {
-                    Text("You finish and send the request yourself in Venmo. Lana won’t know it was sent until you say so.").font(.footnote)
-                    SimulatedNote("Demo build: Venmo isn’t opened. Approving records the handoff only.")
+                    Text("You send it yourself in Venmo.").font(.footnote)
+                    SimulatedNote("Simulated. Venmo isn’t opened.")
                 }
                 Section {
                     Button("Approve & hand off") {
@@ -311,7 +308,7 @@ struct SplitScreen: View {
                         }
                         reviewing = nil
                     }
-                    .fontWeight(.semibold)
+                    .buttonStyle(PrimaryButtonStyle()).listRowInsets(EdgeInsets()).listRowBackground(Color.clear)
                 }
             }
             .navigationTitle("Request \(usd(q.amountCents, cents: true))")
@@ -322,15 +319,13 @@ struct SplitScreen: View {
 
     @ViewBuilder private func followUps(_ r: SplitResult) -> some View {
         Text("Follow-ups").font(Theme.display(30))
-        Text("Lana can remind people who haven’t paid. Each reminder needs your OK.").foregroundStyle(Theme.ink2)
         Card {
-            let clock = VStack(alignment: .leading) { Text("Demo clock").font(.caption).foregroundStyle(Theme.ink3); Text(tomorrow ? "Mon, Oct 12 · 10:00 AM" : "Sun, Oct 11 · 8:40 PM").fontWeight(.semibold).fixedSize() }
+            let clock = VStack(alignment: .leading, spacing: 4) { SimulatedNote("Demo clock"); Text(tomorrow ? "Mon, Oct 12 · 10:00 AM" : "Sun, Oct 11 · 8:40 PM").fontWeight(.semibold).fixedSize() }
             let jump = Button(tomorrow ? "Back to today" : "Jump to tomorrow") { tomorrow.toggle() }.buttonStyle(GhostButtonStyle())
             ViewThatFits(in: .horizontal) { // date stays on one line; the button drops below when they don't fit side by side
                 HStack { clock; Spacer(); jump }
                 VStack(alignment: .leading, spacing: 10) { clock; jump }
             }
-            SimulatedNote("Simulated clock. Real time and security timeouts are unchanged.")
         }
         ForEach(ordered(r), id: \.contactId) { q in
             let id = q.contactId, s = state(id), closed = s == .paidReported || s == .cancelled || disputed.contains(id)
@@ -349,7 +344,7 @@ struct SplitScreen: View {
                 }
                 if reminders.contains(id) && tomorrow && !closed {
                     Text(reminderText(q)).font(.subheadline).padding(12).overlay(RoundedRectangle(cornerRadius: 14).stroke(Theme.line))
-                    SimulatedNote("Simulated send. The messaging line isn’t connected here.")
+                    SimulatedNote("Simulated")
                 }
                 HStack {
                     if !closed && !reminders.contains(id) { Button("Approve reminder") { remindTarget = q }.buttonStyle(GhostButtonStyle()) }
@@ -382,14 +377,14 @@ struct SplitScreen: View {
                     LabeledContent("To", value: store.dataset.contacts?.first { $0.contactId == q.contactId }?.phone ?? "")
                     LabeledContent("Channel", value: "Messages")
                     LabeledContent("When", value: "Once, tomorrow 10:00 AM")
-                    Text("Cancelled automatically if they pay or dispute it.").font(.footnote)
+                    Text("Cancelled if they pay or dispute.").font(.footnote)
                 }
                 Section {
                     Button("Approve reminder") {
                         if !reminders.contains(q.contactId) { reminders.insert(q.contactId); onAction("Reminder to \(q.reviewedName) for tomorrow 10:00 AM") }
                         remindTarget = nil
                     }
-                    .fontWeight(.semibold)
+                    .buttonStyle(PrimaryButtonStyle()).listRowInsets(EdgeInsets()).listRowBackground(Color.clear)
                 }
             }
             .navigationTitle("Remind \(q.reviewedName)?")
