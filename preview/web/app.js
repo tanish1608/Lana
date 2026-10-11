@@ -737,7 +737,15 @@
   });
 
   // ---------- boot ----------
+  // Ambient texture: slow aurora gradients plus film grain, behind everything and non-interactive.
+  function mountAura() {
+    if ($("#aura")) return;
+    const a = document.createElement("div"); a.id = "aura"; a.className = "aura"; a.setAttribute("aria-hidden", "true");
+    a.innerHTML = "<i></i><i></i><i></i>";
+    $("#phone").prepend(a);
+  }
   async function boot() {
+    mountAura();
     main.innerHTML = '<div class="empty" style="padding-top:120px">Loading your demo data…</div>';
     const urls = window.LANA_FIXTURE_URLS || ["fixtures/seed-v1.json", "../../fixtures/seed-v1.json"];
     for (const u of urls) {

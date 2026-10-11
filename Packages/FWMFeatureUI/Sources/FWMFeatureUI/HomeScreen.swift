@@ -71,8 +71,9 @@ struct HomeScreen: View {
         .foregroundStyle(Theme.skyInk)
         .padding(20).frame(maxWidth: .infinity, alignment: .leading)
         .background {
-            LinearGradient(colors: [Theme.sky, Theme.skyDeep], startPoint: .topLeading, endPoint: .bottomTrailing)
+            LinearGradient(colors: [Theme.sky.opacity(0.72), Theme.skyDeep.opacity(0.6), Theme.auraViolet.opacity(0.4)], startPoint: .topLeading, endPoint: .bottomTrailing)
                 .overlay(alignment: .topTrailing) { Circle().fill(.white.opacity(0.18)).frame(width: 220, height: 220).offset(x: 70, y: -110).blur(radius: 8) }
+                .overlay(alignment: .bottomLeading) { Circle().fill(Theme.auraTeal.opacity(0.28)).frame(width: 200, height: 200).offset(x: -70, y: 110).blur(radius: 30) }
                 .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
         }
         .raised(24, tint: Theme.accent, strength: 1.6)
@@ -107,7 +108,7 @@ struct HomeScreen: View {
             GeometryReader { g in
                 let w = g.size.width - CGFloat(parts.count - 1) * 3, total = CGFloat(max(f.netIncomeCents, 1))
                 HStack(spacing: 3) {
-                    ForEach(parts) { p in Capsule().fill(p.color).frame(width: max(4, w * CGFloat(p.cents) / total)) }
+                    ForEach(parts) { p in Capsule().fill(p.color.gradient).frame(width: max(4, w * CGFloat(p.cents) / total)) }
                 }
             }
             .frame(height: 12)
@@ -155,7 +156,7 @@ struct HomeScreen: View {
                 }
             }
             Button { tab = .budget } label: {
-                duoCard(fill: Theme.sky2.gradient, ink: Theme.skyInk, glow: Theme.accent) {
+                duoCard(fill: Theme.sky2.opacity(0.55).gradient, ink: Theme.skyInk, glow: Theme.accent) {
                     (Text(usd(plan)).font(.system(size: 28, weight: .bold)) + Text("/mo").font(.subheadline.weight(.semibold))).monospacedDigit().foregroundStyle(Theme.accent)
                     Text("plan to save").font(.footnote)
                     Text(budgetAdopted ? "Adopted" : "Ready to review").font(.caption).opacity(0.6)

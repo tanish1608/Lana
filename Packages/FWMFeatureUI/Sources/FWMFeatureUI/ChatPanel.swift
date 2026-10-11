@@ -110,8 +110,11 @@ struct ChatPanel: View {
                 }.disabled(controller.busy || draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty).accessibilityLabel("Send")
             }.padding(.horizontal, 10).padding(.bottom, 14)
         }
-        .background(Theme.cardFill, in: RoundedRectangle(cornerRadius: 28))
-        .overlay(RoundedRectangle(cornerRadius: 28).strokeBorder(Theme.edge))
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 28, style: .continuous))
+        .background(Theme.cardFill, in: RoundedRectangle(cornerRadius: 28, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 28, style: .continuous).strokeBorder(Theme.glassEdge))
+        .compositingGroup()
+        .shadow(color: .black.opacity(0.10), radius: 3, y: 2)
         .shadow(color: .black.opacity(0.28), radius: 36, y: 18)
         .buttonStyle(.plain)
         .task { await controller.restore() }

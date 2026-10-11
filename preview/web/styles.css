@@ -310,3 +310,67 @@ button.card:active{transform:scale(.97);box-shadow:var(--elev-press)}
 .fc-row .dot{border-radius:50%;width:9px;height:9px}
 .fc-row .pct{color:var(--ink-3);font-size:13px;width:40px;text-align:right}
 .fc-row b{font-weight:650;min-width:64px;text-align:right}
+/* ---- Texture layer: aurora background, grain, glass cards, floating dock ---- */
+:root{
+  --au-1:rgba(64,140,255,.30); --au-2:rgba(130,110,255,.22); --au-3:rgba(40,200,190,.16);
+  --glass:rgba(255,255,255,.62); --glass-edge-a:rgba(255,255,255,.95); --glass-edge-b:rgba(255,255,255,.25);
+  --grain-op:.05; --dock-glass-a:rgba(255,255,255,.75); --dock-glass-b:rgba(255,255,255,.45); --fade:rgba(242,242,247,.92);
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --au-1:rgba(40,110,255,.34); --au-2:rgba(120,80,255,.26); --au-3:rgba(0,190,170,.14);
+  --glass:rgba(28,28,32,.58); --glass-edge-a:rgba(255,255,255,.18); --glass-edge-b:rgba(255,255,255,.03);
+  --grain-op:.07; --dock-glass-a:rgba(60,60,68,.55); --dock-glass-b:rgba(30,30,36,.35); --fade:rgba(0,0,0,.85)}}
+:root[data-theme="dark"]{
+  --au-1:rgba(40,110,255,.34); --au-2:rgba(120,80,255,.26); --au-3:rgba(0,190,170,.14);
+  --glass:rgba(28,28,32,.58); --glass-edge-a:rgba(255,255,255,.18); --glass-edge-b:rgba(255,255,255,.03);
+  --grain-op:.07; --dock-glass-a:rgba(60,60,68,.55); --dock-glass-b:rgba(30,30,36,.35); --fade:rgba(0,0,0,.85)}
+.phone{background:var(--surface);isolation:isolate}
+.aura{position:absolute;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+@media (max-width:599px){.aura{position:fixed;max-width:430px;margin:0 auto}}
+.aura i{position:absolute;border-radius:50%;filter:blur(60px);will-change:transform}
+.aura i:nth-child(1){width:420px;height:420px;left:-140px;top:-160px;background:var(--au-1);animation:drift1 22s ease-in-out infinite alternate}
+.aura i:nth-child(2){width:360px;height:360px;right:-160px;top:120px;background:var(--au-2);animation:drift2 26s ease-in-out infinite alternate}
+.aura i:nth-child(3){width:380px;height:380px;left:-60px;bottom:-180px;background:var(--au-3);animation:drift1 30s ease-in-out infinite alternate-reverse}
+@keyframes drift1{to{transform:translate(60px,50px) scale(1.08)}}
+@keyframes drift2{to{transform:translate(-50px,70px) scale(.95)}}
+.aura::after{content:"";position:absolute;inset:0;opacity:var(--grain-op);mix-blend-mode:overlay;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .5  0 0 0 0 .5  0 0 0 0 .5  0 0 0 1 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>")}
+.topbar,main,#nav,.chat,.toast,.sheet-bg{position:relative;z-index:1}
+main{position:relative}
+#nav{position:absolute;z-index:12}
+.chat{position:absolute;z-index:11}
+.toast{position:absolute;z-index:30}
+.sheet-bg{position:absolute;z-index:20}
+@media (max-width:599px){#nav,.chat,.toast,.sheet-bg{position:fixed}}
+.topbar{background:linear-gradient(180deg,var(--fade),transparent);backdrop-filter:none;-webkit-backdrop-filter:none}
+/* glass cards with a lit gradient edge */
+.card:not(.flat):not(.sky):not(.ink-card){background:var(--glass);backdrop-filter:saturate(170%) blur(22px);-webkit-backdrop-filter:saturate(170%) blur(22px)}
+.card:not(.flat),.swap,.dock{position:relative}
+.card:not(.flat)::before,.swap::before,.dock::before,.chat::before{content:"";position:absolute;inset:0;border-radius:inherit;padding:1px;pointer-events:none;background:linear-gradient(160deg,var(--glass-edge-a),var(--glass-edge-b) 45%,transparent 70%,var(--glass-edge-b));-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;z-index:2}
+.swap{background:var(--glass);backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px)}
+.card.flat{background:var(--glass)}
+.tile,.fc-row{background:transparent}
+/* number glow */
+.seg-bar span,.stack-bar span{box-shadow:inset 0 1px 0 rgba(255,255,255,.35)}
+.eyebrow{letter-spacing:.01em}
+/* floating dock: compact, centred, liquid glass, with the page fading out beneath it */
+#nav{display:flex;justify-content:center;padding:0 16px calc(18px + env(safe-area-inset-bottom,0px))}
+.dock{width:auto;gap:6px;height:60px;padding:0 8px;border-radius:30px;background:linear-gradient(180deg,var(--dock-glass-a),var(--dock-glass-b));backdrop-filter:saturate(200%) blur(30px);-webkit-backdrop-filter:saturate(200%) blur(30px);box-shadow:inset 0 1px 0 rgba(255,255,255,.35),inset 0 -1px 0 rgba(0,0,0,.08),0 20px 40px -12px rgba(0,0,0,.45),0 2px 6px rgba(0,0,0,.12)}
+.dock-btn[aria-current="page"]{background:linear-gradient(180deg,color-mix(in oklab,var(--ink) 88%,var(--accent)),var(--ink));box-shadow:inset 0 1px 0 rgba(255,255,255,.25),0 4px 12px -4px rgba(0,0,0,.4)}
+.orb{box-shadow:0 0 0 4px color-mix(in oklab,var(--surface) 70%,transparent),0 0 36px -4px rgba(90,110,255,.75),0 12px 28px -6px rgba(70,90,255,.6),inset 0 -4px 10px rgba(0,0,0,.18)}
+.chat{background:var(--glass);backdrop-filter:saturate(180%) blur(30px);-webkit-backdrop-filter:saturate(180%) blur(30px)}
+.chat-head{background:transparent}
+main{padding-bottom:150px}
+.dock{gap:2px;padding:0 6px;height:58px}
+.dock-btn{min-width:46px;padding:0 8px}
+.dock-btn[aria-current="page"]{padding:0 12px 0 10px}
+.orb{margin:-24px 6px 0}
+/* more see-through cards; no backdrop blur inside the scroller (the aurora is already soft) */
+:root{--glass:rgba(255,255,255,.40)}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--glass:rgba(40,40,48,.32)}}
+:root[data-theme="dark"]{--glass:rgba(40,40,48,.32)}
+.card:not(.flat):not(.sky):not(.ink-card),.swap{backdrop-filter:none;-webkit-backdrop-filter:none}
+.card.sky{background:linear-gradient(150deg,color-mix(in oklab,var(--sky-a) 70%,transparent),color-mix(in oklab,var(--sky-b) 62%,transparent))}
+.sky2{background:linear-gradient(160deg,var(--glass),color-mix(in oklab,var(--sky2) 55%,transparent))!important}
+.ink-card{background:linear-gradient(160deg,rgba(44,44,48,.82),rgba(11,11,13,.9))!important}
+.tile{background:color-mix(in oklab,var(--bg) 50%,transparent)}
+@media (min-width:600px){.phone{height:min(880px,calc(100dvh - 48px));min-height:600px}}

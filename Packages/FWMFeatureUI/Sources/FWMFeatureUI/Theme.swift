@@ -51,16 +51,23 @@ enum Theme {
     static let lanaGradient = LinearGradient(colors: [Color(light: 0x3B9BFF, dark: 0x3B9BFF), Color(light: 0x5E5CE6, dark: 0x5E5CE6)], startPoint: .topLeading, endPoint: .bottomTrailing)
     /// Card surface: a slightly lighter top edge so cards read as lit from above.
     static let cardHi = Color(light: 0xFFFFFF, dark: 0x26262A)
-    static let cardFill = LinearGradient(colors: [cardHi, card], startPoint: .top, endPoint: .bottom)
+    /// Frosted and see-through: the ambient backdrop shows through every card.
+    static let cardFill: some ShapeStyle = LinearGradient(colors: [cardHi.opacity(0.62), card.opacity(0.42)], startPoint: .top, endPoint: .bottom)
+    /// Glass edge: bright along the top, fading out toward the bottom.
+    static let glassEdge = LinearGradient(colors: [Color(light: 0xFFFFFF, dark: 0xFFFFFF).opacity(0.55), edgeLow, edgeLow.opacity(0.4)], startPoint: .top, endPoint: .bottom)
+    #if canImport(UIKit)
+    private static let edgeLow = Color(uiColor: UIColor { $0.userInterfaceStyle == .dark ? UIColor(white: 1, alpha: 0.07) : UIColor(white: 0, alpha: 0.05) })
+    #else
+    private static let edgeLow = Color.primary.opacity(0.06)
+    #endif
+    // Ambient backdrop tones.
+    static let base = Color(light: 0xF3F5FA, dark: 0x06070B)
+    static let auraBlue = Color(light: 0x8EC5FF, dark: 0x0A5BD6)
+    static let auraViolet = Color(light: 0xC9B8FF, dark: 0x5B3FD9)
+    static let auraTeal = Color(light: 0xA8EBDD, dark: 0x0C7F86)
     static let inkCardFill = LinearGradient(colors: [Color(light: 0x2C2C30, dark: 0x2C2C30), Color(light: 0x0B0B0D, dark: 0x0B0B0D)], startPoint: .top, endPoint: .bottom)
-    /// Screen background: the grouped background with a faint blue glow at the top.
-    static var backdrop: some View {
-        ZStack(alignment: .top) {
-            bg
-            RadialGradient(colors: [accent.opacity(0.09), .clear], center: UnitPoint(x: 0.5, y: 0), startRadius: 0, endRadius: 340).frame(height: 340)
-        }
-        .ignoresSafeArea()
-    }
+    /// Screen background: a slow ambient gradient behind everything.
+    static var backdrop: some View { Aurora() }
 
     static func display(_ size: CGFloat) -> Font { .system(size: size, weight: .bold) }
 }
@@ -109,13 +116,43 @@ struct Raised: ViewModifier {
     var strength: Double = 1
     func body(content: Content) -> some View {
         content
-            .overlay(RoundedRectangle(cornerRadius: radius, style: .continuous).strokeBorder(Theme.edge, lineWidth: 1))
+            .overlay(RoundedRectangle(cornerRadius: radius, style: .continuous).strokeBorder(Theme.glassEdge, lineWidth: 1))
             .shadow(color: .black.opacity(0.05 * strength), radius: 1, y: 1)
-            .shadow(color: tint.opacity(0.10 * strength), radius: 16, y: 8)
+            .shadow(color: tint.opacity(0.12 * strength), radius: 18, y: 10)
     }
 }
 extension View {
     func raised(_ radius: CGFloat = 12, tint: Color = .black, strength: Double = 1) -> some View { modifier(Raised(radius: radius, tint: tint, strength: strength)) }
+}
+
+/// Soft colour fields that drift very slowly: blue top-left, violet top-right, teal low on the page.
+/// Holds still when Reduce Motion is on.
+struct Aurora: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.colorScheme) private var scheme
+    @State private var drift = false
+
+    var body: some View {
+        GeometryReader { g in
+            let w = g.size.width, h = g.size.height, k: CGFloat = scheme == .dark ? 0.55 : 0.6
+            ZStack {
+                Theme.base
+                blob(Theme.auraBlue, k, w * 1.1).position(x: w * (drift ? 0.12 : 0.22), y: h * (drift ? 0.06 : 0.12))
+                blob(Theme.auraViolet, k * 0.9, w * 0.95).position(x: w * (drift ? 0.98 : 0.86), y: h * (drift ? 0.2 : 0.12))
+                blob(Theme.auraTeal, k * 0.55, w * 0.9).position(x: w * (drift ? 0.2 : 0.34), y: h * (drift ? 0.74 : 0.66))
+                blob(Theme.auraViolet, k * 0.45, w * 0.8).position(x: w * (drift ? 0.9 : 0.78), y: h * (drift ? 0.9 : 0.98))
+                // Keeps the lower page calm so text stays readable over the colour.
+                LinearGradient(colors: [.clear, Theme.base.opacity(scheme == .dark ? 0.55 : 0.35)], startPoint: .top, endPoint: .bottom)
+            }
+        }
+        .ignoresSafeArea()
+        .onAppear { if !reduceMotion { withAnimation(.easeInOut(duration: 14).repeatForever(autoreverses: true)) { drift = true } } }
+        .accessibilityHidden(true)
+    }
+
+    private func blob(_ c: Color, _ a: CGFloat, _ d: CGFloat) -> some View {
+        Circle().fill(RadialGradient(colors: [c.opacity(a), c.opacity(0)], center: .center, startRadius: 0, endRadius: d / 2)).frame(width: d, height: d)
+    }
 }
 
 struct Card<Content: View>: View {
@@ -199,6 +236,7 @@ struct PrimaryButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label.font(.body.weight(.semibold)).frame(maxWidth: .infinity, minHeight: 50)
             .foregroundStyle(.white).background(fill.gradient, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).strokeBorder(LinearGradient(colors: [.white.opacity(0.45), .clear], startPoint: .top, endPoint: .center), lineWidth: 1))
             .shadow(color: fill.opacity(0.28), radius: 10, y: 5)
             .scaleEffect(configuration.isPressed ? 0.96 : 1)
             .animation(.easeOut(duration: 0.12), value: configuration.isPressed)

@@ -118,4 +118,3 @@ final class LanaChatController {
         } catch { status = "Chat is available in this session but couldn't be saved: \(error.localizedDescription)" }
     }
 }
-
