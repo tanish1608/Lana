@@ -88,6 +88,14 @@ public final class DemoStore {
             .filter { let s = states[$0.contactId] ?? .draft; return s != .paidReported && s != .cancelled }
     }
 
+    /// "2026-10-11" → "Oct 11" for receipt dates.
+    static func shortDate(_ ymd: String) -> String {
+        let f = DateFormatter(); f.dateFormat = "yyyy-MM-dd"; f.timeZone = TimeZone(identifier: "America/Los_Angeles")
+        guard let d = f.date(from: ymd) else { return ymd }
+        f.dateFormat = "MMM d"
+        return f.string(from: d)
+    }
+
     static func weekday(_ iso: String) -> String {
         let f = ISO8601DateFormatter()
         f.formatOptions = [.withInternetDateTime]
