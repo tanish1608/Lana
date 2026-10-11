@@ -32,6 +32,15 @@ window.LanaPreview = {
     memory: { provider: "Keewano", evidence_count: 3, queried_at: "Oct 11, 12:58 PM" }
   },
 
+  // EXTRA SAMPLE RECEIPTS for the Receipts tab. The seed fixture has only the dinner receipt,
+  // so these two are labeled samples. Amounts are integer cents.
+  receipts: [
+    { receipt_id: "rcpt_power_1009", kind: "bill", merchant: "Demo Power & Light", date: "2026-10-09", due: "2026-10-20", category: "Bills and subscriptions", total_cents: 8412,
+      items: [{ description: "Electricity, Sep 1–30", extended_price_cents: 7130 }, { description: "Delivery charge", extended_price_cents: 900 }, { description: "Taxes and fees", extended_price_cents: 382 }] },
+    { receipt_id: "rcpt_market_1010", kind: "store", merchant: "Demo Market", date: "2026-10-10", category: "Groceries", total_cents: 6347, paid_with: "Demo Card",
+      items: [{ description: "Produce", extended_price_cents: 1890 }, { description: "Oat milk ×2", extended_price_cents: 998 }, { description: "Pasta, rice, beans", extended_price_cents: 1642 }, { description: "Coffee beans", extended_price_cents: 1399 }, { description: "Tax", extended_price_cents: 418 }] }
+  ],
+
   // RECEIPT + VOICE DEMO INPUTS. The receipt itself is fixtures/seed-v1.json receipts[0].
   split: {
     transcript: "I paid for dinner with Tanish and Aryan. Split the appetizer evenly and divide tax and tip proportionally.",
