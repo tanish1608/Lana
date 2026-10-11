@@ -1,0 +1,12 @@
+SYNTHETIC DEMO RECEIPT
+Juniper Table - fictional dinner
+2026-10-11
+Short rib 24.00
+Duck breast 30.00
+Mushroom risotto 18.00
+Shared burrata 12.00
+SUBTOTAL 84.00
+TAX 8.40
+TIP 16.80
+TOTAL 109.20 USD
+Not a real purchase or verified contact.

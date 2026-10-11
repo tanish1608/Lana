@@ -1,0 +1,366 @@
+{
+  "aliases": [
+    {
+      "contact_id": "c_ashwin",
+      "currency": "USD",
+      "dataset_version": "synthetic-world-v1",
+      "label": "Ashwin",
+      "record_id": "alias_Ashwin",
+      "scenario_id": "dinner_2026_10_11",
+      "source_id": "fixture:alias_Ashwin",
+      "synthetic": true,
+      "verified_contact": false
+    },
+    {
+      "contact_id": "c_tanish",
+      "currency": "USD",
+      "dataset_version": "synthetic-world-v1",
+      "label": "Tanish",
+      "record_id": "alias_Tanish",
+      "scenario_id": "dinner_2026_10_11",
+      "source_id": "fixture:alias_Tanish",
+      "synthetic": true,
+      "verified_contact": false
+    },
+    {
+      "contact_id": "c_aryan",
+      "currency": "USD",
+      "dataset_version": "synthetic-world-v1",
+      "label": "Aryan",
+      "record_id": "alias_Aryan",
+      "scenario_id": "dinner_2026_10_11",
+      "source_id": "fixture:alias_Aryan",
+      "synthetic": true,
+      "verified_contact": false
+    }
+  ],
+  "contacts": [
+    {
+      "contact_id": "c_ashwin",
+      "currency": "USD",
+      "is_self": true,
+      "phone": "SYNTHETIC-NOT-A-CONTACT",
+      "reviewed_name": "Ashwin",
+      "scenario_id": "dinner_2026_10_11",
+      "synthetic": true,
+      "venmo_handle": null,
+      "verified": false
+    },
+    {
+      "contact_id": "c_tanish",
+      "currency": "USD",
+      "phone": "SYNTHETIC-NOT-A-CONTACT",
+      "reviewed_name": "Tanish",
+      "scenario_id": "dinner_2026_10_11",
+      "synthetic": true,
+      "venmo_handle": null,
+      "verified": false
+    },
+    {
+      "contact_id": "c_aryan",
+      "currency": "USD",
+      "phone": "SYNTHETIC-NOT-A-CONTACT",
+      "reviewed_name": "Aryan",
+      "scenario_id": "dinner_2026_10_11",
+      "synthetic": true,
+      "venmo_handle": null,
+      "verified": false
+    }
+  ],
+  "currency": "USD",
+  "data_mode": "fixture",
+  "dataset_version": "synthetic-world-v1",
+  "demo_clock": "2026-10-11T21:00:00-07:00",
+  "receipt": {
+    "attachment_hash": null,
+    "currency": "USD",
+    "date": "2026-10-11",
+    "items": [
+      {
+        "description": "Short rib",
+        "extended_price_cents": 2400,
+        "item_id": "it_1",
+        "ocr_confidence": 0.97,
+        "quantity": 1,
+        "synthetic": true
+      },
+      {
+        "description": "Duck breast",
+        "extended_price_cents": 3000,
+        "item_id": "it_2",
+        "ocr_confidence": 0.95,
+        "quantity": 1,
+        "synthetic": true
+      },
+      {
+        "description": "Mushroom risotto",
+        "extended_price_cents": 1800,
+        "item_id": "it_3",
+        "ocr_confidence": 0.96,
+        "quantity": 1,
+        "synthetic": true
+      },
+      {
+        "description": "Burrata appetizer",
+        "extended_price_cents": 1200,
+        "item_id": "it_4",
+        "ocr_confidence": 0.93,
+        "quantity": 1,
+        "synthetic": true
+      }
+    ],
+    "linked_transaction_id": "oct_dinner_purchase",
+    "merchant": "Juniper Table - SYNTHETIC DINNER",
+    "receipt_id": "rcpt_dinner_1011",
+    "scenario_id": "dinner_2026_10_11",
+    "source_id": "fixture:receipt_dinner",
+    "status": "reviewed",
+    "subtotal_cents": 8400,
+    "synthetic": true,
+    "tax_cents": 840,
+    "tip_cents": 1680,
+    "total_cents": 10920
+  },
+  "reminder": {
+    "cancel_on": [
+      "payment_reported",
+      "dispute_opened",
+      "verified_settlement"
+    ],
+    "currency": "USD",
+    "dataset_version": "synthetic-world-v1",
+    "due_at": "2026-10-12T21:00:00-07:00",
+    "no_dispatch_implemented": true,
+    "participant_contact_ids": [
+      "c_tanish",
+      "c_aryan"
+    ],
+    "record_id": "dinner_reminder",
+    "scenario_id": "dinner_2026_10_11",
+    "scope": "per_participant",
+    "source_id": "fixture:dinner_reminder",
+    "status": "projected",
+    "synthetic": true
+  },
+  "scenario_id": "dinner_2026_10_11",
+  "seed": 261011,
+  "split_example": {
+    "assignments": {
+      "it_1": [
+        "c_tanish"
+      ],
+      "it_2": [
+        "c_aryan"
+      ],
+      "it_3": [
+        "c_ashwin"
+      ],
+      "it_4": [
+        "c_ashwin",
+        "c_tanish",
+        "c_aryan"
+      ]
+    },
+    "expected_outstanding_cents": 8060,
+    "expected_shares_cents": {
+      "c_aryan": 4420,
+      "c_ashwin": 2860,
+      "c_tanish": 3640
+    },
+    "payer_id": "c_ashwin",
+    "receipt_id": "rcpt_dinner_1011",
+    "tax_tip_rule": "proportional"
+  },
+  "states": [
+    {
+      "currency": "USD",
+      "dataset_version": "synthetic-world-v1",
+      "next_reminder_active": true,
+      "observed_bank_settlement": false,
+      "outstanding_cents": 8060,
+      "record_id": "dinner_state_extraction_draft",
+      "reported_unverified_cents": 0,
+      "requires_evidence_for_verified_settlement": true,
+      "scenario_id": "dinner_2026_10_11",
+      "simulated": true,
+      "source_id": "fixture:dinner_state_extraction_draft",
+      "status": "extraction_draft",
+      "synthetic": true
+    },
+    {
+      "currency": "USD",
+      "dataset_version": "synthetic-world-v1",
+      "next_reminder_active": true,
+      "observed_bank_settlement": false,
+      "outstanding_cents": 8060,
+      "record_id": "dinner_state_reviewed",
+      "reported_unverified_cents": 0,
+      "requires_evidence_for_verified_settlement": true,
+      "scenario_id": "dinner_2026_10_11",
+      "simulated": true,
+      "source_id": "fixture:dinner_state_reviewed",
+      "status": "reviewed",
+      "synthetic": true
+    },
+    {
+      "currency": "USD",
+      "dataset_version": "synthetic-world-v1",
+      "next_reminder_active": true,
+      "observed_bank_settlement": false,
+      "outstanding_cents": 8060,
+      "record_id": "dinner_state_split_preview",
+      "reported_unverified_cents": 0,
+      "requires_evidence_for_verified_settlement": true,
+      "scenario_id": "dinner_2026_10_11",
+      "simulated": true,
+      "source_id": "fixture:dinner_state_split_preview",
+      "status": "split_preview",
+      "synthetic": true
+    },
+    {
+      "currency": "USD",
+      "dataset_version": "synthetic-world-v1",
+      "next_reminder_active": true,
+      "observed_bank_settlement": false,
+      "outstanding_cents": 8060,
+      "record_id": "dinner_state_approved",
+      "reported_unverified_cents": 0,
+      "requires_evidence_for_verified_settlement": true,
+      "scenario_id": "dinner_2026_10_11",
+      "simulated": true,
+      "source_id": "fixture:dinner_state_approved",
+      "status": "approved",
+      "synthetic": true
+    },
+    {
+      "currency": "USD",
+      "dataset_version": "synthetic-world-v1",
+      "next_reminder_active": true,
+      "observed_bank_settlement": false,
+      "outstanding_cents": 8060,
+      "record_id": "dinner_state_handoff_opened",
+      "reported_unverified_cents": 0,
+      "requires_evidence_for_verified_settlement": true,
+      "scenario_id": "dinner_2026_10_11",
+      "simulated": true,
+      "source_id": "fixture:dinner_state_handoff_opened",
+      "status": "handoff_opened",
+      "synthetic": true
+    },
+    {
+      "currency": "USD",
+      "dataset_version": "synthetic-world-v1",
+      "next_reminder_active": true,
+      "observed_bank_settlement": false,
+      "outstanding_cents": 8060,
+      "record_id": "dinner_state_request_sent",
+      "reported_unverified_cents": 0,
+      "requires_evidence_for_verified_settlement": true,
+      "scenario_id": "dinner_2026_10_11",
+      "simulated": true,
+      "source_id": "fixture:dinner_state_request_sent",
+      "status": "request_sent",
+      "synthetic": true
+    },
+    {
+      "currency": "USD",
+      "dataset_version": "synthetic-world-v1",
+      "next_reminder_active": true,
+      "observed_bank_settlement": false,
+      "outstanding_cents": 8060,
+      "record_id": "dinner_state_delivery_unknown",
+      "reported_unverified_cents": 0,
+      "requires_evidence_for_verified_settlement": true,
+      "scenario_id": "dinner_2026_10_11",
+      "simulated": true,
+      "source_id": "fixture:dinner_state_delivery_unknown",
+      "status": "delivery_unknown",
+      "synthetic": true
+    },
+    {
+      "currency": "USD",
+      "dataset_version": "synthetic-world-v1",
+      "next_reminder_active": false,
+      "observed_bank_settlement": false,
+      "outstanding_cents": 8060,
+      "record_id": "dinner_state_payment_reported",
+      "reported_unverified_cents": 3640,
+      "requires_evidence_for_verified_settlement": true,
+      "scenario_id": "dinner_2026_10_11",
+      "simulated": true,
+      "source_id": "fixture:dinner_state_payment_reported",
+      "status": "payment_reported",
+      "synthetic": true
+    },
+    {
+      "currency": "USD",
+      "dataset_version": "synthetic-world-v1",
+      "next_reminder_active": false,
+      "observed_bank_settlement": false,
+      "outstanding_cents": 8060,
+      "record_id": "dinner_state_disputed",
+      "reported_unverified_cents": 0,
+      "requires_evidence_for_verified_settlement": true,
+      "scenario_id": "dinner_2026_10_11",
+      "simulated": true,
+      "source_id": "fixture:dinner_state_disputed",
+      "status": "disputed",
+      "synthetic": true
+    },
+    {
+      "currency": "USD",
+      "dataset_version": "synthetic-world-v1",
+      "next_reminder_active": false,
+      "observed_bank_settlement": false,
+      "outstanding_cents": 0,
+      "record_id": "dinner_state_verified_settlement",
+      "reported_unverified_cents": 0,
+      "requires_evidence_for_verified_settlement": true,
+      "scenario_id": "dinner_2026_10_11",
+      "simulated": true,
+      "source_id": "fixture:dinner_state_verified_settlement",
+      "status": "verified_settlement",
+      "synthetic": true
+    }
+  ],
+  "synthetic": true,
+  "timezone": "America/Los_Angeles",
+  "transcript": "I paid for dinner with Tanish and Aryan. Split the appetizer evenly and divide tax and tip proportionally.",
+  "transitions": [
+    {
+      "event": "open_venmo",
+      "expected": "no_request_sent",
+      "from": "approved",
+      "synthetic": true,
+      "to": "handoff_opened"
+    },
+    {
+      "event": "dispatch_ack",
+      "expected": "not_settled",
+      "from": "handoff_opened",
+      "synthetic": true,
+      "to": "request_sent"
+    },
+    {
+      "event": "manual_payment_report",
+      "expected": "cancel_participant_reminder_no_verified_settlement",
+      "from": "request_sent",
+      "synthetic": true,
+      "to": "payment_reported"
+    },
+    {
+      "event": "dispute_opened",
+      "expected": "cancel_participant_reminder",
+      "from": "request_sent",
+      "synthetic": true,
+      "to": "disputed"
+    },
+    {
+      "event": "duplicate_approval",
+      "expected": "no_second_effect",
+      "from": "approved",
+      "synthetic": true,
+      "to": "approved"
+    }
+  ]
+}

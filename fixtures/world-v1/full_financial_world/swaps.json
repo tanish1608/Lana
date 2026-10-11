@@ -1,0 +1,331 @@
+{
+  "adoption": {
+    "currency": "USD",
+    "dataset_version": "synthetic-world-v1",
+    "extra_savings_cents": 15000,
+    "observed_ledger_mutation": false,
+    "record_id": "full_financial_world_plan_preview",
+    "scenario_id": "full_financial_world",
+    "source_id": "fixture:full_financial_world_plan_preview",
+    "status": "projected",
+    "synthetic": true
+  },
+  "currency": "USD",
+  "data_mode": "fixture",
+  "dataset_version": "synthetic-world-v1",
+  "decision_history": [
+    {
+      "candidate": "instant_coffee",
+      "currency": "USD",
+      "dataset_version": "synthetic-world-v1",
+      "decision": "rejected",
+      "group": "coffee",
+      "occurred_at": "2026-09-22T12:00:00-07:00",
+      "potential_savings_cents": 3000,
+      "reason": "preference for brewed beans",
+      "record_id": "full_financial_world_decision_1",
+      "scenario_id": "full_financial_world",
+      "source_id": "fixture:full_financial_world_decision_1",
+      "status": "user_reported",
+      "synthetic": true
+    },
+    {
+      "candidate": "alternate_coffee_beans",
+      "currency": "USD",
+      "dataset_version": "synthetic-world-v1",
+      "decision": "accepted_for_projection",
+      "group": "coffee",
+      "occurred_at": "2026-09-23T12:00:00-07:00",
+      "potential_savings_cents": 2000,
+      "reason": "different bean brand acceptable",
+      "record_id": "full_financial_world_decision_2",
+      "scenario_id": "full_financial_world",
+      "source_id": "fixture:full_financial_world_decision_2",
+      "status": "user_reported",
+      "synthetic": true
+    }
+  ],
+  "demo_clock": "2026-10-11T21:00:00-07:00",
+  "keewano_result": {
+    "currency": "USD",
+    "dataset_version": "synthetic-world-v1",
+    "live_integration_verified": false,
+    "mode": "fixture",
+    "normalized_query": {
+      "exclude": [
+        "instant_coffee"
+      ],
+      "group": "coffee",
+      "preserve": [
+        "oat_milk"
+      ],
+      "quantity": 2,
+      "unit_size": "340 g"
+    },
+    "record_id": "full_financial_world_keewano_fixture",
+    "results": [
+      {
+        "candidate_id": "instant_coffee",
+        "eligible": false,
+        "excluded_reason": "decision_history_rejection",
+        "savings_cents": 3000,
+        "synthetic": true
+      },
+      {
+        "candidate_id": "alternate_coffee_beans",
+        "eligible": true,
+        "savings_cents": 2000,
+        "synthetic": true
+      }
+    ],
+    "scenario_id": "full_financial_world",
+    "source_id": "fixture:full_financial_world_keewano_fixture",
+    "synthetic": true
+  },
+  "recommendations": [
+    {
+      "alternative_product": "Comparable store pantry staples",
+      "category": "Groceries",
+      "constraints": [
+        "Keep preferred oat milk",
+        "Preserve necessary phone coverage",
+        "Instant coffee rejected"
+      ],
+      "currency": "USD",
+      "current_monthly_cost_cents": 12000,
+      "current_product": "Pantry staples",
+      "current_unit_cost_cents": 3000,
+      "dataset_version": "synthetic-world-v1",
+      "eligibility": "synthetic_person_eligible_assumption",
+      "evidence_transaction_ids": [
+        "fw_2026-09_0040",
+        "fw_2026-09_0041",
+        "fw_2026-09_0042",
+        "fw_2026-09_0043"
+      ],
+      "monthly_quantity": 4,
+      "portion_of_bundled_purchase": false,
+      "price_provenance": "synthetic_comparison_catalog_2026-09-30",
+      "projected_savings_cents": 3600,
+      "proposed_monthly_cost_cents": 8400,
+      "proposed_unit_cost_cents": 2100,
+      "recommendation_id": "full_financial_world_swap_pantry",
+      "record_id": "full_financial_world_swap_pantry",
+      "scenario_id": "full_financial_world",
+      "source_id": "fixture:full_financial_world_swap_pantry",
+      "status": "projected",
+      "synthetic": true,
+      "unit_size": "four 1 kg baskets"
+    },
+    {
+      "alternative_product": "Comparable concentrated detergent",
+      "category": "Other",
+      "constraints": [
+        "Keep preferred oat milk",
+        "Preserve necessary phone coverage",
+        "Instant coffee rejected"
+      ],
+      "currency": "USD",
+      "current_monthly_cost_cents": 4800,
+      "current_product": "Preferred detergent",
+      "current_unit_cost_cents": 2400,
+      "dataset_version": "synthetic-world-v1",
+      "eligibility": "synthetic_person_eligible_assumption",
+      "evidence_transaction_ids": [
+        "fw_2026-09_0047"
+      ],
+      "monthly_quantity": 2,
+      "portion_of_bundled_purchase": false,
+      "price_provenance": "synthetic_comparison_catalog_2026-09-30",
+      "projected_savings_cents": 2400,
+      "proposed_monthly_cost_cents": 2400,
+      "proposed_unit_cost_cents": 1200,
+      "recommendation_id": "full_financial_world_swap_detergent",
+      "record_id": "full_financial_world_swap_detergent",
+      "scenario_id": "full_financial_world",
+      "source_id": "fixture:full_financial_world_swap_detergent",
+      "status": "projected",
+      "synthetic": true,
+      "unit_size": "two 32 load bottles"
+    },
+    {
+      "alternative_product": "Accepted alternate coffee beans",
+      "category": "Other",
+      "constraints": [
+        "Keep preferred oat milk",
+        "Preserve necessary phone coverage",
+        "Instant coffee rejected"
+      ],
+      "currency": "USD",
+      "current_monthly_cost_cents": 4000,
+      "current_product": "Preferred coffee beans",
+      "current_unit_cost_cents": 2000,
+      "dataset_version": "synthetic-world-v1",
+      "eligibility": "synthetic_person_eligible_assumption",
+      "evidence_transaction_ids": [
+        "fw_2026-09_0048"
+      ],
+      "monthly_quantity": 2,
+      "portion_of_bundled_purchase": false,
+      "price_provenance": "synthetic_comparison_catalog_2026-09-30",
+      "projected_savings_cents": 2000,
+      "proposed_monthly_cost_cents": 2000,
+      "proposed_unit_cost_cents": 1000,
+      "recommendation_id": "full_financial_world_swap_beans",
+      "record_id": "full_financial_world_swap_beans",
+      "scenario_id": "full_financial_world",
+      "source_id": "fixture:full_financial_world_swap_beans",
+      "status": "projected",
+      "synthetic": true,
+      "unit_size": "two 340 g bags"
+    },
+    {
+      "alternative_product": "Comparable coverage plan",
+      "category": "Bills and subscriptions",
+      "constraints": [
+        "Keep preferred oat milk",
+        "Preserve necessary phone coverage",
+        "Instant coffee rejected"
+      ],
+      "currency": "USD",
+      "current_monthly_cost_cents": 8500,
+      "current_product": "Fictional coverage phone plan",
+      "current_unit_cost_cents": 8500,
+      "dataset_version": "synthetic-world-v1",
+      "eligibility": "synthetic_person_eligible_assumption",
+      "evidence_transaction_ids": [
+        "fw_2026-09_0014"
+      ],
+      "monthly_quantity": 1,
+      "portion_of_bundled_purchase": false,
+      "price_provenance": "synthetic_comparison_catalog_2026-09-30",
+      "projected_savings_cents": 2000,
+      "proposed_monthly_cost_cents": 6500,
+      "proposed_unit_cost_cents": 6500,
+      "recommendation_id": "full_financial_world_swap_phone",
+      "record_id": "full_financial_world_swap_phone",
+      "scenario_id": "full_financial_world",
+      "source_id": "fixture:full_financial_world_swap_phone",
+      "status": "projected",
+      "synthetic": true,
+      "unit_size": "one monthly line"
+    },
+    {
+      "alternative_product": "Lower cost ordering at same visits",
+      "category": "Dining",
+      "constraints": [
+        "Keep preferred oat milk",
+        "Preserve necessary phone coverage",
+        "Instant coffee rejected"
+      ],
+      "currency": "USD",
+      "current_monthly_cost_cents": 13000,
+      "current_product": "Two restaurant visits",
+      "current_unit_cost_cents": 6500,
+      "dataset_version": "synthetic-world-v1",
+      "eligibility": "synthetic_person_eligible_assumption",
+      "evidence_transaction_ids": [
+        "fw_2026-09_0049",
+        "fw_2026-09_0050",
+        "fw_2026-09_0051",
+        "fw_2026-09_0052",
+        "fw_2026-09_0053",
+        "fw_2026-09_0054",
+        "fw_2026-09_0055",
+        "fw_2026-09_0056",
+        "fw_2026-09_0057",
+        "fw_2026-09_0058",
+        "fw_2026-09_0059",
+        "fw_2026-09_0060"
+      ],
+      "monthly_quantity": 2,
+      "portion_of_bundled_purchase": false,
+      "price_provenance": "synthetic_comparison_catalog_2026-09-30",
+      "projected_savings_cents": 2000,
+      "proposed_monthly_cost_cents": 11000,
+      "proposed_unit_cost_cents": 5500,
+      "recommendation_id": "full_financial_world_swap_dining",
+      "record_id": "full_financial_world_swap_dining",
+      "scenario_id": "full_financial_world",
+      "source_id": "fixture:full_financial_world_swap_dining",
+      "status": "projected",
+      "synthetic": true,
+      "unit_size": "two comparable meals"
+    },
+    {
+      "alternative_product": "Transit for two discretionary trips",
+      "category": "Transport",
+      "constraints": [
+        "Keep preferred oat milk",
+        "Preserve necessary phone coverage",
+        "Instant coffee rejected"
+      ],
+      "currency": "USD",
+      "current_monthly_cost_cents": 5600,
+      "current_product": "Two rideshare trips",
+      "current_unit_cost_cents": 2800,
+      "dataset_version": "synthetic-world-v1",
+      "eligibility": "synthetic_person_eligible_assumption",
+      "evidence_transaction_ids": [
+        "fw_2026-09_0063",
+        "fw_2026-09_0064",
+        "fw_2026-09_0065",
+        "fw_2026-09_0066"
+      ],
+      "monthly_quantity": 2,
+      "portion_of_bundled_purchase": false,
+      "price_provenance": "synthetic_comparison_catalog_2026-09-30",
+      "projected_savings_cents": 1000,
+      "proposed_monthly_cost_cents": 4600,
+      "proposed_unit_cost_cents": 2300,
+      "recommendation_id": "full_financial_world_swap_transit",
+      "record_id": "full_financial_world_swap_transit",
+      "scenario_id": "full_financial_world",
+      "source_id": "fixture:full_financial_world_swap_transit",
+      "status": "projected",
+      "synthetic": true,
+      "unit_size": "two comparable trips"
+    },
+    {
+      "alternative_product": "Reduce two discretionary baskets",
+      "category": "Other",
+      "constraints": [
+        "Keep preferred oat milk",
+        "Preserve necessary phone coverage",
+        "Instant coffee rejected"
+      ],
+      "currency": "USD",
+      "current_monthly_cost_cents": 7000,
+      "current_product": "Discretionary shopping",
+      "current_unit_cost_cents": 3500,
+      "dataset_version": "synthetic-world-v1",
+      "eligibility": "synthetic_person_eligible_assumption",
+      "evidence_transaction_ids": [
+        "fw_2026-09_0069",
+        "fw_2026-09_0070",
+        "fw_2026-09_0071",
+        "fw_2026-09_0072",
+        "fw_2026-09_0073",
+        "fw_2026-09_0074"
+      ],
+      "monthly_quantity": 2,
+      "portion_of_bundled_purchase": false,
+      "price_provenance": "synthetic_comparison_catalog_2026-09-30",
+      "projected_savings_cents": 2000,
+      "proposed_monthly_cost_cents": 5000,
+      "proposed_unit_cost_cents": 2500,
+      "recommendation_id": "full_financial_world_swap_other",
+      "record_id": "full_financial_world_swap_other",
+      "scenario_id": "full_financial_world",
+      "source_id": "fixture:full_financial_world_swap_other",
+      "status": "projected",
+      "synthetic": true,
+      "unit_size": "two comparable baskets"
+    }
+  ],
+  "scenario_id": "full_financial_world",
+  "seed": 261011,
+  "synthetic": true,
+  "timezone": "America/Los_Angeles",
+  "total_projected_savings_cents": 15000
+}
