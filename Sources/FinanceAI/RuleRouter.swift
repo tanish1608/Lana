@@ -12,7 +12,7 @@ public struct RuleRouter: IntentRouting {
         if words.contains("cancel") {
             // Negation, multiple targets and ambiguous actions must not become proposals.
             if words.intersection(["not", "dont", "don", "never", "and", "all"]).isEmpty {
-                let range = lower.range(of: "cancel")!
+                let range = clean.range(of: "cancel", options: .caseInsensitive)!
                 let target = String(clean[range.upperBound...]).trimmingCharacters(in: .whitespacesAndNewlines)
                 if !target.isEmpty {
                     return RoutedRequest(request: .init(intent: .proposeCancellation, target: target), source: .deterministicFallback)
