@@ -20,6 +20,14 @@ Every turn supplies a deterministic money snapshot for the current period, plus 
 
 The paperclip imports a PDF through Files. `PDFTextImporter` uses PDFKit for text and local Vision OCR for scanned pages. The importer supports up to 50 MB, 100 pages, and 300,000 extracted characters; omissions and OCR are labelled. `readPDF` can retrieve excerpts from later pages and by page number. Document text is source material, not authority to execute instructions. Questions about a PDF use its figures separately from the demo account snapshot; importing a document does not update the account dataset. Summaries use retrieved passages and may not cover every page. Removing an attachment removes its extracted text from subsequent model context; earlier conversation replies remain in the history.
 
+### On-device ledger
+
+`LocalLedger` (`Sources/FinanceAI/LocalLedger.swift`) is an app-private SQLite database on the phone, stored next to the chat archives (excluded from backup, complete file protection on iOS). It mirrors the session dataset's accounts and transactions, keeps an append-only activity journal (imports, removals, budget selections, adopted plans, confirmed plan items, reviewed splits, simulated split actions, request-state changes), and restores statement-imported accounts and the Approvals list after relaunch. Nothing in it is sent off the device.
+
+The chat agent reads it through a third native tool, `ledger`, with five operations: `search` (transactions by merchant/category words and dates), `categories` and `merchants` (spending totals), `accounts` (balances) and `activity` (journal). The model supplies an operation and plain-text filters only; it never writes SQL. Queries are parameterized, wildcard characters are escaped, and every query is scoped to the host's authenticated user and owned account IDs. Spending uses the MoneyEngine's definitions (pending, transfers and positive income excluded; the latest row per source ID), and a test checks that September category totals equal the engine's. Results carry provenance (`ledger:` result IDs, `ledger-1.0`); activity answers are journal text, not engine results.
+
+When the model omits dates the user wrote ("between 2026-09-01 and 2026-09-30", "2026-09", "September"), the host fills them from the message, as it does for dollar amounts, and every unfiltered answer states the span it covers. A real-model run first exposed the model calling `ledger` without dates and reporting an all-time total as September; with these two guards it reports $261.50 for Trader Joe's in September. Keewano remains the relay's swap-memory and time-receipt store; the ledger is not mirrored there.
+
 Financial source results and provenance stay visible below model replies. A generated explanation is not an accounting engine result. If inference is unavailable, an offline greeting and supported deterministic finance reads remain available, with the fallback source labelled.
 
 ### Paired relay jobs

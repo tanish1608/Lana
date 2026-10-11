@@ -37,7 +37,7 @@ Direct bank sign-in shows an explicit not-available state. The fixture provider 
 
 Venmo handoff and split-reminder controls are explicitly simulated. User-reported paid/requested states do not establish bank settlement. No payment, real phone-plan switch, automatic reminder or financial mutation is performed by these screens. The relay's approved-reminder API and Sparta's approval/idempotency executor are merged and tested separately, not represented as integrated live financial actions.
 
-Chats and PDF text persist; budget adoption, reviewed receipts, imported statement accounts, request states and the local action log currently last for the app session. Restarting restores canonical fixture screens. Previously saved financial answers retain their evidence labels and are excluded from context when the dataset revision differs.
+Chats, PDF text, imported statement accounts and the Approvals list persist on the phone (the last two in the on-device ledger, which also journals budget selections and request-state changes for the agent). Budget adoption, reviewed receipts and request states are journaled but still reset to the fixture screens on relaunch. Restarting restores canonical fixture screens. Previously saved financial answers retain their evidence labels and are excluded from context when the dataset revision differs.
 
 Relay dependency installation reports transitive npm audit findings in the Dial SDK dependency tree. Nonbreaking `npm audit fix` did not resolve them. The team should assess these before operating a production relay; no SDK downgrade or unrelated forced dependency migration was applied.
 

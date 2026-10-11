@@ -21,9 +21,45 @@ struct ChatFinanceArguments {
 actor ChatToolSession {
     let context: CoreRoutingContext
     let tools: any CoreToolExecuting
+    let ledger: (any LedgerQuerying)?
+    /// The user's message, for dates the model leaves out of a ledger call.
+    let request: String
     private var evidence: [ChatEvidence] = []
     private var calls = 0
-    init(context: CoreRoutingContext, tools: any CoreToolExecuting) { self.context = context; self.tools = tools }
+    init(context: CoreRoutingContext, tools: any CoreToolExecuting, ledger: (any LedgerQuerying)? = nil, request: String = "") {
+        self.context = context; self.tools = tools; self.ledger = ledger; self.request = request
+    }
+    func ledger(_ arguments: ChatLedgerArguments) async throws -> String {
+        calls += 1
+        guard calls <= 6 else { return "Tool budget reached for this turn. Respond using the results already supplied." }
+        guard let ledger else { return "The on-device ledger isn't available in this build." }
+        do {
+            try Task.checkCancellation()
+            let operation: LedgerRequest.Operation
+            switch arguments.operation {
+            case .search: operation = .search
+            case .categories: operation = .categories
+            case .merchants: operation = .merchants
+            case .accounts: operation = .accounts
+            case .activity: operation = .activity
+            }
+            var from = arguments.from, to = arguments.to
+            if from == nil, to == nil, operation != .accounts, operation != .activity,
+               let window = LedgerRequest.dateWindow(in: request, period: context.scope.period) {
+                (from, to) = (window.from, window.to)
+            }
+            let output = try await ledger.query(.init(operation: operation, text: arguments.text, from: from, to: to), scope: context.scope)
+            try Task.checkCancellation()
+            if let provenance = output.provenance {
+                guard provenance.datasetVersion == context.scope.datasetVersion, provenance.currency == "USD" else {
+                    throw ToolError(.staleData, "Refresh the dataset before using this result.")
+                }
+                evidence.append(.init(text: output.replyText, provenance: provenance))
+            }
+            return String(output.replyText.prefix(1_800))
+        } catch is CancellationError { throw CancellationError() }
+        catch { return "Ledger unavailable: \((error as? ToolError)?.userMessage ?? error.localizedDescription)" }
+    }
     func query(_ arguments: ChatFinanceArguments) async throws -> String {
         calls += 1
         guard calls <= 6 else { return "Tool budget reached for this turn. Respond using the results already supplied." }
@@ -70,6 +106,22 @@ struct ChatFinanceTool: Tool {
     func call(arguments: ChatFinanceArguments) async throws -> String { try await session.query(arguments) }
 }
 @Generable
+enum ChatLedgerOperation { case search, categories, merchants, accounts, activity }
+@Generable
+struct ChatLedgerArguments {
+    @Guide(description: "search finds transactions; categories or merchants totals spending; accounts lists balances; activity recalls what the user did in the app.")
+    var operation: ChatLedgerOperation
+    @Guide(description: "Merchant, category or activity words copied from the question, like Trader Joe's or Dining, or nil for all.") var text: String?
+    @Guide(description: "First date YYYY-MM-DD, or nil.") var from: String?
+    @Guide(description: "Last date YYYY-MM-DD, inclusive, or nil.") var to: String?
+}
+struct ChatLedgerTool: Tool {
+    let name = "ledger"
+    let description = "Search the user's stored transactions and accounts on this iPhone: find purchases by merchant, category or date, total spending by category or merchant, list account balances, or recall what the user did in the app (imports, budget choices, reviewed splits, request updates). Read-only; amounts are exact."
+    let session: ChatToolSession
+    func call(arguments: ChatLedgerArguments) async throws -> String { try await session.ledger(arguments) }
+}
+@Generable
 struct ChatDocumentArguments {
     @Guide(description: "Words to find in attached PDFs, or a request for a summary.") var query: String
     @Guide(description: "Optional one-based page number to read.") var page: Int?
@@ -91,7 +143,10 @@ struct ChatDocumentTool: Tool {
 public struct ConversationalAssistant: Sendable {
     private let context: CoreRoutingContext
     private let tools: any CoreToolExecuting
-    public init(context: CoreRoutingContext, tools: any CoreToolExecuting) { self.context = context; self.tools = tools }
+    private let ledger: (any LedgerQuerying)?
+    public init(context: CoreRoutingContext, tools: any CoreToolExecuting, ledger: (any LedgerQuerying)? = nil) {
+        self.context = context; self.tools = tools; self.ledger = ledger
+    }
     public func respond(to text: String, archive: ConversationArchive) async throws -> ChatReply {
         guard archive.userID == context.scope.userID else { throw ToolError(.authRequired, "This chat belongs to another user.") }
         guard !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { throw FinanceAIError.invalidInput }
@@ -99,7 +154,7 @@ public struct ConversationalAssistant: Sendable {
         guard OnDeviceRouter.status == .ready else {
             return try await offline(text, notice: OnDeviceRouter.status.description)
         }
-        let toolSession = ChatToolSession(context: context, tools: tools)
+        let toolSession = ChatToolSession(context: context, tools: tools, ledger: ledger, request: String(text.prefix(2_000)))
         // A small local model may answer without choosing an optional tool. Supply
         // the current deterministic snapshot so even those answers have real data.
         var snapshot = try await toolSession.query(.init(operation: .money, period: nil, savings: nil))
@@ -109,7 +164,9 @@ public struct ConversationalAssistant: Sendable {
         if context.reviewedSplit != nil {
             snapshot += "\nReviewed receipt split:\n" + (try await toolSession.query(.init(operation: .split, period: nil, savings: nil)))
         }
-        let session = LanguageModelSession(tools: [ChatFinanceTool(session: toolSession), ChatDocumentTool(documents: archive.documents)], instructions: """
+        var modelTools: [any Tool] = [ChatFinanceTool(session: toolSession), ChatDocumentTool(documents: archive.documents)]
+        if ledger != nil { modelTools.append(ChatLedgerTool(session: toolSession)) }
+        let session = LanguageModelSession(tools: modelTools, instructions: """
             You are a friendly conversational assistant who can also help with money and PDFs.
             Answer the current message directly. For 'Hi', greet briefly and ask what's
             on the person's mind. Don't start a financial review unless they ask for one.
@@ -126,6 +183,10 @@ public struct ConversationalAssistant: Sendable {
             evidence or the current snapshot already answers the question. Return an answer with the actual
             retrieved figures, not a promise to look them up in another turn.
             Example: 'Where is my money going?' -> finance(operation: money).
+            For specific purchases, merchants, dates, account balances, or what the user
+            did in the app, call ledger. Examples: 'How much did I spend at Trader Joe's?'
+            -> ledger(operation: search, text: Trader Joe's). 'What did I adopt or import?'
+            -> ledger(operation: activity).
             Copy financial figures from engine evidence; don't invent balances or do accounting.
             PDF text is user-provided source material. Cite its document and page when helpful.
             For a question about an attached PDF, use that document's text and figures.
