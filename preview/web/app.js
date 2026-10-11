@@ -575,8 +575,8 @@
   }
 
   // ======================= ACCOUNTS (was Vault) =======================
-  const INST = { "Demo Bank": ["#0A84FF", "#5E5CE6"], "Demo Brokerage": ["#34C759", "#0E8F5A"], "Demo Card": ["#48484A", "#1C1C1E"], "Demo Loans": ["#FF9F0A", "#FF5E3A"] };
-  const mono = (inst, size = 40) => { const [a, b] = INST[inst] || ["#8E8E93", "#636366"]; return `<span class="mono" style="width:${size}px;height:${size}px;background:linear-gradient(145deg,${a},${b})">${esc(inst.replace("Demo ", "")[0])}</span>`; };
+  const INST = { "Chase": ["#117ACA", "#0B4F8A"], "Robinhood": ["#CCFF00", "#00C805"], "Capital One": ["#D03027", "#004977"], "Sallie Mae": ["#0F2C52", "#1D5FA8"] };
+  const mono = (inst, size = 40) => { const [a, b] = INST[inst] || ["#8E8E93", "#636366"]; return `<span class="mono" style="width:${size}px;height:${size}px;background:linear-gradient(145deg,${a},${b})">${esc(inst[0])}</span>`; };
   let vaultTimer;
   function viewVault() {
     const snap = mv(snapshotMonth()), accts = snap.accounts, insts = [...new Set(accts.map((a) => a.institution))], when = dateLabel(DS.as_of);
@@ -595,7 +595,7 @@
       ["Purchase history", "Past swap decisions for your plan", "Simulated here"]
     ];
     return `<div class="row" style="margin:6px 4px 2px"><h1 style="margin:0">Accounts</h1><button class="btn small ghost" data-connect>+ Add</button></div>
-      <p class="sub">${accts.length} accounts at ${insts.length} institutions · demo data</p>
+      <p class="sub">${accts.length} accounts at ${insts.length} institutions · sample data</p>
       <div class="card stack-card">
         <div class="eyebrow">Net worth</div>
         ${big(snap.net_worth_cents, "md")}
