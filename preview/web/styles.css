@@ -427,3 +427,6 @@ main::-webkit-scrollbar,.chat-log::-webkit-scrollbar,.sheet::-webkit-scrollbar{d
 .deck{height:300px}
 .goal-card .goal-num{margin:2px 0 8px}
 .chat{background:var(--bg);backdrop-filter:none;-webkit-backdrop-filter:none}
+/* Orb sits above the dock: nothing from the bar (glass edge, sheen) draws over it */
+.orb{position:relative;z-index:5}
+.dock::before{z-index:1}
