@@ -430,3 +430,13 @@ main::-webkit-scrollbar,.chat-log::-webkit-scrollbar,.sheet::-webkit-scrollbar{d
 /* Orb sits above the dock: nothing from the bar (glass edge, sheen) draws over it */
 .orb{position:relative;z-index:5}
 .dock::before{z-index:1}
+/* Blue instead of black for selected category and the owed-to-you card, tuned to the orb */
+:root{--blue-a:#3B8BFF;--blue-b:#1B49C8;--navy-a:#3B8BFF;--navy-b:#1B49C8}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--blue-a:#3B8BFF;--blue-b:#1B49C8;--navy-a:#3B8BFF;--navy-b:#1B49C8}}
+:root[data-theme="dark"]{--blue-a:#3B8BFF;--blue-b:#1B49C8;--navy-a:#3B8BFF;--navy-b:#1B49C8}
+.cat.on{background:linear-gradient(150deg,var(--blue-a),var(--blue-b));color:#fff;box-shadow:inset 0 1px 0 rgba(255,255,255,.3),0 12px 24px -10px rgba(60,80,255,.6)}
+.cat.on .cat-s,.cat.on .cat-n{color:#fff;opacity:.85}
+.cat.on .cat-bar{background:rgba(255,255,255,.25)}.cat.on .cat-bar i{background:#fff;opacity:.9}
+.ink-card{background:linear-gradient(155deg,var(--navy-a),var(--navy-b))!important;color:#fff;box-shadow:inset 0 1px 0 rgba(255,255,255,.22),0 18px 36px -14px rgba(40,60,200,.6)!important}
+.ink-card .ink-num{color:#fff}
+.ink-card .tiny{opacity:.75}
