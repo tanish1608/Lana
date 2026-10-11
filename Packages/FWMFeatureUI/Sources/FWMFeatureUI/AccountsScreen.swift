@@ -202,16 +202,17 @@ struct AccountsScreen: View {
                 ForEach(Array(institutions(all).enumerated()), id: \.element) { n, inst in
                     let accounts = all.filter { $0.institution == inst }
                     let csv = accounts.contains { AccountDisplay($0).isImported }
+                    let link = accounts.contains { AccountDisplay($0).isLinked }
                     if n > 0 { Divider().padding(.leading, 62) }
                     HStack(spacing: 12) {
                         InstitutionLogo(name: inst, size: 36)
                         VStack(alignment: .leading, spacing: 2) {
                             Text(inst).fontWeight(.semibold)
-                            Text("\(accounts.count) account\(accounts.count == 1 ? "" : "s") · \(csv ? "imported statement" : "sample data")")
+                            Text("\(accounts.count) account\(accounts.count == 1 ? "" : "s") · \(link ? "SimpleFIN" : csv ? "imported statement" : "sample data")")
                                 .font(.caption).foregroundStyle(Theme.ink2)
                         }
                         Spacer()
-                        HStack(spacing: 5) { Circle().fill(Theme.ok).frame(width: 7, height: 7); Text(csv ? "Imported" : "Up to date").font(.caption.weight(.semibold)).foregroundStyle(Theme.ink2) }
+                        HStack(spacing: 5) { Circle().fill(Theme.ok).frame(width: 7, height: 7); Text(link ? "Linked" : csv ? "Imported" : "Up to date").font(.caption.weight(.semibold)).foregroundStyle(Theme.ink2) }
                     }
                     .padding(.horizontal, 14).padding(.vertical, 11)
                     .accessibilityElement(children: .combine)

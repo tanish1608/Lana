@@ -33,7 +33,7 @@ Dataset/selection revisions exclude old financial evidence from subsequent conte
 
 ## Remaining demo boundaries
 
-Direct bank sign-in shows an explicit not-available state. The fixture provider is wired, and BankCSVProvider powers the reviewed statement import on the Accounts screen. The budget catalog is the reviewed demo catalog, not live product pricing. Provider calls, Keewano memory and Dial delivery require team server configuration; no keys are embedded in the app.
+Bank linking works through SimpleFIN Bridge (`FWMCore/SimpleFIN.swift`): paste a setup token from SimpleFIN, or use SimpleFIN's demo bank, and the phone reads 90 days of balances and transactions directly from SimpleFIN's API. The user picks which accounts to add; they persist in the on-device ledger and are labelled "Linked via SimpleFIN". The access URL is not stored yet, so refreshing means connecting again with a new token. BankCSVProvider powers the reviewed statement import on the same screen. The budget catalog is the reviewed demo catalog, not live product pricing. Provider calls, Keewano memory and Dial delivery require team server configuration; no keys are embedded in the app.
 
 Venmo handoff and split-reminder controls are explicitly simulated. User-reported paid/requested states do not establish bank settlement. No payment, real phone-plan switch, automatic reminder or financial mutation is performed by these screens. The relay's approved-reminder API and Sparta's approval/idempotency executor are merged and tested separately, not represented as integrated live financial actions.
 

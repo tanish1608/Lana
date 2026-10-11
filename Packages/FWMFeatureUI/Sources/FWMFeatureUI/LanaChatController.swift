@@ -16,6 +16,8 @@ final class LanaChatController {
     var accepted = Set(PreviewBudgetPlan.swaps.map(\.id) + PreviewBudgetPlan.habits.map(\.id))
     var useHistory = true
     var budgetAdopted = false
+    /// Dinner requests as the Receipts screen shows them, so chat can propose marking one paid or sent.
+    var requestRoster: [ChatRequestRow] = []
     var scope: CoreScope {
         CoreScope(userID: dataset.user.userId, conversationID: archive?.id.uuidString ?? "app",
             period: "2026-09", datasetVersion: dataset.datasetVersion, preferencesVersion: dataset.user.preferencesVersion,
@@ -52,7 +54,7 @@ final class LanaChatController {
         ledgerWrite { try await $0.record(event, userID: user) }
     }
     /// Journal kinds shown in Accounts › Approvals.
-    static let approvalKinds: Set<String> = ["plan_adopted", "plan_item_confirmed", "split_reviewed", "split_action", "account_imported", "account_removed"]
+    static let approvalKinds: Set<String> = ["plan_adopted", "plan_item_confirmed", "split_reviewed", "split_action", "account_imported", "account_removed", "chat_action"]
     func approvalLog() async -> [String] {
         await ledgerSettled()
         return (try? await ledger?.events(userID: dataset.user.userId, kinds: Self.approvalKinds, limit: 50).map(\.summary)) ?? []
@@ -71,11 +73,54 @@ final class LanaChatController {
     }
     /// Removes an imported account and its transactions. Fixture accounts stay.
     func removeImportedAccount(_ id: String) {
-        guard dataset.accounts.contains(where: { $0.accountId == id && $0.sourceId?.hasPrefix("csv:") == true }) else { return }
+        guard let account = dataset.accounts.first(where: { $0.accountId == id }), AccountDisplay(account).isImported else { return }
         dataset.accounts.removeAll { $0.accountId == id }
         dataset.transactions.removeAll { $0.accountId == id }
         invalidateEvidence()
         mirrorDataset()
+    }
+    /// Moves transactions to a category the user confirmed in chat. Saved in the ledger and reapplied at launch.
+    @discardableResult
+    func recategorize(_ ids: Set<String>, to category: String) -> Int {
+        var moved: [String] = []
+        for i in dataset.transactions.indices where ids.contains(dataset.transactions[i].transactionId) && dataset.transactions[i].category != category {
+            dataset.transactions[i].category = category
+            moved.append(dataset.transactions[i].transactionId)
+        }
+        guard !moved.isEmpty else { return 0 }
+        invalidateEvidence()
+        mirrorDataset()
+        let user = dataset.user.userId, ids = moved
+        ledgerWrite { try await $0.setCategory(category, transactionIDs: ids, userID: user) }
+        return moved.count
+    }
+
+    /// Runs a confirmed chat card through the host's `perform` (which re-checks it against current state), records the
+    /// outcome on the card and in the journal. A card is performed at most once.
+    func confirm(_ action: ChatAction, in messageID: UUID, perform: @MainActor (ChatAction) async throws -> String) async {
+        guard current(action.id, in: messageID)?.status == .proposed else { return }
+        update(action.id, in: messageID) { $0.status = .done; $0.result = "Working…" } // reserve before awaiting
+        do {
+            let result = try await perform(action)
+            update(action.id, in: messageID) { $0.result = result }
+            journal("chat_action", "\(action.title) · confirmed in chat", details: action.payload.merging(["kind": action.kind]) { a, _ in a })
+        } catch {
+            update(action.id, in: messageID) { $0.status = .failed; $0.result = (error as? ToolError)?.userMessage ?? error.localizedDescription }
+        }
+        await persist()
+    }
+    func cancel(_ action: ChatAction, in messageID: UUID) async {
+        guard current(action.id, in: messageID)?.status == .proposed else { return }
+        update(action.id, in: messageID) { $0.status = .cancelled; $0.result = "Cancelled. Nothing changed." }
+        await persist()
+    }
+    private func current(_ id: UUID, in messageID: UUID) -> ChatAction? {
+        archive?.messages.first { $0.id == messageID }?.actions?.first { $0.id == id }
+    }
+    private func update(_ id: UUID, in messageID: UUID, _ change: (inout ChatAction) -> Void) {
+        guard let m = archive?.messages.firstIndex(where: { $0.id == messageID }),
+              let a = archive?.messages[m].actions?.firstIndex(where: { $0.id == id }) else { return }
+        change(&archive!.messages[m].actions![a])
     }
     private func invalidateEvidence() {
         dataset.datasetVersion = "session-" + UUID().uuidString
@@ -100,6 +145,11 @@ final class LanaChatController {
             }
             if !saved.isEmpty { invalidateEvidence() }
         }
+        // Categories the user changed in chat, on fixture and imported transactions alike.
+        if let ledger, let overrides = try? await ledger.categoryOverrides(userID: dataset.user.userId), !overrides.isEmpty {
+            for i in dataset.transactions.indices { if let c = overrides[dataset.transactions[i].transactionId] { dataset.transactions[i].category = c } }
+            invalidateEvidence()
+        }
         mirrorDataset()
         do {
             savedChats = try await store.load(userID: scope.userID)
@@ -123,13 +173,14 @@ final class LanaChatController {
         current.datasetVersion = dataset.datasetVersion
         let context = current
         await ledgerSettled()
-        let assistant = ConversationalAssistant(context: CoreRoutingContext(scope: scope, reviewedSplit: reviewedSplit), tools: tools, ledger: ledger)
+        let assistant = ConversationalAssistant(context: CoreRoutingContext(scope: scope, reviewedSplit: reviewedSplit), tools: tools, ledger: ledger,
+                                                planner: ChatActionPlanner(dataset: dataset, requests: requestRoster, useHistory: useHistory))
         current.messages.append(.init(role: .user, text: text)); archive = current
         await persist()
         do {
             let response = try await assistant.respond(to: text, archive: context)
             archive?.messages.append(.init(role: .assistant, text: response.text,
-                source: response.source.rawValue, evidence: response.evidence))
+                source: response.source.rawValue, evidence: response.evidence, actions: response.actions))
             status = dataset.datasetVersion == context.datasetVersion ? response.notice
                 : "The screen selection changed while this reply was generated. Its evidence reflects the earlier selection; ask again for current figures."
         } catch {

@@ -105,6 +105,8 @@ public actor LocalLedger: LedgerQuerying {
               seq INTEGER PRIMARY KEY AUTOINCREMENT, user_id TEXT NOT NULL, kind TEXT NOT NULL, summary TEXT NOT NULL,
               occurred_at REAL NOT NULL, details TEXT NOT NULL);
             CREATE INDEX IF NOT EXISTS events_by_user ON events (user_id, seq);
+            CREATE TABLE IF NOT EXISTS category_overrides (
+              user_id TEXT NOT NULL, transaction_id TEXT NOT NULL, category TEXT NOT NULL, PRIMARY KEY (user_id, transaction_id));
             """)
         #if os(iOS)
         try? FileManager.default.setAttributes([.protectionKey: FileProtectionType.complete], ofItemAtPath: url.path)
@@ -129,7 +131,7 @@ public actor LocalLedger: LedgerQuerying {
                 try run("INSERT INTO accounts VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", [
                     .text(user), .text(a.accountId), .text(a.institution), .text(a.kind), .text(a.assetOrLiability.rawValue),
                     a.openingBalanceCents.map(SQLValue.int) ?? .null, .int(a.balanceCents), .text(a.asOf),
-                    a.sourceId.map(SQLValue.text) ?? .null, .text(Self.isImported(a) ? "csv" : "dataset")])
+                    a.sourceId.map(SQLValue.text) ?? .null, .text(Self.origin(a))])
             }
             let owned = Set(dataset.accounts.map(\.accountId))
             for t in dataset.transactions where owned.contains(t.accountId) {
@@ -146,7 +148,7 @@ public actor LocalLedger: LedgerQuerying {
     /// Statement accounts imported on this phone in an earlier session, with their transactions.
     public func importedAccounts(userID: String) throws -> [(account: Account, transactions: [Transaction])] {
         // FWMCore records have no public memberwise initializers; rebuild them through the shared snake_case wire format.
-        let accounts: [Account] = try rows("SELECT account_id, institution, kind, side, opening_cents, balance_cents, as_of, source_id FROM accounts WHERE user_id = ? AND origin = 'csv' ORDER BY account_id", [.text(userID)]).map { r in
+        let accounts: [Account] = try rows("SELECT account_id, institution, kind, side, opening_cents, balance_cents, as_of, source_id FROM accounts WHERE user_id = ? AND origin IN ('csv', 'linked') ORDER BY account_id", [.text(userID)]).map { r in
             try Self.decode(["account_id": r.text(0), "institution": r.text(1), "kind": r.text(2), "asset_or_liability": r.text(3),
                              "opening_balance_cents": r.optionalInt(4), "balance_cents": r.int(5), "as_of": r.text(6), "source_id": r.optionalText(7)])
         }
@@ -161,6 +163,22 @@ public actor LocalLedger: LedgerQuerying {
             }
             return (a, txns)
         }
+    }
+
+    // MARK: user edits
+
+    /// A category the user chose for a transaction. Reapplied to the dataset on launch, so it survives relaunch.
+    public func setCategory(_ category: String, transactionIDs: [String], userID: String) throws {
+        try transaction {
+            for id in transactionIDs {
+                try run("INSERT OR REPLACE INTO category_overrides VALUES (?, ?, ?)", [.text(userID), .text(id), .text(category)])
+            }
+        }
+    }
+
+    public func categoryOverrides(userID: String) throws -> [String: String] {
+        Dictionary(try rows("SELECT transaction_id, category FROM category_overrides WHERE user_id = ?", [.text(userID)]).map { ($0.text(0), $0.text(1)) },
+                   uniquingKeysWith: { _, b in b })
     }
 
     // MARK: activity journal
@@ -210,6 +228,7 @@ public actor LocalLedger: LedgerQuerying {
         var lines: [String] = []
         var sources: [String] = []
         var imported = false
+        var chart: ChatChart?
 
         switch request.operation {
         case .search:
@@ -222,9 +241,15 @@ public actor LocalLedger: LedgerQuerying {
                 """, args + [.int(limit)])
             lines.append("\(totals.int(0)) matching transactions\(request.text.map { " for \"\($0)\"" } ?? "") \(try window()). Net \(CoreDatasetTools.money(totals.int(1))); spending (excluding transfers, pending and income) \(CoreDatasetTools.money(totals.int(2))).")
             if totals.int(0) > found.count { lines.append("Showing the latest \(found.count).") }
+            // Spending per month when the matches span more than one month.
+            let months = try rows("SELECT substr(t.posted_date, 1, 7) AS month, sum(CASE WHEN \(spending) THEN -t.amount_cents ELSE 0 END) FROM transactions t WHERE \(filter) GROUP BY month ORDER BY month", args)
+            if months.count > 1 {
+                chart = ChatChart(title: "\(request.text.map { "\($0) s" } ?? "S")pending by month", style: .columns,
+                                  points: months.map { .init(label: Self.monthLabel($0.text(0)), cents: $0.int(1)) })
+            }
             for r in found {
-                sources.append(r.text(0)); imported = imported || r.text(9) == "csv"
-                let tags = [r.optionalText(3), r.int(5) != 0 ? "pending" : nil, r.optionalText(6) != nil ? "transfer" : nil, r.text(9) == "csv" ? "imported" : nil].compactMap { $0 }
+                sources.append(r.text(0)); imported = imported || r.text(9) != "dataset"
+                let tags = [r.optionalText(3), r.int(5) != 0 ? "pending" : nil, r.optionalText(6) != nil ? "transfer" : nil, Self.originTag(r.text(9))].compactMap { $0 }
                 lines.append("- \(r.text(1)) \(r.text(2)) \(CoreDatasetTools.money(r.int(4))) · \(r.text(7)) \(r.text(8).replacingOccurrences(of: "_", with: " "))\(tags.isEmpty ? "" : " · " + tags.joined(separator: ", "))")
             }
         case .categories, .merchants:
@@ -238,14 +263,18 @@ public actor LocalLedger: LedgerQuerying {
             lines.append("Spending by \(request.operation == .categories ? "category" : "merchant") \(try window()) (transfers, pending and income excluded):")
             for r in grouped { lines.append("- \(r.text(0)): \(CoreDatasetTools.money(r.int(1))) in \(r.int(2)) transaction\(r.int(2) == 1 ? "" : "s")") }
             lines.append("Listed total \(CoreDatasetTools.money(total)).")
+            if !grouped.isEmpty {
+                chart = ChatChart(title: "Spending by \(request.operation == .categories ? "category" : "merchant")", style: .bars,
+                                  points: grouped.prefix(10).map { .init(label: $0.text(0), cents: $0.int(1)) })
+            }
             sources = try rows("SELECT t.transaction_id FROM transactions t WHERE \(filter) AND \(spending) ORDER BY t.posted_at DESC LIMIT 50", args).map { $0.text(0) }
         case .accounts:
             var accountFilter = "user_id = ? AND account_id IN (\(Array(repeating: "?", count: scope.accountIDs.count).joined(separator: ", ")))"
             var accountArgs: [SQLValue] = [.text(scope.userID)] + scope.accountIDs.sorted().map(SQLValue.text)
             if let like { accountFilter += " AND (institution LIKE ? ESCAPE '\\' OR kind LIKE ? ESCAPE '\\')"; accountArgs += [.text(like), .text(like)] }
             for r in try rows("SELECT account_id, institution, kind, side, balance_cents, as_of, origin FROM accounts WHERE \(accountFilter) ORDER BY side, institution, kind", accountArgs) {
-                sources.append(r.text(0)); imported = imported || r.text(6) == "csv"
-                lines.append("- \(r.text(1)) \(r.text(2).replacingOccurrences(of: "_", with: " ")): \(CoreDatasetTools.money(r.int(4)))\(r.text(3) == "liability" ? " owed" : "") as of \(r.text(5).prefix(10))\(r.text(6) == "csv" ? " · imported statement" : "")")
+                sources.append(r.text(0)); imported = imported || r.text(6) != "dataset"
+                lines.append("- \(r.text(1)) \(r.text(2).replacingOccurrences(of: "_", with: " ")): \(CoreDatasetTools.money(r.int(4)))\(r.text(3) == "liability" ? " owed" : "") as of \(r.text(5).prefix(10))\(Self.originTag(r.text(6)).map { " · \($0)" } ?? "")")
             }
             if lines.isEmpty { lines.append("No matching accounts.") }
         case .activity:
@@ -261,19 +290,34 @@ public actor LocalLedger: LedgerQuerying {
         let provenance = Provenance(resultId: "ledger:\(request.operation.rawValue):\(scope.datasetVersion):\(digest)", datasetVersion: scope.datasetVersion,
             dataMode: imported ? .cached : .fixture, asOf: ISO8601DateFormatter().string(from: Date()), sourceIds: Array(sources.prefix(50)),
             engineVersion: Self.engineVersion)
-        return CoreToolOutput(replyText: lines.joined(separator: "\n"), provenance: request.operation == .activity ? nil : provenance)
+        return CoreToolOutput(replyText: lines.joined(separator: "\n"), provenance: request.operation == .activity ? nil : provenance, chart: chart)
     }
 
     // MARK: helpers
 
-    static func isImported(_ a: Account) -> Bool { a.sourceId?.hasPrefix("csv:") == true }
+    /// Statement imports (`csv:`) and SimpleFIN links (`sfin:`) are the user's own additions and persist here.
+    static func isImported(_ a: Account) -> Bool { a.sourceId.map { $0.hasPrefix("csv:") || $0.hasPrefix("sfin:") } ?? false }
+
+    static func origin(_ a: Account) -> String {
+        if a.sourceId?.hasPrefix("csv:") == true { return "csv" }
+        if a.sourceId?.hasPrefix("sfin:") == true { return "linked" }
+        return "dataset"
+    }
+    static func originTag(_ origin: String) -> String? { ["csv": "imported", "linked": "linked via SimpleFIN"][origin] }
+
+    /// "2026-09" as "Sep 2026".
+    static func monthLabel(_ ym: String) -> String {
+        let names = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+        guard ym.count == 7, let m = Int(ym.suffix(2)), (1...12).contains(m) else { return ym }
+        return "\(names[m - 1]) \(ym.prefix(4))"
+    }
 
     private static func decode<T: Decodable>(_ fields: [String: Any?]) throws -> T {
         let present = fields.compactMapValues { $0 }
         return try FWMJSON.decoder.decode(T.self, from: JSONSerialization.data(withJSONObject: present))
     }
 
-    static func validDate(_ raw: String?) throws -> String? {
+    public static func validDate(_ raw: String?) throws -> String? {
         guard let raw = raw?.trimmingCharacters(in: .whitespaces), !raw.isEmpty else { return nil }
         let f = DateFormatter(); f.calendar = Calendar(identifier: .gregorian); f.locale = Locale(identifier: "en_US_POSIX")
         f.timeZone = TimeZone(identifier: "UTC"); f.dateFormat = "yyyy-MM-dd"; f.isLenient = false
@@ -283,7 +327,7 @@ public actor LocalLedger: LedgerQuerying {
         return raw
     }
 
-    static func localDate(_ iso: String, _ tz: TimeZone) -> String? {
+    public static func localDate(_ iso: String, _ tz: TimeZone) -> String? {
         let parser = ISO8601DateFormatter(); parser.formatOptions = [.withInternetDateTime]
         guard let d = parser.date(from: iso) else { return nil }
         let f = DateFormatter(); f.calendar = Calendar(identifier: .gregorian); f.locale = Locale(identifier: "en_US_POSIX")

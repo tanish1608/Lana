@@ -38,7 +38,9 @@ struct FeatureTools: CoreToolExecuting {
             let status = requestStates.sorted { $0.key < $1.key }.map { "\($0.key): \($0.value)" }.joined(separator: "; ")
             return .init(replyText: base.replyText + " Categories: " + categories + ". Accounts: " + accounts
                 + ". Budget adopted in this session: \(budgetAdopted). User-reported dinner request states: \(status.isEmpty ? "none; requests not sent" : status).",
-                provenance: base.provenance, cardID: base.cardID)
+                provenance: base.provenance, cardID: base.cardID,
+                chart: v.categories.isEmpty ? nil : ChatChart(title: "Spending by category · \(DemoStore.monthName(period))", style: .bars,
+                                                             points: v.categories.map { .init(label: $0.category, cents: $0.totalCents) }))
         case .prepareSplit(let id, let assignments, let payer):
             let base = try await CoreDatasetTools(dataset: dataset).query(call, scope: scope)
             guard let receipt = dataset.receipts?.first(where: { $0.receiptId == id }) else { throw ToolError(.invalidArguments, "Reviewed receipt missing.") }
@@ -68,7 +70,10 @@ struct FeatureTools: CoreToolExecuting {
         let provenance = Provenance(resultId: "budget:\(dataset.datasetVersion):\(period):\(signature)", datasetVersion: dataset.datasetVersion,
             dataMode: dataset.dataMode, asOf: dataset.asOf, sourceIds: p.current.provenance.sourceIds,
             evidenceIds: accepted.sorted(), engineVersion: "feature-demo-v1")
-        return .init(replyText: "Demo catalog projection from \(period), matching the selected Budget options: saves \(CoreDatasetTools.money(p.savingsCents))/month against a requested goal of \(CoreDatasetTools.money(goal)); \(p.savingsCents >= goal ? "goal met" : "goal not met"). \(options). Category targets: \(targets). Rent and savings/investment transfers unchanged. No money moved, purchase made or phone plan switched. Review the Budget screen to adopt this demo plan.", provenance: provenance, cardID: provenance.resultId)
+        let changed = p.current.categories.filter { (p.targets[$0.category] ?? $0.totalCents) != $0.totalCents }
+        let chart = changed.isEmpty ? nil : ChatChart(title: "Monthly spending: now vs plan", style: .comparison,
+            points: changed.map { .init(label: $0.category, cents: $0.totalCents, secondCents: p.targets[$0.category] ?? $0.totalCents) }, series: ["Now", "Plan"])
+        return .init(replyText: "Demo catalog projection from \(period), matching the selected Budget options: saves \(CoreDatasetTools.money(p.savingsCents))/month against a requested goal of \(CoreDatasetTools.money(goal)); \(p.savingsCents >= goal ? "goal met" : "goal not met"). \(options). Category targets: \(targets). Rent and savings/investment transfers unchanged. No money moved, purchase made or phone plan switched. Review the Budget screen to adopt this demo plan.", provenance: provenance, cardID: provenance.resultId, chart: chart)
     }
 }
 

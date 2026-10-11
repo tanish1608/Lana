@@ -95,3 +95,24 @@ private actor ChatTestTools: CoreToolExecuting {
     let decoded = try JSONDecoder().decode(ConversationArchive.self, from: old)
     #expect(decoded.channel == nil)
 }
+
+@Test func archivesSavedBeforeChartsAndActionsStillLoad() throws {
+    let provenance = Provenance(resultId: "mv:x", datasetVersion: "seed-v1", dataMode: .fixture, asOf: "2026-09-30T00:00:00Z", sourceIds: [], engineVersion: "money-1.0")
+    var archive = ConversationArchive(userID: "user_ashwin", datasetVersion: "seed-v1")
+    archive.messages = [.init(role: .assistant, text: "Old reply", evidence: [.init(text: "Old", provenance: provenance)])]
+    // An archive written before these fields existed has no "actions" or "chart" keys.
+    let data = try JSONEncoder().encode(archive)
+    let json = String(decoding: data, as: UTF8.self)
+    #expect(!json.contains("\"actions\"") && !json.contains("\"chart\""))
+    let loaded = try JSONDecoder().decode(ConversationArchive.self, from: data)
+    #expect(loaded.messages.first?.actions == nil)
+    #expect(loaded.messages.first?.evidence.first?.chart == nil)
+
+    var card = ChatAction(kind: "open_screen", title: "Open Budget", detail: "", payload: ["screen": "budget"], confirmLabel: "Open")
+    card.status = .done
+    archive.messages.append(.init(role: .assistant, text: "New", evidence: [.init(text: "New", provenance: provenance,
+        chart: ChatChart(title: "T", style: .bars, points: [.init(label: "Rent", cents: 160_000)]))], actions: [card]))
+    let round = try JSONDecoder().decode(ConversationArchive.self, from: JSONEncoder().encode(archive))
+    #expect(round.messages.last?.actions?.first?.status == .done)
+    #expect(round.messages.last?.evidence.first?.chart?.points.first?.cents == 160_000)
+}

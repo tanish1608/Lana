@@ -34,7 +34,7 @@ struct AccountDetailView: View {
 
                     SectionLabel("Details")
                     Card {
-                        row("Source", d.isImported ? "Statement imported on this iPhone" : "Sample data (\(dataset.dataMode.rawValue))")
+                        row("Source", d.isImported ? d.originLabel : "Sample data (\(dataset.dataMode.rawValue))")
                         Divider()
                         row("Balance as of", DemoStore.day(account.asOf))
                         if let open = account.openingBalanceCents, account.assetOrLiability == .asset {

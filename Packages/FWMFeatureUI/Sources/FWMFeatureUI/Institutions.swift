@@ -118,7 +118,10 @@ struct AccountDisplay {
         return String(format: "%04d", Int(h % 9000) + 1000)
     }
     var subtitle: String { "\(AccountKind.name(kind)) ••\(mask)" }
-    var isImported: Bool { sourceId?.hasPrefix("csv:") == true }
+    /// Added on this phone: a statement import or a SimpleFIN link. Both persist in the ledger and can be removed.
+    var isImported: Bool { isLinked || sourceId?.hasPrefix("csv:") == true }
+    var isLinked: Bool { sourceId?.hasPrefix("sfin:") == true }
+    var originLabel: String { isLinked ? "Linked via SimpleFIN" : isImported ? "Statement imported on this iPhone" : "Sample data" }
     var color: Color { institution?.color ?? Theme.accent }
 }
 
