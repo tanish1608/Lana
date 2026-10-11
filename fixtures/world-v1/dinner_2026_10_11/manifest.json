@@ -1,0 +1,41 @@
+{
+  "completed_period": null,
+  "currency": "USD",
+  "data_mode": "fixture",
+  "dataset_version": "synthetic-world-v1",
+  "demo_clock": "2026-10-11T21:00:00-07:00",
+  "do_not_merge_ledgers": true,
+  "entrypoint": "scenario.json",
+  "files": [
+    {
+      "path": "ocr.txt",
+      "sha256": "4f6ddb933f32c13098daf36a191edfa30c90e50b9bcca6b5cafed69a5deeaddf",
+      "synthetic": true
+    },
+    {
+      "path": "receipt.png",
+      "sha256": "2c246d6f5820f9e8ddcb1f49e34ab88ce17fe64b2992220aee8628819a8a5819",
+      "synthetic": true
+    },
+    {
+      "path": "receipt.svg",
+      "sha256": "6f2487a9751503ffb432c72fc28de86bc7e33dfa0b1c679b1de09c9259f09147",
+      "synthetic": true
+    },
+    {
+      "path": "reviewed-extraction.json",
+      "sha256": "3595bb678c1f8650af440aa44a05491b54617504aa733d65b721f48b40b5e07e",
+      "synthetic": true
+    },
+    {
+      "path": "scenario.json",
+      "sha256": "fe7cef48d76049e92609bae2c5b41da8485b10849e8ecc10cf53554610849119",
+      "synthetic": true
+    }
+  ],
+  "scenario_id": "dinner_2026_10_11",
+  "seed": 261011,
+  "supplementary_profile": null,
+  "synthetic": true,
+  "timezone": "America/Los_Angeles"
+}

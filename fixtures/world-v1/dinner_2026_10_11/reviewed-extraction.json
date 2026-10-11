@@ -1,0 +1,63 @@
+{
+  "currency": "USD",
+  "data_mode": "fixture",
+  "dataset_version": "synthetic-world-v1",
+  "demo_clock": "2026-10-11T21:00:00-07:00",
+  "extraction_status": "reviewed",
+  "ocr_source": "ocr.txt",
+  "parser_tested": false,
+  "receipt": {
+    "attachment_hash": null,
+    "currency": "USD",
+    "date": "2026-10-11",
+    "items": [
+      {
+        "description": "Short rib",
+        "extended_price_cents": 2400,
+        "item_id": "it_1",
+        "ocr_confidence": 0.97,
+        "quantity": 1,
+        "synthetic": true
+      },
+      {
+        "description": "Duck breast",
+        "extended_price_cents": 3000,
+        "item_id": "it_2",
+        "ocr_confidence": 0.95,
+        "quantity": 1,
+        "synthetic": true
+      },
+      {
+        "description": "Mushroom risotto",
+        "extended_price_cents": 1800,
+        "item_id": "it_3",
+        "ocr_confidence": 0.96,
+        "quantity": 1,
+        "synthetic": true
+      },
+      {
+        "description": "Burrata appetizer",
+        "extended_price_cents": 1200,
+        "item_id": "it_4",
+        "ocr_confidence": 0.93,
+        "quantity": 1,
+        "synthetic": true
+      }
+    ],
+    "linked_transaction_id": "oct_dinner_purchase",
+    "merchant": "Juniper Table - SYNTHETIC DINNER",
+    "receipt_id": "rcpt_dinner_1011",
+    "scenario_id": "dinner_2026_10_11",
+    "source_id": "fixture:receipt_dinner",
+    "status": "reviewed",
+    "subtotal_cents": 8400,
+    "synthetic": true,
+    "tax_cents": 840,
+    "tip_cents": 1680,
+    "total_cents": 10920
+  },
+  "scenario_id": "dinner_2026_10_11",
+  "seed": 261011,
+  "synthetic": true,
+  "timezone": "America/Los_Angeles"
+}

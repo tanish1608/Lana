@@ -113,3 +113,11 @@ Read these from the engines. Do not duplicate financial constants in prompts or 
 - Use focused feature-branch commits and reviewed PRs; preserve history with merge commits. Direct `main` edits are reserved for explicitly agreed shared setup such as these docs.
 
 Read [the technical guide](docs/README.md) before changing shared contracts, fixtures, build settings, or another owner's files.
+
+## Expanded synthetic fixtures
+
+The isolated three-year world, canonical demo and October dinner live under
+`fixtures/world-v1`. Read [the data handoff](docs/synthetic-data.md) for explicit
+scenario loading, metric definitions, accounting assumptions and schema gaps.
+Run `python3 -m tools.synthetic_data.validate` from the root to check the data
+and existing Swift engine goldens. Legacy fixture files remain unchanged.

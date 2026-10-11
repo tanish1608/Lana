@@ -1,0 +1,188 @@
+{
+  "annual_summaries": [
+    {
+      "category_totals_cents": {
+        "Bills and subscriptions": 108744,
+        "Debt interest": 20643,
+        "Dining": 123643,
+        "Groceries": 228173,
+        "Housing": 517841,
+        "Other": 112056,
+        "Transport": 34800
+      },
+      "consumption_spending_cents": 1145900,
+      "covered_months": [
+        "2023-10",
+        "2023-11",
+        "2023-12"
+      ],
+      "currency": "USD",
+      "dataset_version": "synthetic-world-v1",
+      "income_cents": 2162585,
+      "partial_calendar_year": true,
+      "record_id": "annual_2023",
+      "scenario_id": "full_financial_world",
+      "source_id": "fixture:annual_2023",
+      "summary_ids": [
+        "summary_2023-10",
+        "summary_2023-11",
+        "summary_2023-12"
+      ],
+      "synthetic": true,
+      "year": "2023"
+    },
+    {
+      "category_totals_cents": {
+        "Bills and subscriptions": 430476,
+        "Debt interest": 77390,
+        "Dining": 496675,
+        "Groceries": 880684,
+        "Housing": 2055008,
+        "Other": 501546,
+        "Transport": 139200,
+        "Travel": 96000
+      },
+      "consumption_spending_cents": 4676979,
+      "covered_months": [
+        "2024-01",
+        "2024-02",
+        "2024-03",
+        "2024-04",
+        "2024-05",
+        "2024-06",
+        "2024-07",
+        "2024-08",
+        "2024-09",
+        "2024-10",
+        "2024-11",
+        "2024-12"
+      ],
+      "currency": "USD",
+      "dataset_version": "synthetic-world-v1",
+      "income_cents": 9256539,
+      "partial_calendar_year": false,
+      "record_id": "annual_2024",
+      "scenario_id": "full_financial_world",
+      "source_id": "fixture:annual_2024",
+      "summary_ids": [
+        "summary_2024-01",
+        "summary_2024-02",
+        "summary_2024-03",
+        "summary_2024-04",
+        "summary_2024-05",
+        "summary_2024-06",
+        "summary_2024-07",
+        "summary_2024-08",
+        "summary_2024-09",
+        "summary_2024-10",
+        "summary_2024-11",
+        "summary_2024-12"
+      ],
+      "synthetic": true,
+      "year": "2024"
+    },
+    {
+      "category_totals_cents": {
+        "Bills and subscriptions": 414986,
+        "Debt interest": 68254,
+        "Dining": 490683,
+        "Groceries": 865896,
+        "Housing": 2262844,
+        "Interest and fees": 1700,
+        "Other": 309755,
+        "Transport": 139200,
+        "Travel": 96000
+      },
+      "consumption_spending_cents": 4649318,
+      "covered_months": [
+        "2025-01",
+        "2025-02",
+        "2025-03",
+        "2025-04",
+        "2025-05",
+        "2025-06",
+        "2025-07",
+        "2025-08",
+        "2025-09",
+        "2025-10",
+        "2025-11",
+        "2025-12"
+      ],
+      "currency": "USD",
+      "dataset_version": "synthetic-world-v1",
+      "income_cents": 10350646,
+      "partial_calendar_year": false,
+      "record_id": "annual_2025",
+      "scenario_id": "full_financial_world",
+      "source_id": "fixture:annual_2025",
+      "summary_ids": [
+        "summary_2025-01",
+        "summary_2025-02",
+        "summary_2025-03",
+        "summary_2025-04",
+        "summary_2025-05",
+        "summary_2025-06",
+        "summary_2025-07",
+        "summary_2025-08",
+        "summary_2025-09",
+        "summary_2025-10",
+        "summary_2025-11",
+        "summary_2025-12"
+      ],
+      "synthetic": true,
+      "year": "2025"
+    },
+    {
+      "category_totals_cents": {
+        "Bills and subscriptions": 307791,
+        "Debt interest": 42317,
+        "Dining": 375143,
+        "Groceries": 655237,
+        "Housing": 1502218,
+        "Other": 215116,
+        "Transport": 104400,
+        "Travel": 114000
+      },
+      "consumption_spending_cents": 3316222,
+      "covered_months": [
+        "2026-01",
+        "2026-02",
+        "2026-03",
+        "2026-04",
+        "2026-05",
+        "2026-06",
+        "2026-07",
+        "2026-08",
+        "2026-09"
+      ],
+      "currency": "USD",
+      "dataset_version": "synthetic-world-v1",
+      "income_cents": 8133006,
+      "partial_calendar_year": true,
+      "record_id": "annual_2026",
+      "scenario_id": "full_financial_world",
+      "source_id": "fixture:annual_2026",
+      "summary_ids": [
+        "summary_2026-01",
+        "summary_2026-02",
+        "summary_2026-03",
+        "summary_2026-04",
+        "summary_2026-05",
+        "summary_2026-06",
+        "summary_2026-07",
+        "summary_2026-08",
+        "summary_2026-09"
+      ],
+      "synthetic": true,
+      "year": "2026"
+    }
+  ],
+  "currency": "USD",
+  "data_mode": "fixture",
+  "dataset_version": "synthetic-world-v1",
+  "demo_clock": "2026-10-11T21:00:00-07:00",
+  "scenario_id": "full_financial_world",
+  "seed": 261011,
+  "synthetic": true,
+  "timezone": "America/Los_Angeles"
+}

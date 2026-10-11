@@ -10,3 +10,5 @@ xcuserdata/
 !.env.example
 node_modules/
 relay/data/
+__pycache__/
+*.pyc
