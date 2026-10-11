@@ -11,11 +11,13 @@ public actor RelayWorker {
     private let tools: any CoreToolExecuting
     private let router: any CoreIntentRouting
     private let contextFor: ContextProvider
+    private let onAnswered: (@Sendable (RelayJob, AgentResult) async -> Void)?
     private var loop: Task<Void, Never>?
 
+    /// `onAnswered` runs after the reply is posted, so the host can keep the turn in its chat history.
     public init(client: RelayClient, tools: any CoreToolExecuting, router: any CoreIntentRouting = CoreRouter(),
-                contextFor: @escaping ContextProvider) {
-        self.client = client; self.tools = tools; self.router = router; self.contextFor = contextFor
+                contextFor: @escaping ContextProvider, onAnswered: (@Sendable (RelayJob, AgentResult) async -> Void)? = nil) {
+        self.client = client; self.tools = tools; self.router = router; self.contextFor = contextFor; self.onAnswered = onAnswered
     }
 
     /// Scope over one owned dataset. The user ID comes from the dataset, not the envelope, so CoreAgent still rejects
@@ -47,6 +49,7 @@ public actor RelayWorker {
         }
         // If this throws, the job stays leased and comes back later; the relay accepts a repeated result once.
         try await client.postResult(result)
+        await onAnswered?(job, result)
         return result
     }
 
