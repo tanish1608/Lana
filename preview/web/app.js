@@ -250,7 +250,7 @@
         <div class="kv"><span class="muted">Kept in checking</span><span class="num">${fmt(PL.f.retained_cash_cents)} → <b style="color:var(--accent)">${fmt(PL.retainedNext)}</b></span></div>
       </div>
       <h2>Your rules</h2>
-      <div class="card flat"><div class="chips">${b.constraints.filter((c) => S.budget.memoryOn || c.id !== "c_instant").map((c) => `<span class="chip" aria-pressed="true" title="${esc(c.source)}">✓ ${esc(c.text)}</span>`).join("")}</div></div>
+      <div class="card flat"><div class="chips">${b.constraints.filter((c) => S.budget.memoryOn || c.id !== "c_instant").map((c) => `<span class="chip rule" title="${esc(c.source)}">✓ ${esc(c.text)}</span>`).join("")}</div></div>
       <h2>Swaps · ${fmt(swapTotal)}</h2>${swapsInPlay().map((s) => card(s, false)).join("")}
       <p class="note">Prices are illustrative demo assumptions, not live quotes.</p>
       <h2>Habits · ${fmt(habitTotal)}</h2>${b.habits.map((s) => card(s, true)).join("")}
