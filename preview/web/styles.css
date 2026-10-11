@@ -156,3 +156,53 @@ img{outline:1px solid oklch(0 0 0 / .1);outline-offset:-1px}
 .btn:not(.ghost):not(.accent):not(.small){background:var(--accent);color:#fff}
 .btn.small:not(.ghost):not(.accent){background:var(--accent);color:#fff}
 .chip.rule{border-color:transparent;background:var(--accent-soft);color:var(--accent)}
+/* ---- Home + lighter, number-first layout ---- */
+:root{--spent:#AEAEB2;--sky:#D6EAFB;--sky-ink:#0B2A45;--sky2:#E7F0FA;--inkcard:#111113;--warm:#FF9F0A}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--spent:#636366;--sky:#12324F;--sky-ink:#EAF4FF;--sky2:#1A2633;--inkcard:#1C1C1E}}
+:root[data-theme="dark"]{--spent:#636366;--sky:#12324F;--sky-ink:#EAF4FF;--sky2:#1A2633;--inkcard:#1C1C1E}
+.hero-num{font-family:var(--display);font-weight:700;font-size:56px;letter-spacing:-.04em;line-height:1;font-variant-numeric:tabular-nums;display:inline-flex;align-items:flex-start}
+.hero-num .cur{font-size:.42em;margin:.18em .06em 0 0;letter-spacing:0}
+.hero-num .cents{font-size:.38em;margin-top:.2em;letter-spacing:0;opacity:.75}
+.hero-num.md{font-size:40px}
+.eyebrow{font-size:13px;font-weight:600;color:var(--ink-2)}
+.home-top{display:flex;align-items:flex-end;justify-content:space-between;margin:6px 4px 14px}
+.msgbtn{display:inline-flex;align-items:center;gap:6px;min-height:40px;padding:0 14px;border-radius:999px;background:var(--accent);color:#fff;font-weight:600;font-size:14px;transition-property:transform;transition-duration:.12s}
+.msgbtn:active,.card[data-tab]:active,.card[data-messages]:active{transform:scale(.98)}
+button.card{display:block;width:100%;text-align:left;transition-property:transform;transition-duration:.12s;transition-timing-function:ease-out}
+.card.sky{background:var(--sky);color:var(--sky-ink);border-radius:24px;padding:20px}
+.card.sky .eyebrow,.card.sky .muted{color:inherit;opacity:.7}
+.hero .hero-num{margin:8px 0 16px}
+.split-bar{display:flex;gap:4px;height:10px;margin-bottom:10px}
+.split-bar span{border-radius:5px;background:var(--sky-ink)}
+.split-bar span+span{opacity:.25}
+.ring-card{border-radius:24px;padding:18px 18px 16px}
+.ring-wrap{position:relative;width:200px;height:200px;margin:4px auto 12px}
+.ring{width:200px;height:200px;display:block}
+.ring circle[data-dash]{transition-property:stroke-dasharray;transition-duration:.9s;transition-timing-function:cubic-bezier(.2,0,0,1)}
+.ring-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+.ring-num{font-size:30px;font-weight:700;letter-spacing:-.03em}
+.tiles{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.tile{background:var(--bg);border-radius:14px;padding:10px 12px;display:grid;grid-template-columns:auto 1fr;grid-template-rows:auto auto;column-gap:8px;align-items:center}
+.tile .dot{grid-row:1}
+.tile b{grid-column:1 / -1;font-size:20px;letter-spacing:-.02em;margin-top:2px}
+.duo{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.duo .card{margin-bottom:12px;border-radius:24px;min-height:132px;display:flex;flex-direction:column;justify-content:flex-end;gap:2px}
+.ink-card{background:var(--inkcard)!important;color:#fff}
+.ink-num{color:var(--warm);font-size:28px;font-weight:700;letter-spacing:-.03em}
+.sky2{background:var(--sky2)!important;color:var(--sky-ink)}
+.sky-num{font-size:28px;font-weight:700;letter-spacing:-.03em;color:var(--accent)}
+.sky-num small{font-size:14px;font-weight:600;opacity:.7}
+.tiny{font-size:12px;opacity:.6}
+.msg-card{border-radius:24px}
+.askchip{display:inline-flex;align-items:center;gap:8px;max-width:100%;padding:8px 12px;border-radius:999px;background:var(--accent-soft);color:var(--accent);font-size:13.5px;font-weight:500;margin:6px 0 4px}
+.askchip span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.back{color:var(--accent);font-size:16px;min-height:40px;padding:0 4px}
+.checkline{font-size:13px;color:var(--ok);font-weight:600;margin:0 4px 12px}
+.gauge-card{text-align:center;margin-top:8px}
+.gauge{position:relative;width:200px;height:200px;margin:0 auto 6px}
+.gauge .ring-center .hero-num{margin:2px 0 6px}
+.pillok{font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;background:var(--ok-soft);color:var(--ok)}
+/* pill segment tabs */
+.seg{background:transparent;padding:0;gap:6px}
+.seg button{border-radius:999px;background:var(--card);min-height:36px;box-shadow:none}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--bg);box-shadow:none}

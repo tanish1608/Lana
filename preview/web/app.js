@@ -26,7 +26,7 @@
   function initialState() {
     const ex = DS.split_example;
     return {
-      tab: "money",
+      tab: "home",
       money: { period: "2026-09", view: "flow" },
       budget: { accepted: Object.fromEntries([...P.budget.swaps, ...P.budget.habits].map((x) => [x.id, true])), memoryOn: true, adopted: null, busy: false },
       split: {
@@ -43,20 +43,25 @@
 
   // ---------- shell ----------
   const ICONS = {
+    home: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 10.5 12 4l8.5 6.5V20a1 1 0 0 1-1 1h-5v-6h-5v6h-5a1 1 0 0 1-1-1z"/></svg>',
     money: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 19V9M10 19V5M16 19v-7M22 19H2"/></svg>',
     budget: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 3.5V12l6 4.5"/></svg>',
     split: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6"/></svg>',
     vault: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="4" y="10" width="16" height="11" rx="2.5"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>'
   };
-  const TABS = [["money", "Money"], ["budget", "Budget"], ["split", "Split"], ["vault", "Vault"]];
-  function renderNav() { $("#nav").innerHTML = TABS.map(([id, l]) => `<button data-tab="${id}" ${S.tab === id ? 'aria-current="page"' : ""}>${ICONS[id]}${l}</button>`).join(""); }
+  const TABS = [["home", "Home"], ["budget", "Budget"], ["split", "Split"], ["vault", "Vault"]];
+  const navTab = () => (S.tab === "money" ? "home" : S.tab);
+  function renderNav() { $("#nav").innerHTML = TABS.map(([id, l]) => `<button data-tab="${id}" ${navTab() === id ? 'aria-current="page"' : ""}>${ICONS[id]}${l}</button>`).join(""); }
   function render() {
     renderNav();
     let v;
-    try { v = { money: viewMoney, budget: viewBudget, split: viewSplit, vault: viewVault }[S.tab](); }
+    try { v = { home: viewHome, money: viewMoney, budget: viewBudget, split: viewSplit, vault: viewVault }[S.tab](); }
     catch (e) { console.error(e); v = `<div class="card" style="margin-top:20px"><span class="tag bad">Something went wrong</span><p>${esc(e.message)}</p><button class="btn ghost" data-reset>Reset demo</button></div>`; }
     main.innerHTML = `<div class="fade-in">${v}</div>`;
-    requestAnimationFrame(() => document.querySelectorAll("[data-w]").forEach((el) => (el.style.width = el.dataset.w + "%")));
+    requestAnimationFrame(() => {
+      document.querySelectorAll("[data-w]").forEach((el) => (el.style.width = el.dataset.w + "%"));
+      document.querySelectorAll("[data-dash]").forEach((el) => el.setAttribute("stroke-dasharray", el.dataset.dash));
+    });
   }
   function top() { main.scrollTop = 0; window.scrollTo(0, 0); }
   function go(tab) { S.tab = tab; top(); render(); }
@@ -70,7 +75,59 @@
     $("#phone").appendChild(bg); requestAnimationFrame(() => bg.classList.add("open"));
   }
   function closeSheet() { const s = $("#sheet"); if (s) s.remove(); }
-  const bubbles = (me, lana) => `<div class="msg"><div class="via">From Messages</div><div class="bubble me">${esc(me)}</div>${lana ? `<div class="bubble lana">${lana}</div>` : ""}</div>`;
+  const MSG_ICON = '<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M12 3C6.5 3 2 6.8 2 11.5c0 2.6 1.4 4.9 3.6 6.5L5 21.5l4.1-2.1c.9.2 1.9.3 2.9.3 5.5 0 10-3.8 10-8.5S17.5 3 12 3z"/></svg>';
+  // The conversation lives in Messages; screens only show which question they answer.
+  const bubbles = (me) => `<div class="askchip">${MSG_ICON}<span>“${esc(me)}”</span></div>`;
+  // Hero amount: small currency sign and cents, big dollars.
+  function big(c, cls = "") {
+    const a = Math.abs(c), d = Math.floor(a / 100).toLocaleString("en-US"), ct = String(a % 100).padStart(2, "0");
+    return `<span class="hero-num ${cls}"><span class="cur">${c < 0 ? "−" : ""}$</span>${d}<span class="cents">.${ct}</span></span>`;
+  }
+  function ring(parts, total, center) {
+    const R = 78, C = 2 * Math.PI * R, gap = 6; let off = 0;
+    const arcs = parts.map((p) => { const len = Math.max(0, (p.v / total) * C - gap); const a = `<circle r="${R}" cx="100" cy="100" fill="none" stroke="${p.c}" stroke-width="22" stroke-linecap="round" stroke-dasharray="0 ${C}" data-dash="${len} ${C - len}" stroke-dashoffset="${-off}" transform="rotate(-90 100 100)"/>`; off += (p.v / total) * C; return a; }).join("");
+    return `<svg viewBox="0 0 200 200" class="ring" role="img" aria-label="${esc(parts.map((p) => p.label + " " + fmt(p.v)).join(", "))}"><circle r="${R}" cx="100" cy="100" fill="none" stroke="var(--line)" stroke-width="22"/>${arcs}</svg><div class="ring-center">${center}</div>`;
+  }
+
+  // ======================= HOME =======================
+  function viewHome() {
+    const snapP = snapshotMonth(), v = mv(snapP), snap = v, f = v.flow, mon = monthLabel(snapP).split(" ")[0];
+    const owed = fixtureSplit(), PL = budgetPlan();
+    const parts = [
+      { label: "Spent", v: f.expenses_cents, c: "var(--spent)" },
+      { label: "Saved", v: f.to_savings_cents, c: "var(--accent)" },
+      { label: "Invested", v: f.to_investments_cents, c: "var(--accent-2)" },
+      { label: "Kept", v: f.retained_cash_cents, c: "var(--ok)" }
+    ];
+    const stays = f.to_savings_cents + f.to_investments_cents + f.retained_cash_cents;
+    const unpaid = owed.ok ? people().map((p) => owed.r.requests.find((q) => q.contact_id === p.contact_id)).filter(Boolean).filter((q) => reqState(q.contact_id) !== "paid_reported" && reqState(q.contact_id) !== "cancelled") : [];
+    const unpaidCents = sum(unpaid, (q) => q.amount_cents);
+    return `<div class="home-top"><div><div class="muted small">Sunday, Oct 11</div><h1 style="margin:2px 0 0">Hi, ${esc(DS.user.display_name || "there")}</h1></div>
+        <button class="msgbtn" data-messages>${MSG_ICON}Messages</button></div>
+      <div class="hero card sky">
+        <div class="eyebrow">Net worth</div>
+        ${big(snap.net_worth_cents)}
+        <div class="split-bar"><span style="flex:${snap.assets_cents}"></span><span style="flex:${snap.liabilities_cents}"></span></div>
+        <div class="row small"><span><b class="num">${fmt(snap.assets_cents)}</b> owned</span><span><b class="num">${fmt(snap.liabilities_cents)}</b> owed</span></div>
+      </div>
+      <button class="card ring-card" data-tab="money">
+        <div class="row"><span class="eyebrow">${mon}</span><span class="chev">›</span></div>
+        <div class="ring-wrap">${ring(parts, f.net_income_cents, `<div class="muted small">Stayed</div><div class="ring-num num">${fmt(stays)}</div><div class="muted small">of ${fmt(f.net_income_cents)}</div>`)}</div>
+        <div class="tiles">${parts.map((p) => `<div class="tile"><i class="dot" style="background:${p.c}"></i><span class="muted small">${p.label}</span><b class="num">${fmt(p.v)}</b></div>`).join("")}</div>
+      </button>
+      <div class="duo">
+        <button class="card ink-card" data-tab="split"><div class="ink-num num">${fmt(unpaidCents, { cents: true })}</div><div class="small">owed to you</div><div class="tiny">${unpaid.length ? unpaid.map((q) => esc(q.reviewed_name)).join(", ") : "All settled"}</div></button>
+        <button class="card sky2" data-tab="budget"><div class="sky-num num">${fmt(PL.reduction)}<small>/mo</small></div><div class="small">plan to save</div><div class="tiny">${S.budget.adopted ? "Adopted" : "Ready to review"}</div></button>
+      </div>
+      <button class="card msg-card" data-messages><div class="row"><span class="eyebrow">Latest in Messages</span><span class="chev">›</span></div>
+        <div class="bubble lana" style="max-width:100%;margin-top:8px">You kept ${fmt(stays)} of ${fmt(f.net_income_cents)} in ${mon}. Want a plan to save $150 more?</div></button>`;
+  }
+  function messagesSheet() {
+    sheet(`<h3>Lana lives in Messages</h3><p class="small muted" style="margin:6px 0 12px">Ask anything there. This app is for the details.</p>
+      <div class="msg"><div class="bubble me">Where did my money go this month?</div><div class="bubble lana">You kept $1,650 of $4,800 in September. Rent was the biggest cost.</div><div class="bubble me">Split dinner with Tanish and Aryan</div><div class="bubble lana">You’re owed $80.60. Review the requests?</div></div>
+      <div class="sim">◆ Preview only. Messages isn’t connected here.</div>
+      <button class="btn ghost" data-close style="margin-top:12px">Done</button>`);
+  }
 
   // ======================= JOURNEY 1: MONEY =======================
   const mvCache = {};
@@ -119,21 +176,22 @@
     const seg = `<div class="seg" role="group" aria-label="Month">${periods().map((p) => `<button data-period="${p}" aria-pressed="${p === pid}">${monthLabel(p).slice(0, 3)}</button>`).join("")}</div>`;
     if (inProgress) {
       const owed = fixtureSplit();
-      return `<h1>${mon} so far</h1><p class="sub">The month is still open, so nothing here is estimated.</p>${seg}
-        <div class="card" style="margin-top:14px"><div class="empty"><div class="big-num">No posted totals yet</div><p class="small">Lana charts ${mon} once its transactions post. Pick September to see a complete month.</p></div></div>
+      return `<button class="back" data-tab="home">‹ Home</button><h1>${mon} so far</h1>${seg}
+        <div class="card" style="margin-top:14px"><div class="empty"><div class="big-num">Month still open</div><p class="small">Totals appear once it closes.</p></div></div>
         <h2>Pending, not counted</h2>
         <div class="card list"><button class="item" data-tab="split"><div class="grow"><div class="t">Dinner reimbursements owed to you</div><div class="s">${esc(DS.receipts[0].merchant)} · Oct 11 · tracked in Split</div></div><div class="a num">${owed.ok ? fmt(owed.r.outstanding_cents, { cents: true }) : "—"}</div><span class="chev">›</span></button></div>
-        <p class="note">The October receipt never changes September’s numbers.</p>`;
+`;
     }
     const stays = f.to_savings_cents + f.to_investments_cents + f.retained_cash_cents;
     const flowOk = f.net_income_cents === f.expenses_cents + f.to_savings_cents + f.to_investments_cents + f.retained_cash_cents && sum(v.categories, (c) => c.total_cents) === f.expenses_cents;
     const biggest = v.categories[0];
     const answer = `In ${mon} you brought in <b>${fmt(f.net_income_cents)}</b> and spent <b>${fmt(f.expenses_cents)}</b>. ${esc(biggest.category)} was the biggest cost at ${fmt(biggest.total_cents)}. You moved ${fmt(f.to_savings_cents)} to savings and ${fmt(f.to_investments_cents)} to investing, and ${fmt(f.retained_cash_cents)} stayed in checking.`;
-    const head = `${bubbles(`Where did my money go in ${mon}?`, answer)}
-      <h1>${fmt(stays)} stayed with you</h1>
-      <p class="sub">${fmt(f.net_income_cents)} came in during ${label}. ${fmt(f.expenses_cents)} went to expenses.</p>
+    const head = `<button class="back" data-tab="home">‹ Home</button>
+      ${bubbles(`Where did my money go in ${mon}?`)}
+      <div class="eyebrow" style="margin:14px 4px 0">Stayed with you</div>
+      <div style="margin:0 4px 14px">${big(stays)}</div>
       ${seg}
-      <div class="seg" role="group" aria-label="View" style="margin-top:8px"><button data-mview="flow" aria-pressed="${S.money.view === "flow"}">Money in &amp; out</button><button data-mview="bal" aria-pressed="${S.money.view === "bal"}">Where it sits</button></div>`;
+      <div class="seg" role="group" aria-label="View" style="margin-top:8px"><button data-mview="flow" aria-pressed="${S.money.view === "flow"}">In &amp; out</button><button data-mview="bal" aria-pressed="${S.money.view === "bal"}">Balances</button></div>`;
     if (!flowOk) return head + `<div class="card" style="margin-top:12px"><span class="tag bad">Doesn’t reconcile</span><p>These numbers don’t add up, so Lana won’t chart them.</p></div>`;
 
     if (S.money.view === "bal") {
@@ -142,15 +200,14 @@
       return head + `
         <div class="card" style="margin-top:12px">
           <div class="muted small">Net worth on ${when}</div>
-          <div class="hero-amt num" style="margin-top:6px">${fmt(snap.net_worth_cents)}</div>
-          <div class="hero-line">${fmt(snap.assets_cents)} in assets minus ${fmt(snap.liabilities_cents)} owed</div>
+          <div style="margin-top:6px">${big(snap.net_worth_cents)}</div>
           <div class="bar" style="height:10px;margin-top:14px"><span style="width:100%;background:var(--accent)"></span></div>
           <div class="bar" style="height:10px;margin-top:6px"><span style="width:0;background:var(--goes)" data-w="${(snap.liabilities_cents / snap.assets_cents) * 100}"></span></div>
           <div class="legend"><span><i class="dot" style="background:var(--accent)"></i>Assets</span><span><i class="dot" style="background:var(--goes)"></i>Liabilities</span></div>
         </div>
         <h2>What you own</h2><div class="card list">${snap.accounts.filter((a) => a.asset_or_liability === "asset").map(acctRow).join("")}</div>
         <h2>What you owe</h2><div class="card list">${snap.accounts.filter((a) => a.asset_or_liability === "liability").map(acctRow).join("")}</div>
-        <p class="note">Balances are a snapshot at the end of ${when}${pid !== snapshotMonth() ? ", the latest available" : ""}. Monthly income and spending are under Money in &amp; out.</p>`;
+        <p class="note">Balances as of ${when}.</p>`;
     }
     const max = Math.max(...v.categories.map((c) => c.total_cents));
     const chk = v.accounts.find((a) => a.kind === "checking");
@@ -158,7 +215,7 @@
     return head + `
       <div class="card" style="margin-top:12px">${flowSVG(f)}
         <div class="legend"><span><i class="dot" style="background:var(--goes)"></i>Went out</span><span><i class="dot" style="background:var(--accent)"></i>Stayed with you</span></div></div>
-      <div class="explain"><div class="k">✓ Adds up</div><p class="num">${fmt(f.net_income_cents)} = ${fmt(f.expenses_cents)} spent + ${fmt(f.to_savings_cents)} saved + ${fmt(f.to_investments_cents)} invested + ${fmt(f.retained_cash_cents)} kept.</p></div>
+      <div class="checkline">✓ <span class="num">${fmt(f.net_income_cents)} = ${fmt(f.expenses_cents)} + ${fmt(f.to_savings_cents)} + ${fmt(f.to_investments_cents)} + ${fmt(f.retained_cash_cents)}</span></div>
       <h2>Spending by category</h2>
       <div class="card list">${v.categories.map((c) => `<button class="item" data-cat="${esc(c.category)}"><div class="grow"><div class="row"><span class="t">${esc(c.category)}</span><span class="a num">${fmt(c.total_cents)}</span></div><div class="bar"><span style="width:0" data-w="${(c.total_cents / max) * 100}"></span></div></div><span class="chev">›</span></button>`).join("")}
         <div class="kv total"><span>Total spending</span><span class="num">${fmt(f.expenses_cents)}</span></div></div>
@@ -238,9 +295,12 @@
     const habitTotal = sum(b.habits.filter((s) => S.budget.accepted[s.id]), (s) => s.savings);
     const rows = Object.keys(PL.current);
     const line = "padding-top:8px;border-top:1px solid var(--line)";
-    return `${bubbles("Help me save $150 next month without changing my rent.", `Here’s a plan that keeps rent at ${fmt(PL.current.Rent)} and frees up <b>${fmt(goal)}</b> a month: four swaps worth $100 and three small habit changes worth $50.`)}
-      <h1>${fmt(PL.reduction)} a month, projected</h1>
-      <p class="sub">${PL.reduction >= goal ? "Meets your $150 goal." : `${fmt(goal - PL.reduction)} short of your $150 goal.`} A plan for ${b.period}. Nothing is saved until you spend less.</p>
+    const pct = Math.min(1, PL.reduction / goal);
+    return `${bubbles("Help me save $150 next month without changing my rent.")}
+      <div class="card sky gauge-card">
+        <div class="gauge">${ring([{ label: "Projected", v: Math.round(pct * 1000), c: "var(--accent)" }], 1000, `<div class="muted small">Projected</div>${big(PL.reduction, "md")}<div class="pillok">${PL.reduction >= goal ? "Meets goal" : fmt(goal - PL.reduction) + " short"}</div>`)}</div>
+        <div class="tiny" style="text-align:center">per month · ${b.period} · not saved yet</div>
+      </div>
       ${S.budget.adopted ? `<div class="explain"><div class="k">✓ ${changed ? "Edited since adopting" : "Adopted"}</div><p>${changed ? "Review and adopt again to update your budget." : `Your ${b.period} budget is updated. Balances and purchases are unchanged.`}</p></div>` : ""}
       <div class="card">
         <div class="cmp num"><span class="h">Category</span><span class="h" style="text-align:right">Sep</span><span class="h" style="text-align:right">Plan</span>
@@ -252,7 +312,7 @@
       <h2>Your rules</h2>
       <div class="card flat"><div class="chips">${b.constraints.filter((c) => S.budget.memoryOn || c.id !== "c_instant").map((c) => `<span class="chip rule" title="${esc(c.source)}">✓ ${esc(c.text)}</span>`).join("")}</div></div>
       <h2>Swaps · ${fmt(swapTotal)}</h2>${swapsInPlay().map((s) => card(s, false)).join("")}
-      <p class="note">Prices are illustrative demo assumptions, not live quotes.</p>
+      <p class="note">Illustrative prices.</p>
       <h2>Habits · ${fmt(habitTotal)}</h2>${b.habits.map((s) => card(s, true)).join("")}
       <h2>Left out on purpose</h2>
       <div class="card flat list">${b.excluded.filter((x) => S.budget.memoryOn || !x.memory).map((x) => `<div class="item"><div class="grow"><div class="t">${esc(x.title)}</div><div class="s">${esc(x.why)}</div></div><span class="num muted">${fmt(x.savings)}/mo</span></div>`).join("")}
@@ -318,7 +378,7 @@
     if (st.step === 0) {
       const wave = Array.from({ length: 34 }, (_, i) => `<i style="height:${6 + Math.round(Math.abs(Math.sin(i * 1.7) * 18 + Math.cos(i * 0.6) * 4))}px"></i>`).join("");
       const both = st.receipt && st.voice;
-      return head("Split dinner", "Send a receipt and a voice note to Lana in Messages, or add them here.") + `
+      return head("Split dinner", "") + bubbles("I paid for dinner with Tanish and Aryan…") + `
         <div class="card"><div class="row"><h3>Receipt</h3>${st.receipt ? '<span class="tag acc">Received</span>' : '<span class="tag">Waiting</span>'}</div>
           ${st.upload ? `<img src="${st.upload}" alt="Your uploaded receipt" style="width:100%;max-height:160px;object-fit:cover;border-radius:12px;margin-top:10px">` : ""}
           ${st.receipt ? `<p class="small muted" style="margin:8px 0 0">${st.upload ? "Your photo is shown. This preview reads the sample receipt; on iPhone the photo is read on-device." : `${esc(merchant)} · ${dateStr}`}</p>` : ""}
@@ -326,17 +386,17 @@
           <label class="btn small ghost" style="cursor:pointer">Upload photo<input type="file" accept="image/*" data-upload hidden></label></div></div>
         <div class="card"><div class="row"><h3>Voice note</h3>${st.voice ? '<span class="tag acc">Transcribed</span>' : '<span class="tag">Waiting</span>'}</div>
           ${st.voice ? `<div class="row" style="margin-top:10px;gap:10px"><span class="avatar" style="background:var(--accent);color:#fff">▶</span><div class="wave" aria-hidden="true">${wave}</div><span class="small muted num">0:07</span></div>
-          <p style="margin:10px 0 0;font-size:15px">“${esc(P.split.transcript)}”</p><div class="sim">◆ Sample transcript. On iPhone, speech is transcribed on-device.</div>` : ""}
+          <p style="margin:10px 0 0;font-size:15px">“${esc(P.split.transcript)}”</p><div class="sim">◆ Sample · on-device on iPhone</div>` : ""}
           <div style="margin-top:12px"><button class="btn small ${st.voice ? "ghost" : ""}" data-sample-voice>Use sample voice note</button></div></div>
         <div class="card flat"><div class="row"><span class="small">Messages delivery</span><span class="pill ${both ? "ok" : "muted"}">${both ? "Completed · 2 of 2" : st.receipt || st.voice ? "Pending · 1 of 2" : "Waiting"}</span></div>
-          <div class="sim">◆ Simulated delivery states. The messaging line isn’t connected in this preview.</div></div>
+          <div class="sim">◆ Simulated</div></div>
         ${nav(1, "Read receipt", !both)}`;
     }
     if (st.step === 1) {
       const ln = (n, c, cls = "") => `<div class="row ${cls}"><span>${esc(n)}</span><span>${fmt(c, { cents: true })}</span></div>`;
       const sr = splitResult(), mismatch = !sr.ok && sr.e.code === "RECEIPT_MISMATCH";
       const diff = rc.total_cents - (rc.subtotal_cents + rc.tax_cents + st.tip);
-      return head("Check what Lana read", mismatch ? "One field looks off. Fix it before anything is sent." : "Everything adds up to the receipt total.") + `
+      return head("Check the receipt", mismatch ? "Fix the tip to continue." : "") + `
         <div class="receipt" aria-label="Receipt image"><div class="c"><b>${esc(merchant.toUpperCase())}</b><br>${esc(rc.date)}</div><br>
           ${rc.items.map((i) => ln(i.description, i.extended_price_cents)).join("")}<br>${ln("Subtotal", rc.subtotal_cents)}${ln("Tax", rc.tax_cents)}${ln("Tip", rc.tip_cents, st.tipFixed ? "" : "hl")}<b>${ln("TOTAL", rc.total_cents)}</b></div>
         <div class="card" style="margin-top:14px">
@@ -346,13 +406,12 @@
           <div class="field ${st.tipFixed ? "" : "flag"}"><span>Tip ${st.tipFixed ? '<span class="tag acc">Corrected</span>' : `<span class="tag warn">Unsure · ${Math.round(P.split.ocr_misread.confidence * 100)}%</span>`}</span><input inputmode="decimal" aria-label="Tip amount" data-tip value="${(st.tip / 100).toFixed(2)}"></div>
           <div class="kv total"><span>Receipt total</span><span class="num">${fmt(rc.total_cents, { cents: true })}</span></div>
           ${mismatch ? `<div class="sim" style="color:var(--bad)">✕ Off by ${fmt(Math.abs(diff), { cents: true })}. Requests stay blocked until this matches.</div>` : '<div class="sim" style="color:var(--accent)">✓ Items, tax and tip match the total</div>'}
-          <div class="sim">◆ The low-confidence tip is staged so you can see the correction step.</div></div>
-        <div class="card flat"><div class="small muted">Instruction</div><p style="margin:4px 0 0">“${esc(P.split.transcript)}”</p></div>
+          </div>
         ${nav(2, "Assign items", mismatch)}`;
     }
     if (st.step === 2) {
       const ppl = people(), opts = [...ppl.map((p) => [p.contact_id, p.reviewed_name]), ["shared", "Shared"]];
-      return head("Who had what", "Filled in from your voice note. Tap to change.") + `
+      return head("Who had what", "") + `
         <h2>People</h2>
         <div class="card list">${ppl.map((p) => `<div class="item">${av(p.contact_id)}<div class="grow"><div class="t">${esc(p.reviewed_name)}${p.is_self ? " (you)" : ""}</div><div class="s">${p.contact_id === payerId() ? "Paid the bill" : `${esc(p.venmo_handle)} · ${phoneFmt(p.phone)}`}</div></div>${p.is_self ? "" : '<span class="tag acc">Reviewed contact</span>'}</div>`).join("")}</div>
         <h2>Items</h2>
@@ -364,22 +423,21 @@
     const r = { ...sr.r, requests: people().map((p) => sr.r.requests.find((q) => q.contact_id === p.contact_id)).filter(Boolean) }, byId = Object.fromEntries(r.shares.map((s) => [s.contact_id, s]));
     if (st.step === 3) {
       const ordered = people().map((p) => byId[p.contact_id]), total = sum(r.shares, (s) => s.total_cents), ok = total === rc.total_cents;
-      return head(`You’re owed ${fmt(r.outstanding_cents, { cents: true })}`, "The appetizer is split evenly. Tax and tip follow what each person ordered.") + `
+      return head("You’re owed", "") + `<div style="margin:-4px 4px 14px">${big(r.outstanding_cents)}</div>` + `
         ${ordered.map((x) => `<div class="card"><div class="row">${av(x.contact_id)}<div class="grow" style="margin-left:4px"><div style="font-weight:650">${esc(person(x.contact_id).reviewed_name)}</div><div class="small muted num">${fmt(x.items_cents, { cents: true })} food + ${fmt(x.tax_tip_cents, { cents: true })} tax &amp; tip</div></div><div class="big-num num" style="font-size:24px">${fmt(x.total_cents, { cents: true })}</div></div>${x.contact_id === payerId() ? '<div class="small muted" style="margin-top:6px">Your share. You paid the bill.</div>' : ""}</div>`).join("")}
-        <div class="explain"><div class="k">${ok ? "✓ Adds up" : "✕ Mismatch"}</div><p class="num">${ordered.map((x) => fmt(x.total_cents, { cents: true })).join(" + ")} = ${fmt(total, { cents: true })}, the receipt total.</p></div>
-        <p class="note">Dated Oct 11, so it isn’t added to September’s spending.</p>
+        <div class="checkline">${ok ? "✓" : "✕"} <span class="num">${ordered.map((x) => fmt(x.total_cents, { cents: true })).join(" + ")} = ${fmt(total, { cents: true })}</span></div>
         ${nav(4, "Prepare requests", !ok)}`;
     }
     if (st.step === 4) {
-      return head("Payment requests", "Nothing is sent without your review. Opening Venmo isn’t the same as sending a request.") + `
+      return head("Requests", "You review each one first.") + `
         ${r.requests.map((q) => reqCard(q)).join("")}
-        <p class="note">Lana can’t see inside Venmo. “You sent it” and “Paid” are what you tell Lana.</p>
+        <p class="note">Paid status is what you report.</p>
         ${nav(5, "Set up follow-ups")}`;
     }
-    return head("Follow-ups", "Lana can remind people who haven’t paid. Each reminder needs your OK.") + `
+    return head("Follow-ups", "") + `
       <div class="card"><div class="row"><div><div class="small muted">Demo clock</div><div style="font-weight:650">${st.clock ? "Mon, Oct 12 · 10:00 AM" : "Sun, Oct 11 · 8:40 PM"}</div></div>
       <button class="btn small ${st.clock ? "ghost" : ""}" data-clock>${st.clock ? "Back to today" : "Jump to tomorrow"}</button></div>
-      <div class="sim">◆ Simulated clock for the demo. Real time and security timeouts are unchanged.</div></div>
+      <div class="sim">◆ Demo clock</div></div>
       ${r.requests.map((q) => remCard(q)).join("")}
       <div class="btns" style="margin-top:14px"><button class="btn ghost" data-back style="width:auto;padding:0 18px">Back</button><button class="btn ghost" data-restart-split>Start over</button></div>`;
   }
@@ -429,7 +487,7 @@
     }
     const canDispute = !paid && !disputed && s !== "cancelled";
     return `<div class="card"><div class="row">${av(id)}<div class="grow" style="margin-left:4px"><div style="font-weight:650">${esc(q.reviewed_name)} owes ${fmt(q.amount_cents, { cents: true })}</div><div style="margin-top:6px">${status}</div></div></div>
-      ${r && st.clock && !paid && !disputed && s !== "cancelled" ? `<div class="bubble lana" style="margin-top:10px;max-width:100%">${esc(text)}</div><div class="sim">◆ Simulated send. The messaging line isn’t connected here.</div>` : ""}
+      ${r && st.clock && !paid && !disputed && s !== "cancelled" ? `<div class="bubble lana" style="margin-top:10px;max-width:100%">${esc(text)}</div><div class="sim">◆ Simulated send</div>` : ""}
       <div class="btns" style="margin-top:12px;flex-wrap:wrap">${action}${canDispute ? `<button class="btn small ghost" data-dispute="${id}">They disputed it</button>` : ""}</div></div>`;
   }
   function remSheet(id) {
@@ -452,10 +510,10 @@
       <p style="margin:0 0 8px">Messages you send Lana pass through a messaging provider, and connected services receive what they need to work.</p>
       <p style="margin:0">Lana’s model sees connection names and what they’re allowed to do. It never sees passwords, tokens or verification codes.</p></div>`;
     const activity = `<h2>Approvals</h2><div class="card list">${S.log.length ? S.log.map((l) => `<div class="item"><div class="grow"><div style="font-weight:550">${esc(l.text)}</div><div class="s">${esc(l.at)}</div></div><span class="tag ${l.kind === "approved" ? "acc" : ""}">${esc(l.kind)}</span></div>`).join("") : '<div class="empty small">Nothing approved yet.</div>'}</div>`;
-    const sim = `<div class="card flat" style="margin-top:12px"><div class="sim" style="margin:0">◆ Simulated vault. Face ID and authenticator checks are not performed in this browser preview. On iPhone this uses the native secure vault.</div></div>`;
+    const sim = `<div class="card flat" style="margin-top:12px"><div class="sim" style="margin:0">◆ Simulated. No Face ID or code check in this preview.</div></div>`;
     const lockIcon = '<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><rect x="4" y="10" width="16" height="11" rx="2.5"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>';
     if (v.stage === "locked" || v.stage === "bio") {
-      return `<div class="lock"><div class="ring">${lockIcon}</div><h1 style="margin:0">Vault is locked</h1><p class="sub" style="margin-top:6px">Connections, saved credentials and sensitive settings.</p></div>
+      return `<div class="lock"><div class="ring">${lockIcon}</div><h1 style="margin:0">Vault is locked</h1></div>
         ${v.err ? `<div class="card flat" style="border-color:var(--bad)"><span class="tag bad">Couldn’t unlock</span><p class="small" style="margin:6px 0 0">${esc(v.err)}</p></div>` : ""}
         <button class="btn accent" data-bio ${v.stage === "bio" ? "disabled" : ""}>${v.stage === "bio" ? "Checking Face ID…" : "Unlock with Face ID"}</button>
         <div style="text-align:center;margin-top:6px"><button class="small muted" data-bio-fail style="min-height:44px;text-decoration:underline">Show a failed attempt</button></div>
@@ -512,6 +570,7 @@
     const d = t.dataset;
     if (d.tab) { closeSheet(); return go(d.tab); }
     if (t.id === "demoPill") return demoSheet();
+    if ("messages" in d) return messagesSheet();
     if ("close" in d) return closeSheet();
     if ("reset" in d) { closeSheet(); clearInterval(vaultTimer); S = initialState(); toast("Demo reset"); top(); return render(); }
     if ("themeToggle" in d) { const r = document.documentElement; const dark = r.dataset.theme ? r.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches; r.dataset.theme = dark ? "light" : "dark"; return; }
