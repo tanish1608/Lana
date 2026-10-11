@@ -200,7 +200,7 @@ struct FlowBar: View {
 struct TransactionList: View {
     let title: String
     let subtitle: String
-    let txs: [Transaction]
+    let txs: [FWMCore.Transaction]
     let total: Int
     var body: some View {
         List {
