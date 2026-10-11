@@ -114,3 +114,34 @@ struct PressScaleStyle: ButtonStyle {
             .animation(.easeOut(duration: 0.12), value: configuration.isPressed)
     }
 }
+
+/// A PNG bundled with the package (Resources/).
+private func brandImage(_ name: String) -> Image? {
+    #if canImport(UIKit)
+    UIImage(named: name, in: .module, with: nil).map { Image(uiImage: $0) }
+    #else
+    Bundle.module.image(forResource: name).map { Image(nsImage: $0) }
+    #endif
+}
+
+/// The Lana mark (Resources/LanaMark.png).
+struct LanaMark: View {
+    var size: CGFloat = 30
+    var body: some View {
+        Group { if let i = brandImage("LanaMark") { i.resizable().interpolation(.high) } }
+            .scaledToFit().frame(width: size, height: size).accessibilityHidden(true)
+    }
+}
+
+/// Mark plus wordmark, for the top of Home. The wordmark is a template: navy on light, white on dark.
+struct LanaLogo: View {
+    var body: some View {
+        HStack(spacing: 7) {
+            LanaMark(size: 30)
+            if let w = brandImage("LanaWordmark") {
+                w.renderingMode(.template).resizable().interpolation(.high).scaledToFit().frame(height: 24).foregroundStyle(Theme.logoInk)
+            }
+        }
+        .accessibilityElement().accessibilityLabel("Lana").accessibilityAddTraits(.isHeader)
+    }
+}

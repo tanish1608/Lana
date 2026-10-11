@@ -71,7 +71,7 @@ struct AccountDetailView: View {
                 Text("This account is no longer connected.").foregroundStyle(Theme.ink2).padding(.top, 60)
             }
         }
-        .background { Theme.backdrop }
+        .scrollIndicators(.hidden).background { Theme.backdrop }
         .navigationTitle(account.map { AccountDisplay($0).title } ?? "Account")
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)

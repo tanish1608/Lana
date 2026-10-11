@@ -18,7 +18,7 @@ struct ChatPanel: View {
     var body: some View {
         VStack(spacing: 0) {
             HStack(spacing: 10) {
-                LanaOrb(size: 36)
+                LanaMark(size: 34)
                 VStack(alignment: .leading, spacing: 1) {
                     Text("Lana").font(.headline)
                     Text(OnDeviceRouter.status == .ready ? "On-device AI · demo financial data" : "Local model unavailable · basic answers")
@@ -74,7 +74,8 @@ struct ChatPanel: View {
                         if controller.busy { HStack { TypingDots(); Spacer() } }
                         Color.clear.frame(height: 1).id("end")
                     }.padding(.horizontal, 14).padding(.top, 12)
-                }.onChange(of: controller.messages.count) { _, _ in withAnimation { proxy.scrollTo("end", anchor: .bottom) } }
+                }.scrollIndicators(.hidden)
+                    .onChange(of: controller.messages.count) { _, _ in withAnimation { proxy.scrollTo("end", anchor: .bottom) } }
                     .onChange(of: controller.busy) { _, _ in withAnimation { proxy.scrollTo("end", anchor: .bottom) } }
                     .onAppear { proxy.scrollTo("end", anchor: .bottom) }
             }
@@ -110,8 +111,8 @@ struct ChatPanel: View {
                 }.disabled(controller.busy || draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty).accessibilityLabel("Send")
             }.padding(.horizontal, 10).padding(.bottom, 14)
         }
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 28, style: .continuous))
-        .background(Theme.cardFill, in: RoundedRectangle(cornerRadius: 28, style: .continuous))
+        // Chat stays solid so replies read clearly over any screen.
+        .background(Theme.card, in: RoundedRectangle(cornerRadius: 28, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: 28, style: .continuous).strokeBorder(Theme.glassEdge))
         .compositingGroup()
         .shadow(color: .black.opacity(0.10), radius: 3, y: 2)

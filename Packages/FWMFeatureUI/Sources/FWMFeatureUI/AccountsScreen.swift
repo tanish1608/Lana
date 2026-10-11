@@ -103,7 +103,7 @@ struct AccountsScreen: View {
             }
             .onChange(of: stage) { _, _ in withAnimation { proxy.scrollTo("keys", anchor: .center) } } // keep the keys card in view
             }
-            .background { Theme.backdrop }
+            .scrollIndicators(.hidden).background { Theme.backdrop }
             .navigationTitle("Accounts")
             .navigationDestination(for: String.self) { id in AccountDetailView(dataset: dataset, period: store.snapshotPeriod, accountID: id, onRemove: onRemove) }
             .toolbar {

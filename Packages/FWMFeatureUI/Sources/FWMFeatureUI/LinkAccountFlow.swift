@@ -108,7 +108,7 @@ struct LinkAccountSheet: View {
             }
             .padding(20)
         }
-        .background { Theme.backdrop }
+        .scrollIndicators(.hidden).background { Theme.backdrop }
     }
 
     private func bullet(_ icon: String, _ title: String, _ text: String) -> some View {
@@ -202,7 +202,7 @@ struct InstitutionPicker: View {
             }
             .padding(.horizontal, 16).padding(.bottom, 24)
         }
-        .background { Theme.backdrop }
+        .scrollIndicators(.hidden).background { Theme.backdrop }
         .navigationTitle("Select your institution")
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
@@ -252,7 +252,7 @@ struct ConnectInstitutionView: View {
             }
             .padding(20)
         }
-        .background { Theme.backdrop }
+        .scrollIndicators(.hidden).background { Theme.backdrop }
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
         #endif
@@ -349,7 +349,7 @@ struct StatementImportView: View {
             }
             .padding(.horizontal, 16).padding(.bottom, 24)
         }
-        .background { Theme.backdrop }
+        .scrollIndicators(.hidden).background { Theme.backdrop }
         .navigationTitle("Import activity")
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)

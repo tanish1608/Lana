@@ -28,7 +28,7 @@
     return {
       tab: "home",
       money: { period: "2026-09", view: "flow" },
-      budget: { accepted: Object.fromEntries([...P.budget.swaps, ...P.budget.habits].map((x) => [x.id, true])), memoryOn: true, adopted: null, busy: false },
+      budget: { accepted: {}, exec: {}, history: [], cat: null, memoryOn: true, adopted: null, busy: false },
       split: {
         step: 0, receipt: false, voice: false, upload: null,
         tip: P.split.ocr_misread.read, tipFixed: false,
@@ -86,7 +86,8 @@
   function closeSheet() { const s = $("#sheet"); if (s) s.remove(); }
   const MSG_ICON = '<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M12 3C6.5 3 2 6.8 2 11.5c0 2.6 1.4 4.9 3.6 6.5L5 21.5l4.1-2.1c.9.2 1.9.3 2.9.3 5.5 0 10-3.8 10-8.5S17.5 3 12 3z"/></svg>';
   // The conversation lives in Messages; screens only show which question they answer.
-  const bubbles = (me) => `<div class="askchip">${MSG_ICON}<span>“${esc(me)}”</span></div>`;
+  // Tapping it opens the Messages thread the screen came from.
+  const bubbles = (me, thread) => `<button class="askchip" data-thread="${thread}" aria-label="Open this conversation in Messages">${MSG_ICON}<span>“${esc(me)}”</span><b class="chev">›</b></button>`;
   // Hero amount: small currency sign and cents, big dollars.
   function big(c, cls = "") {
     const a = Math.abs(c), d = Math.floor(a / 100).toLocaleString("en-US"), ct = String(a % 100).padStart(2, "0");
@@ -127,7 +128,7 @@
       </button>
       <div class="duo">
         <button class="card ink-card" data-tab="split"><div class="ink-num num">${fmt(unpaidCents, { cents: true })}</div><div class="small">owed to you</div><div class="tiny">${unpaid.length ? unpaid.map((q) => esc(q.reviewed_name)).join(", ") : "All settled"}</div></button>
-        <button class="card sky2" data-tab="budget"><div class="sky-num num">${fmt(PL.reduction)}<small>/mo</small></div><div class="small">plan to save</div><div class="tiny">${S.budget.adopted ? "Adopted" : "Ready to review"}</div></button>
+        <button class="card sky2" data-tab="budget"><div class="sky-num num">${fmt(PL.reduction || budgetPlan(true).reduction)}<small>/mo</small></div><div class="small">${PL.reduction ? "plan to save" : "you could save"}</div><div class="tiny">${S.budget.adopted ? "Adopted" : PL.reduction ? "In progress" : "Swipe to review"}</div></button>
       </div>
       <button class="card msg-card" data-messages><div class="row"><span class="eyebrow">Latest in Messages</span><span class="chev">›</span></div>
         <div class="bubble lana" style="max-width:100%;margin-top:8px">You kept ${fmt(stays)} of ${fmt(f.net_income_cents)} in ${mon}. Want a plan to save $150 more?</div></button>`;
@@ -136,6 +137,22 @@
     const owed = fixtureSplit();
     const unpaid = owed.ok ? people().map((p) => owed.r.requests.find((q) => q.contact_id === p.contact_id)).filter(Boolean).filter((q) => reqState(q.contact_id) !== "paid_reported" && reqState(q.contact_id) !== "cancelled") : [];
     return { unpaid, unpaidCents: sum(unpaid, (q) => q.amount_cents) };
+  }
+  // The Messages thread behind each screen. Lana's lines are written from the same engine numbers.
+  function threadSheet(kind) {
+    const p = snapshotMonth(), v = mv(p), f = v.flow, mon = monthLabel(p).split(" ")[0];
+    const stays = f.to_savings_cents + f.to_investments_cents + f.retained_cash_cents;
+    const all = budgetPlan(true), ex = fixtureSplit(), rq = ex.ok ? people().map((x) => ex.r.requests.find((q) => q.contact_id === x.contact_id)).filter(Boolean) : [];
+    const T = {
+      money: { tab: "money", title: `${mon} breakdown`, msgs: [["me", `Where did my money go in ${mon}?`], ["lana", `You kept ${fmt(stays)} of ${fmt(f.net_income_cents)}. ${v.categories[0].category} was the biggest cost at ${fmt(v.categories[0].total_cents)}, then ${v.categories[1].category.toLowerCase()} at ${fmt(v.categories[1].total_cents)}.`]] },
+      budget: { tab: "budget", title: `${P.budget.period} plan`, msgs: [["me", "Help me save $150 next month without changing my rent."], ["lana", `I found ${budgetItems().length} ideas worth up to ${fmt(all.reduction)} a month, and rent stays at ${fmt(all.current.Rent)}. I left out instant coffee since you’ve passed on it before.`], ["lana", "Swipe through them in the app. I’ll ask before buying anything."]] },
+      split: { tab: "split", title: `Dinner at ${receipt().merchant}`, msgs: [["me", P.split.transcript], ["me", "📎 Receipt photo"], ["lana", rq.length ? `You’re owed ${fmt(sum(rq, (q) => q.amount_cents), { cents: true })}: ${rq.map((q) => `${q.reviewed_name} ${fmt(q.amount_cents, { cents: true })}`).join(", ")}. Review before I draft the requests?` : "I read the receipt. Review the split in the app?"]] }
+    }[kind];
+    sheet(`<div class="thread-head"><img src="brand/lana-mark.png" alt="" class="thread-av"><div><b>Lana</b><div class="tiny">iMessage · Today</div></div></div>
+      <div class="msg thread">${T.msgs.map(([who, t]) => `<div class="bubble ${who}">${esc(t)}</div>`).join("")}
+        <button class="link-card" data-tab="${T.tab}"><img src="brand/lana-mark.png" alt=""><div class="grow"><b>${esc(T.title)}</b><div class="tiny">Open in Lana</div></div><span class="chev">›</span></button></div>
+      <div class="sim">◆ Preview of the thread. On iPhone this jumps straight back to your Lana conversation in Messages.</div>
+      <div class="btns" style="margin-top:12px"><button class="btn ghost" data-close>Stay here</button><button class="btn accent" data-open-messages>Open Messages</button></div>`);
   }
   function messagesSheet() {
     sheet(`<h3>Lana lives in Messages</h3><p class="small muted" style="margin:6px 0 12px">Ask anything there. This app is for the details.</p>
@@ -202,7 +219,7 @@
     const biggest = v.categories[0];
     const answer = `In ${mon} you brought in <b>${fmt(f.net_income_cents)}</b> and spent <b>${fmt(f.expenses_cents)}</b>. ${esc(biggest.category)} was the biggest cost at ${fmt(biggest.total_cents)}. You moved ${fmt(f.to_savings_cents)} to savings and ${fmt(f.to_investments_cents)} to investing, and ${fmt(f.retained_cash_cents)} stayed in checking.`;
     const head = `<button class="back" data-tab="home">‹ Home</button>
-      ${bubbles(`Where did my money go in ${mon}?`)}
+      ${bubbles(`Where did my money go in ${mon}?`, "money")}
       <div class="eyebrow" style="margin:14px 4px 0">Stayed with you</div>
       <div style="margin:0 4px 14px">${big(stays)}</div>
       ${seg}
@@ -283,56 +300,99 @@
     const w = b.without_memory;
     return b.swaps.map((s) => (s.id === w.replaces ? { ...s, group: w.group, to: w.to, next: w.next, reason: w.reason, memory: false } : s));
   }
-  function budgetPlan() {
+  function budgetPlan(all = false) {
     const base = mv(P.budget.base_period), b = P.budget;
     const current = Object.fromEntries(base.categories.map((c) => [c.category, c.total_cents]));
     const items = [...swapsInPlay().map((s) => ({ ...s, savings: swapSavings(s) })), ...b.habits];
     const target = { ...current };
-    items.forEach((x) => { if (S.budget.accepted[x.id]) target[x.category] -= x.savings; });
+    items.forEach((x) => { if (all || S.budget.accepted[x.id]) target[x.category] -= x.savings; });
     const curTotal = sum(Object.values(current)), tgtTotal = sum(Object.values(target)), reduction = curTotal - tgtTotal;
     const f = base.flow;
     return { current, target, curTotal, tgtTotal, reduction, f, retainedNext: f.retained_cash_cents + reduction };
   }
   const planSig = () => JSON.stringify([S.budget.accepted, S.budget.memoryOn]);
 
+  // Every idea, in category order, swaps first. Decisions live in S.budget.accepted (true/false).
+  function budgetItems() {
+    return [...swapsInPlay().map((x) => ({ ...x, kind: "swap", savings: swapSavings(x) })), ...P.budget.habits.map((x) => ({ ...x, kind: "habit" }))];
+  }
+  const decided = (id) => id in S.budget.accepted;
+  function budgetCats() {
+    const base = mv(P.budget.base_period), items = budgetItems();
+    return base.categories.map((c) => {
+      const ideas = items.filter((x) => x.category === c.category);
+      return { name: c.category, spent: c.total_cents, ideas, pending: ideas.filter((x) => !decided(x.id)), kept: sum(ideas.filter((x) => S.budget.accepted[x.id]), (x) => x.savings), locked: c.category === "Rent" };
+    });
+  }
+  const CAT_ICON = { Rent: "⌂", Groceries: "🛒", Dining: "🍜", "Bills and subscriptions": "📱", Other: "☕️", Transport: "🚆" };
+  const shortCat = (n) => n.replace(" and subscriptions", " & subs");
+  // What "Keep" can turn into. Every action here is simulated in the preview.
+  function execFor(x) {
+    if (x.kind === "habit") return { verb: "Remind me", done: "Reminder on", ask: `Want a nudge for “${x.title.toLowerCase()}”?`, body: "Lana will message you at the moment it matters, like before a delivery order." };
+    if (x.group === "phone_plan") return { verb: "Switch plan", done: "Switch started", ask: "Switch your phone plan?", body: `Lana opens your carrier with the ${esc(x.to)} selected for ${fmt(x.next)}/mo. You confirm the change there.` };
+    return { verb: `Buy for ${fmt(x.next)}`, done: "On next order", ask: `Buy ${esc(x.to.toLowerCase())}?`, body: `Lana adds it to your next grocery order for <b class="num">${fmt(x.next)}</b> instead of ${fmt(x.cur)}. You approve the cart before anything is charged.` };
+  }
+  function ideaCard(x, i) {
+    const tag = x.kind === "swap" ? (x.memory ? '<span class="tag acc">From your history</span>' : '<span class="tag">Swap</span>') : '<span class="tag">Habit</span>';
+    return `<div class="idea ${i === 0 ? "top" : ""}" style="--i:${i}" ${i === 0 ? `data-idea="${x.id}"` : 'aria-hidden="true"'}>
+      <div class="stamp keep">KEEP</div><div class="stamp skip">SKIP</div>
+      <div class="row">${tag}<span class="small muted">${shortCat(x.category)}</span></div>
+      <h3 class="idea-t">${esc(x.title)}</h3>
+      ${x.kind === "swap" ? `<div class="fromto2"><div><span class="muted small">Now</span><div>${esc(x.from)}</div><b class="num">${fmt(x.cur)}</b></div><div class="arrow">→</div><div><span class="muted small">Instead</span><div>${esc(x.to)}</div><b class="num">${fmt(x.next)}</b></div></div>` : ""}
+      <div class="idea-save"><span class="num">${fmt(x.savings)}</span><small>/mo saved</small></div>
+      <p class="small idea-why">${esc(x.reason)}</p>
+      ${x.kind === "swap" ? '<div class="tiny">Illustrative prices</div>' : ""}
+    </div>`;
+  }
   function viewBudget() {
-    const b = P.budget, PL = budgetPlan(), goal = b.extra_savings_cents;
-    const card = (s, habit) => {
-      const on = !!S.budget.accepted[s.id], sv = habit ? s.savings : swapSavings(s);
-      return `<div class="swap ${on ? "" : "off"}">
-        <div class="row"><h3 style="font-size:15.5px">${esc(s.title)}</h3><span class="num" style="color:var(--accent);font-weight:700">${fmt(sv)}/mo</span></div>
-        ${habit ? `<div class="fromto">${esc(s.category)} · habit change</div>` : `<div class="fromto"><s>${esc(s.from)}</s> <b class="num">${fmt(s.cur)}</b><br>→ ${esc(s.to)} <b class="num">${fmt(s.next)}</b></div>`}
-        <div class="small" style="margin-bottom:10px">${s.memory ? '<span class="tag acc">From your history</span> ' : ""}${esc(s.reason)}</div>
-        <div class="toggle" role="group" aria-label="${esc(s.title)}"><button class="yes" data-acc="${s.id}" aria-pressed="${on}">Keep</button><button class="no" data-rej="${s.id}" aria-pressed="${!on}">Skip</button></div></div>`;
-    };
+    const b = P.budget, PL = budgetPlan(), goal = b.extra_savings_cents, cats = budgetCats(), items = budgetItems();
+    const open = cats.filter((c) => !c.locked && c.pending.length);
+    if (!S.budget.cat || !cats.find((c) => c.name === S.budget.cat)) S.budget.cat = (open[0] || cats.find((c) => c.ideas.length)).name;
+    const cur = cats.find((c) => c.name === S.budget.cat), maxSpent = Math.max(...cats.map((c) => c.spent));
     const changed = S.budget.adopted && S.budget.adopted.sig !== planSig();
-    const swapTotal = sum(swapsInPlay().filter((s) => S.budget.accepted[s.id]), swapSavings);
-    const habitTotal = sum(b.habits.filter((s) => S.budget.accepted[s.id]), (s) => s.savings);
-    const rows = Object.keys(PL.current);
-    const line = "padding-top:8px;border-top:1px solid var(--line)";
-    const pct = Math.min(1, PL.reduction / goal);
-    return `${bubbles("Help me save $150 next month without changing my rent.")}
-      <div class="card sky gauge-card">
-        <div class="gauge">${ring([{ label: "Projected", v: Math.round(pct * 1000), c: "var(--accent)" }], 1000, `<div class="muted small">Projected</div>${big(PL.reduction, "md")}<div class="pillok">${PL.reduction >= goal ? "Meets goal" : fmt(goal - PL.reduction) + " short"}</div>`)}</div>
-        <div class="tiny" style="text-align:center">per month · ${b.period} · not saved yet</div>
+    const left = items.filter((x) => !decided(x.id)).length, kept = items.filter((x) => S.budget.accepted[x.id]);
+    const pct = Math.min(100, (PL.reduction / goal) * 100);
+    const next = open.find((c) => c.name !== cur.name);
+    const deck = cur.locked
+      ? `<div class="deck-done"><div class="big-ic">🔒</div><b>Rent stays at ${fmt(cur.spent)}</b><div class="small muted">You asked Lana not to touch it.</div></div>`
+      : cur.pending.length
+        ? `<div class="deck">${cur.pending.slice(0, 3).map(ideaCard).reverse().join("")}</div>
+           <div class="deck-btns"><button class="round skip" data-swipe="skip" aria-label="Skip">✕</button><span class="small muted num">${cur.ideas.length - cur.pending.length + 1} of ${cur.ideas.length}</span><button class="round keep" data-swipe="keep" aria-label="Keep">✓</button></div>`
+        : `<div class="deck-done"><div class="big-ic">✓</div><b>${shortCat(cur.name)} reviewed</b><div class="small muted">${cur.kept ? `Saving ${fmt(cur.kept)}/mo here` : "Nothing kept here"}</div>${next ? `<button class="btn small accent" data-bcat="${esc(next.name)}" style="margin-top:12px">Next: ${shortCat(next.name)} ›</button>` : ""}</div>`;
+    return `${bubbles("Help me save $150 next month without changing my rent.", "budget")}
+      <div class="card sky goal-card">
+        <div class="row"><span class="eyebrow">${b.period} plan</span>${S.budget.adopted && !changed ? '<span class="pillok">Adopted</span>' : `<span class="tiny">${left ? `${left} ideas left` : "All reviewed"}</span>`}</div>
+        <div class="goal-num">${big(PL.reduction, "md")}<span class="small"> of ${fmt(goal)}/mo</span></div>
+        <div class="goal-bar"><span data-w="${pct.toFixed(1)}"></span></div>
       </div>
-      ${S.budget.adopted ? `<div class="explain"><div class="k">✓ ${changed ? "Edited since adopting" : "Adopted"}</div><p>${changed ? "Review and adopt again to update your budget." : `Your ${b.period} budget is updated. Balances and purchases are unchanged.`}</p></div>` : ""}
-      <div class="card">
-        <div class="cmp num"><span class="h">Category</span><span class="h" style="text-align:right">Sep</span><span class="h" style="text-align:right">Plan</span>
-        ${rows.map((k) => `<span>${esc(k.replace(" and subscriptions", " & subs"))}</span><span style="text-align:right" class="muted">${fmt(PL.current[k])}</span><span style="text-align:right" class="${PL.target[k] < PL.current[k] ? "d" : ""}">${fmt(PL.target[k])}</span>`).join("")}
-        <span style="font-weight:700;${line}">Total</span><span style="text-align:right;${line}" class="muted">${fmt(PL.curTotal)}</span><span style="text-align:right;font-weight:700;${line}">${fmt(PL.tgtTotal)}</span></div>
-        <div class="kv" style="margin-top:12px"><span class="muted">To savings &amp; investing</span><span class="num">${fmt(PL.f.to_savings_cents + PL.f.to_investments_cents)} · unchanged</span></div>
-        <div class="kv"><span class="muted">Kept in checking</span><span class="num">${fmt(PL.f.retained_cash_cents)} → <b style="color:var(--accent)">${fmt(PL.retainedNext)}</b></span></div>
-      </div>
+      <h2>Spending by category · Sep</h2>
+      <div class="cats" role="tablist">${cats.map((c) => `<button class="cat ${c.name === cur.name ? "on" : ""}" data-bcat="${esc(c.name)}" role="tab" aria-selected="${c.name === cur.name}">
+          <span class="cat-ic">${CAT_ICON[c.name] || "•"}</span><span class="cat-n">${shortCat(c.name)}</span><b class="num">${fmt(c.spent)}</b>
+          <span class="cat-bar"><i style="width:${((c.spent / maxSpent) * 100).toFixed(0)}%"></i></span>
+          <span class="cat-s">${c.locked ? "Locked" : !c.ideas.length ? "No ideas" : c.pending.length ? `${c.pending.length} idea${c.pending.length > 1 ? "s" : ""}` : c.kept ? `−${fmt(c.kept)}` : "Reviewed"}</span></button>`).join("")}</div>
+      ${deck}
+      ${S.budget.history.length ? `<div style="text-align:center"><button class="small" data-undo style="min-height:44px;color:var(--accent)">Undo last</button></div>` : ""}
+      <h2>Your plan · ${fmt(PL.reduction)}/mo</h2>
+      <div class="card list">${kept.length ? kept.map((x) => { const e = S.budget.exec[x.id]; return `<div class="item"><div class="grow"><div class="t">${esc(x.title)}</div><div class="s">${esc(shortCat(x.category))}${e ? ` · <span style="color:var(--ok)">${esc(execFor(x).done)}</span>` : ""}</div></div>${!e ? `<button class="btn small ghost" data-exec="${x.id}">${x.kind === "habit" ? "Remind" : x.group === "phone_plan" ? "Switch" : "Buy"}</button>` : ""}<span class="num a" style="color:var(--accent)">${fmt(x.savings)}</span></div>`; }).join("") : '<div class="empty small">Swipe right on ideas you like.</div>'}</div>
+      ${Object.keys(S.budget.exec).length ? '<div class="sim" style="margin:0 4px 8px">◆ Simulated. No orders, reminders or plan switches happen in this preview.</div>' : ""}
+      <button class="btn accent" data-adopt ${!kept.length || (S.budget.adopted && !changed) ? "disabled" : ""}>${S.budget.adopted && !changed ? "Plan adopted" : "Adopt plan"}</button>
       <h2>Your rules</h2>
-      <div class="card flat"><div class="chips">${b.constraints.filter((c) => S.budget.memoryOn || c.id !== "c_instant").map((c) => `<span class="chip rule" title="${esc(c.source)}">✓ ${esc(c.text)}</span>`).join("")}</div></div>
-      <h2>Swaps · ${fmt(swapTotal)}</h2>${swapsInPlay().map((s) => card(s, false)).join("")}
-      <p class="note">Illustrative prices.</p>
-      <h2>Habits · ${fmt(habitTotal)}</h2>${b.habits.map((s) => card(s, true)).join("")}
-      <h2>Left out on purpose</h2>
-      <div class="card flat list">${b.excluded.filter((x) => S.budget.memoryOn || !x.memory).map((x) => `<div class="item"><div class="grow"><div class="t">${esc(x.title)}</div><div class="s">${esc(x.why)}</div></div><span class="num muted">${fmt(x.savings)}/mo</span></div>`).join("")}
-        <button class="item" data-why><div class="grow"><div class="t" style="color:var(--accent)">Why these suggestions?</div></div><span class="chev">›</span></button></div>
-      <div style="margin-top:16px"><button class="btn accent" data-adopt ${S.budget.adopted && !changed ? "disabled" : ""}>${S.budget.adopted && !changed ? "Plan adopted" : "Review & adopt plan"}</button></div>`;
+      <div class="card flat"><div class="chips">${b.constraints.filter((c) => S.budget.memoryOn || c.id !== "c_instant").map((c) => `<span class="chip rule" title="${esc(c.source)}">✓ ${esc(c.text)}</span>`).join("")}</div>
+        <button class="item" data-why style="display:flex;width:100%;min-height:44px;align-items:center;margin-top:8px"><span class="grow" style="color:var(--accent);font-weight:600;text-align:left">Why these ideas? ${b.excluded.filter((x) => S.budget.memoryOn || !x.memory).length} left out</span><span class="chev">›</span></button></div>`;
+  }
+  function decide(id, keep) {
+    const x = budgetItems().find((i) => i.id === id); if (!x || decided(id)) return;
+    S.budget.accepted[id] = keep; S.budget.history.push(id); render();
+    if (keep) execSheet(id);
+  }
+  function execSheet(id) {
+    const x = budgetItems().find((i) => i.id === id), e = execFor(x);
+    sheet(`<div class="exec-ic">${x.kind === "habit" ? "⏰" : x.group === "phone_plan" ? "📱" : "🛒"}</div>
+      <h3 style="text-align:center">${e.ask}</h3>
+      <p class="small" style="text-align:center;margin:8px 8px 14px">${e.body}</p>
+      <div class="kv"><span class="muted">Saves</span><span class="num" style="color:var(--accent);font-weight:650">${fmt(x.savings)}/mo</span></div>
+      <div class="sim">◆ Simulated. Nothing is bought, sent or switched in this preview.</div>
+      <div class="btns" style="margin-top:14px"><button class="btn ghost" data-close>Just add to plan</button><button class="btn accent" data-exec-go="${id}">${e.verb}</button></div>`);
   }
   function whySheet() {
     const m = P.budget.memory;
@@ -388,12 +448,12 @@
     const rc = receipt(), st = S.split, merchant = rc.merchant, dateStr = dateLabel(rc.date + "T12:00:00-07:00");
     const stepper = `<div class="stepper">${STEPS.map((_, i) => `<span class="${i <= st.step ? "on" : ""}"></span>`).join("")}</div>`;
     const nav = (next, label, dis) => `<div class="btns" style="margin-top:14px">${st.step > 0 ? '<button class="btn ghost" data-back style="width:auto;padding:0 18px">Back</button>' : ""}<button class="btn accent" data-next="${next}" ${dis ? "disabled" : ""}>${label}</button></div>`;
-    const head = (t, s) => `${stepper}<p class="muted small" style="margin:0 4px">Step ${st.step + 1} of ${STEPS.length} · ${STEPS[st.step]}</p><h1>${t}</h1>${s ? `<p class="sub">${s}</p>` : ""}`;
+    const head = (t, s) => `${bubbles("I paid for dinner with Tanish and Aryan…", "split")}${stepper}<p class="muted small" style="margin:0 4px">Step ${st.step + 1} of ${STEPS.length} · ${STEPS[st.step]}</p><h1>${t}</h1>${s ? `<p class="sub">${s}</p>` : ""}`;
 
     if (st.step === 0) {
       const wave = Array.from({ length: 34 }, (_, i) => `<i style="height:${6 + Math.round(Math.abs(Math.sin(i * 1.7) * 18 + Math.cos(i * 0.6) * 4))}px"></i>`).join("");
       const both = st.receipt && st.voice;
-      return head("Split dinner", "") + bubbles("I paid for dinner with Tanish and Aryan…") + `
+      return head("Split dinner", "") + `
         <div class="card"><div class="row"><h3>Receipt</h3>${st.receipt ? '<span class="tag acc">Received</span>' : '<span class="tag">Waiting</span>'}</div>
           ${st.upload ? `<img src="${st.upload}" alt="Your uploaded receipt" style="width:100%;max-height:160px;object-fit:cover;border-radius:12px;margin-top:10px">` : ""}
           ${st.receipt ? `<p class="small muted" style="margin:8px 0 0">${st.upload ? "Your photo is shown. This preview reads the sample receipt; on iPhone the photo is read on-device." : `${esc(merchant)} · ${dateStr}`}</p>` : ""}
@@ -534,6 +594,8 @@
     }
     if (has("save", "budget", "plan", "150", "cut")) {
       const PL = budgetPlan(), top = swapsInPlay().filter((x) => S.budget.accepted[x.id]).sort((x, y) => swapSavings(y) - swapSavings(x)).slice(0, 2);
+      if (!PL.reduction) { const all = budgetPlan(true); return { text: `I found ${budgetItems().length} ideas worth up to ${fmt(all.reduction)} a month, with rent unchanged. Swipe through them by category and I’ll ask before buying anything.`, actions: [["budget", "Start swiping"]] }; }
+      if (!top.length) return { text: `So far your plan saves ${fmt(PL.reduction)} a month from habit changes.`, actions: [["budget", "Keep going"]] };
       return { text: `Your plan saves ${fmt(PL.reduction)} a month with rent unchanged. Biggest wins: ${top.map((x) => `${x.title.toLowerCase()} (${fmt(swapSavings(x))})`).join(" and ")}.`, actions: [["budget", "Review plan"]] };
     }
     if (has("worth", "net", "assets", "debt")) return { text: `Your net worth is ${fmt(v.net_worth_cents)}: ${fmt(v.assets_cents)} you own minus ${fmt(v.liabilities_cents)} you owe, as of ${dateLabel(DS.as_of)}.`, actions: [["vault", "See accounts"]] };
@@ -547,7 +609,7 @@
   }
   function chatHTML() {
     const c = S.chat;
-    return `<div class="chat-head"><span class="lana-av">${SPARK}</span><div class="grow"><b>Lana</b><div class="tiny">Preview replies from your demo numbers</div></div>
+    return `<div class="chat-head"><img class="lana-av" src="brand/lana-mark.png" alt=""><div class="grow"><b>Lana</b><div class="tiny">Preview replies from your demo numbers</div></div>
         <button class="chat-x" data-chat aria-label="Close chat">×</button></div>
       <div class="chat-log" id="chatLog" aria-live="polite">
         ${c.msgs.map((m) => `<div class="bubble ${m.from === "me" ? "me" : "lana"}">${esc(m.text)}${m.actions ? `<div class="bub-acts">${m.actions.map(([t, l]) => `<button data-tab="${t}">${esc(l)} ›</button>`).join("")}</div>` : ""}</div>`).join("")}
@@ -654,6 +716,30 @@
       <div class="btns" style="margin-top:12px"><button class="btn ghost" data-theme-toggle>Light / dark</button><button class="btn" data-reset>Reset demo</button></div>`);
   }
 
+  // ---------- swipe deck ----------
+  function flyOut(el, keep) {
+    el.style.transition = "transform .3s ease-in, opacity .3s ease-in";
+    el.style.transform = `translateX(${keep ? 520 : -520}px) rotate(${keep ? 24 : -24}deg)`; el.style.opacity = "0";
+    setTimeout(() => decide(el.dataset.idea, keep), 220);
+  }
+  let drag = null;
+  document.addEventListener("pointerdown", (e) => {
+    const el = e.target.closest(".idea.top"); if (!el) return;
+    drag = { el, x0: e.clientX, y0: e.clientY, dx: 0 }; el.setPointerCapture(e.pointerId); el.style.transition = "none";
+  });
+  document.addEventListener("pointermove", (e) => {
+    if (!drag) return; const dx = e.clientX - drag.x0; drag.dx = dx;
+    drag.el.style.transform = `translateX(${dx}px) rotate(${dx / 18}deg)`;
+    drag.el.style.setProperty("--keep", Math.max(0, Math.min(1, dx / 90))); drag.el.style.setProperty("--skip", Math.max(0, Math.min(1, -dx / 90)));
+  });
+  const endDrag = () => {
+    if (!drag) return; const { el, dx } = drag; drag = null;
+    if (Math.abs(dx) > 90) return flyOut(el, dx > 0);
+    el.style.transition = "transform .35s cubic-bezier(.2,.9,.3,1.2)"; el.style.transform = ""; el.style.setProperty("--keep", 0); el.style.setProperty("--skip", 0);
+  };
+  document.addEventListener("pointerup", endDrag); document.addEventListener("pointercancel", endDrag);
+  document.addEventListener("keydown", (e) => { if (S && S.tab === "budget" && !e.target.closest("input") && $(".idea.top") && (e.key === "ArrowRight" || e.key === "ArrowLeft")) flyOut($(".idea.top"), e.key === "ArrowRight"); });
+
   // ---------- events ----------
   document.addEventListener("input", (e) => {
     const t = e.target;
@@ -681,6 +767,8 @@
     if ("connect" in d) return toast("Simulated. Linking a new account isn’t in this preview.");
     if (t.id === "demoPill") return demoSheet();
     if ("messages" in d) return messagesSheet();
+    if (d.thread) return threadSheet(d.thread);
+    if ("openMessages" in d) { closeSheet(); return toast("Simulated. On iPhone this opens your Lana thread in Messages."); }
     if ("close" in d) return closeSheet();
     if ("reset" in d) { closeSheet(); clearInterval(vaultTimer); S = initialState(); toast("Demo reset"); top(); renderChat(); return render(); }
     if ("themeToggle" in d) { const r = document.documentElement; const dark = r.dataset.theme ? r.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches; r.dataset.theme = dark ? "light" : "dark"; return; }
@@ -689,8 +777,11 @@
     if (d.cat) return catSheet(d.cat);
     if (d.xfer) return xferSheet(d.xfer);
     if (d.acct) return acctSheet(d.acct);
-    if (d.acc) { S.budget.accepted[d.acc] = true; return render(); }
-    if (d.rej) { S.budget.accepted[d.rej] = false; return render(); }
+    if (d.bcat) { S.budget.cat = d.bcat; return render(); }
+    if (d.swipe) { const top = $(".idea.top"); if (top) flyOut(top, d.swipe === "keep"); return; }
+    if ("undo" in d) { const id = S.budget.history.pop(); if (id) { delete S.budget.accepted[id]; delete S.budget.exec[id]; S.budget.cat = budgetItems().find((x) => x.id === id).category; } return render(); }
+    if (d.exec) return execSheet(d.exec);
+    if (d.execGo) { const x = budgetItems().find((i) => i.id === d.execGo), e = execFor(x); S.budget.exec[x.id] = true; logAction(`${x.title}: ${e.done.toLowerCase()} (simulated)`); closeSheet(); render(); toast(`${e.done}. Simulated in this preview.`); return; }
     if ("why" in d) return whySheet();
     if (d.mem) { S.budget.memoryOn = d.mem === "1"; render(); return whySheet(); }
     if ("adopt" in d) return adoptSheet();
