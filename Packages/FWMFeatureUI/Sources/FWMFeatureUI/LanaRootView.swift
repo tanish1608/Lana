@@ -39,7 +39,11 @@ public struct LanaRootView: View {
                     contacts: store.dataset.contacts ?? [], datasetVersion: store.dataset.datasetVersion, dataMode: receipt.receiptId.hasPrefix("local-") ? .cached : store.dataset.dataMode)
                 log.insert("Reviewed split · \(result.outstandingCents) cents outstanding; nothing sent", at: 0)
             }, onInvalidate: { chat.reviewedSplit = nil; store.reviewedResult = nil }, onAction: { log.insert($0, at: 0) }, states: $requestStates) }
-            section(.accounts) { AccountsScreen(store: store, unlocker: unlocker, log: log, relay: relay, isActive: tab == .accounts) }
+            section(.accounts) { AccountsScreen(store: store, dataset: chat.dataset, unlocker: unlocker, log: log, relay: relay, isActive: tab == .accounts,
+                onLink: { account, txns in
+                    chat.addAccount(account, transactions: txns); syncStore()
+                    log.insert("Imported \(account.institution) \(AccountDisplay(account).subtitle) · \(txns.count) transactions, on this iPhone", at: 0)
+                }, onRemove: { chat.removeImportedAccount($0); syncStore() }) }
         }
         .overlay {
             if showChat {
@@ -60,6 +64,12 @@ public struct LanaRootView: View {
         .task(id: scenePhase) { await relay.setForeground(scenePhase == .active) }
         .task { await chat.restore() }
         .onChange(of: requestStates) { _, states in chat.requestStates = Dictionary(uniqueKeysWithValues: states.map { (name($0.key), $0.value.label) }) }
+    }
+
+    /// Screens that read the store see the session dataset; a reviewed split follows its new version.
+    private func syncStore() {
+        store.dataset = chat.dataset
+        if var split = store.reviewedResult { split.provenance.datasetVersion = chat.dataset.datasetVersion; store.reviewedResult = split }
     }
 
     private func name(_ id: String) -> String { store.dataset.contacts?.first { $0.contactId == id }?.reviewedName ?? id }

@@ -43,10 +43,14 @@ private let demoEntries = [
 /// Everything Lana is connected to: financial accounts first, then the access keys behind Face ID.
 struct AccountsScreen: View {
     let store: DemoStore
+    /// The current session dataset (fixture plus any accounts imported on this phone).
+    let dataset: Dataset
     let unlocker: VaultUnlocking
     let log: [String]
     let relay: LanaRelayConnection
     var isActive = true
+    var onLink: (Account, [FWMCore.Transaction]) -> Void = { _, _ in }
+    var onRemove: (String) -> Void = { _ in }
     @State private var authOperation: UUID?
     @State private var messaging = false
     enum Stage { case locked, checking, secondFactor, verifying, unlocked }
@@ -58,7 +62,7 @@ struct AccountsScreen: View {
     @Environment(\.scenePhase) private var scenePhase
     private let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
     @State private var now = Date()
-    @State private var addNote = false
+    @State private var linking = false
 
     var body: some View {
         NavigationStack {
@@ -101,18 +105,13 @@ struct AccountsScreen: View {
             }
             .background { Theme.backdrop }
             .navigationTitle("Accounts")
+            .navigationDestination(for: String.self) { id in AccountDetailView(dataset: dataset, period: store.snapshotPeriod, accountID: id, onRemove: onRemove) }
             .toolbar {
-                Button { withAnimation { addNote = true }; Task { try? await Task.sleep(nanoseconds: 2_000_000_000); withAnimation { addNote = false } } } label: {
-                    Label("Add", systemImage: "plus").labelStyle(.titleAndIcon).font(.subheadline.weight(.semibold))
+                Button { linking = true } label: {
+                    Label("Add account", systemImage: "plus").labelStyle(.titleAndIcon).font(.subheadline.weight(.semibold))
                 }
             }
-            .overlay(alignment: .top) {
-                if addNote {
-                    SimulatedNote("Simulated. Linking a new account isn’t wired in this build.")
-                        .padding(.horizontal, 14).padding(.vertical, 10).background(.regularMaterial, in: Capsule()).raised(22)
-                        .padding(.top, 8).transition(.move(edge: .top).combined(with: .opacity))
-                }
-            }
+            .sheet(isPresented: $linking) { LinkAccountSheet(user: dataset.user, onLink: onLink) }
             .sheet(isPresented: $messaging) { RelaySettings(connection: relay) }
             .onChange(of: isActive) { _, active in if !active { lock() } }
             .onChange(of: scenePhase) { _, phase in if phase == .background || (phase != .active && stage != .checking) { lock() } }
@@ -146,107 +145,141 @@ struct AccountsScreen: View {
 
     // MARK: connected accounts
 
-    private var accounts: [AccountBalance] {
-        if case .success(let v) = store.moneyView(store.snapshotPeriod) { return v.accounts }
-        return []
-    }
+    private var view: MoneyView? { try? MoneyEngine.moneyView(dataset, period: store.snapshotPeriod) }
     /// Institutions in first-seen order.
-    private var institutions: [String] { accounts.reduce(into: [String]()) { if !$0.contains($1.institution) { $0.append($1.institution) } } }
+    private func institutions(_ all: [AccountBalance]) -> [String] { all.reduce(into: [String]()) { if !$0.contains($1.institution) { $0.append($1.institution) } } }
 
     @ViewBuilder private var connected: some View {
-        let all = accounts, synced = DemoStore.day(store.dataset.asOf)
-        Text("\(all.count) accounts at \(institutions.count) institutions · demo data").font(.subheadline).foregroundStyle(Theme.ink2).padding(.horizontal, 4)
-        if case .success(let v) = store.moneyView(store.snapshotPeriod) {
-            VStack(alignment: .leading, spacing: 10) {
-                Eyebrow("Net worth")
+        if let v = view {
+            let all = v.accounts, imported = all.contains { AccountDisplay($0).isImported }
+            VStack(alignment: .leading, spacing: 12) {
+                HStack(alignment: .firstTextBaseline) {
+                    Eyebrow("Net worth")
+                    Spacer()
+                    Text("\(all.count) accounts · \(institutions(all).count) institutions").font(.caption).foregroundStyle(Theme.ink2)
+                }
                 HeroAmount(cents: v.netWorthCents, size: 40)
                 GeometryReader { g in
-                    let total = CGFloat(max(all.reduce(0) { $0 + $1.balanceCents }, 1)), w = g.size.width - CGFloat(max(all.count - 1, 0)) * 3
+                    let assets = all.filter { $0.assetOrLiability == .asset }
+                    let total = CGFloat(max(assets.reduce(0) { $0 + $1.balanceCents }, 1)), w = g.size.width - CGFloat(max(assets.count - 1, 0)) * 3
                     HStack(spacing: 3) {
-                        ForEach(all, id: \.accountId) { a in
-                            Capsule().fill(Self.brand(a.institution).colors[0].gradient).opacity(a.assetOrLiability == .asset ? 1 : 0.35)
-                                .frame(width: max(4, w * CGFloat(a.balanceCents) / total))
+                        ForEach(assets, id: \.accountId) { a in
+                            Capsule().fill(AccountDisplay(a).color.gradient).frame(width: max(4, w * CGFloat(a.balanceCents) / total))
                         }
                     }
                 }
-                .frame(height: 12)
-                .accessibilityElement().accessibilityLabel(all.map { "\(Self.kindName($0.kind)) \(usd($0.balanceCents))" }.joined(separator: ", "))
-                HStack { Text(usd(v.assetsCents)).bold() + Text(" owned"); Spacer(); Text(usd(v.liabilitiesCents)).bold() + Text(" owed") }
+                .frame(height: 10)
+                .accessibilityElement().accessibilityLabel(all.map { "\(AccountDisplay($0).title) \(usd($0.balanceCents))" }.joined(separator: ", "))
+                HStack { Text(usd(v.assetsCents)).bold() + Text(" assets"); Spacer(); Text(usd(v.liabilitiesCents)).bold() + Text(" debt") }
                     .font(.footnote).monospacedDigit().foregroundStyle(Theme.ink2)
+                Text(imported ? "Sample data plus statements imported on this iPhone" : "Sample data · balances as of \(DemoStore.day(dataset.asOf))")
+                    .font(.caption).foregroundStyle(Theme.ink3)
             }
             .padding(18).frame(maxWidth: .infinity, alignment: .leading)
             .background(Theme.cardFill, in: RoundedRectangle(cornerRadius: 24, style: .continuous)).raised(24)
-        }
-        ForEach(institutions, id: \.self) { inst in
-            let brand = Self.brand(inst)
-            VStack(alignment: .leading, spacing: 12) {
-                HStack(spacing: 12) {
-                    Text(brand.monogram).font(.headline.weight(.bold)).foregroundStyle(.white).frame(width: 44, height: 44)
-                        .background(LinearGradient(colors: brand.colors, startPoint: .topLeading, endPoint: .bottomTrailing), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-                        .shadow(color: brand.colors[0].opacity(0.35), radius: 6, y: 3)
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(inst).font(.headline)
-                        HStack(spacing: 5) { Circle().fill(Theme.ok).frame(width: 7, height: 7); Text("Connected · synced \(synced)").font(.caption).foregroundStyle(Theme.ink2) }
-                    }
-                    Spacer()
-                }
-                ForEach(all.filter { $0.institution == inst }, id: \.accountId) { a in
-                    Divider()
+
+            ForEach(AccountKind.Group.allCases, id: \.self) { group in
+                let list = all.filter { AccountKind.group($0.kind) == group }
+                if !list.isEmpty {
                     HStack {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(Self.kindName(a.kind)).fontWeight(.semibold)
-                            Text(change(a)).font(.caption).foregroundStyle(Theme.ink2).monospacedDigit()
-                        }
+                        SectionLabel(group.title)
                         Spacer()
-                        Text(usd(a.balanceCents)).font(.title3.weight(.bold)).monospacedDigit()
+                        Text(usd(list.reduce(0) { $0 + $1.balanceCents })).font(.footnote.weight(.semibold)).monospacedDigit()
+                            .foregroundStyle(Theme.ink2).padding(.top, 18).padding(.horizontal, 16)
                     }
-                    .accessibilityElement(children: .combine)
+                    VStack(spacing: 0) {
+                        ForEach(Array(list.enumerated()), id: \.element.accountId) { n, a in
+                            if n > 0 { Divider().padding(.leading, 68) }
+                            NavigationLink(value: a.accountId) { accountRow(a) }.buttonStyle(.plain)
+                        }
+                    }
+                    .background(Theme.cardFill, in: RoundedRectangle(cornerRadius: 20, style: .continuous)).raised(20)
                 }
             }
-            .padding(16).background(Theme.cardFill, in: RoundedRectangle(cornerRadius: 20, style: .continuous)).raised(20)
+
+            SectionLabel("Connections")
+            VStack(spacing: 0) {
+                ForEach(Array(institutions(all).enumerated()), id: \.element) { n, inst in
+                    let accounts = all.filter { $0.institution == inst }
+                    let csv = accounts.contains { AccountDisplay($0).isImported }
+                    if n > 0 { Divider().padding(.leading, 62) }
+                    HStack(spacing: 12) {
+                        InstitutionLogo(name: inst, size: 36)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(inst).fontWeight(.semibold)
+                            Text("\(accounts.count) account\(accounts.count == 1 ? "" : "s") · \(csv ? "imported statement" : "sample data")")
+                                .font(.caption).foregroundStyle(Theme.ink2)
+                        }
+                        Spacer()
+                        HStack(spacing: 5) { Circle().fill(Theme.ok).frame(width: 7, height: 7); Text(csv ? "Imported" : "Up to date").font(.caption.weight(.semibold)).foregroundStyle(Theme.ink2) }
+                    }
+                    .padding(.horizontal, 14).padding(.vertical, 11)
+                    .accessibilityElement(children: .combine)
+                }
+                Divider().padding(.leading, 62)
+                Button { linking = true } label: {
+                    HStack(spacing: 12) {
+                        Image(systemName: "plus").font(.headline).foregroundStyle(Theme.accent).frame(width: 36, height: 36)
+                            .background(Theme.accentSoft, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+                        Text("Add an account").fontWeight(.semibold).foregroundStyle(Theme.accent)
+                        Spacer()
+                    }
+                    .padding(.horizontal, 14).padding(.vertical, 11).contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+            }
+            .background(Theme.cardFill, in: RoundedRectangle(cornerRadius: 20, style: .continuous)).raised(20)
         }
         SectionLabel("Also connected")
         Card {
-            service("message.fill", .green, "Messages", "Talk to Lana by text", "Simulated here")
+            service(AnyView(symbolMark("message.fill", .green)), "Messages", "Talk to Lana by text", "Simulated here")
             Divider()
-            service("arrow.up.right.square.fill", .blue, "Venmo", "Lana never holds your login", "Handoff")
+            service(AnyView(InstitutionLogo(name: "Venmo", size: 36)), "Venmo", "Request handoff. Lana never holds your login.", "Handoff")
             Divider()
-            service("bag.fill", .orange, "Purchase history", "Past swap decisions", "Simulated here")
+            service(AnyView(symbolMark("bag.fill", .orange)), "Purchase history", "Past swap decisions", "Simulated here")
         }
+    }
+
+    private func accountRow(_ a: AccountBalance) -> some View {
+        let d = AccountDisplay(a)
+        return HStack(spacing: 12) {
+            InstitutionLogo(name: a.institution, size: 40)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(d.title).fontWeight(.semibold).lineLimit(1).minimumScaleFactor(0.8)
+                Text("\(a.institution) · \(d.subtitle)").font(.caption).foregroundStyle(Theme.ink2).lineLimit(1)
+            }
+            Spacer(minLength: 8)
+            VStack(alignment: .trailing, spacing: 2) {
+                Text(usd(a.balanceCents, cents: true)).font(.body.weight(.semibold)).monospacedDigit()
+                Text(change(a)).font(.caption).foregroundStyle(Theme.ink2).monospacedDigit()
+            }
+            Image(systemName: "chevron.right").font(.footnote.weight(.semibold)).foregroundStyle(Theme.ink3)
+        }
+        .padding(.horizontal, 14).padding(.vertical, 12).contentShape(Rectangle())
+        .accessibilityElement(children: .combine)
     }
 
     /// Month's change from the seed's opening balance; liabilities read as what you owe.
     private func change(_ a: AccountBalance) -> String {
-        if a.assetOrLiability == .liability { return "You owe" }
+        if a.assetOrLiability == .liability { return "Owed" }
         let month = DemoStore.monthName(store.snapshotPeriod, short: true)
-        guard let open = store.dataset.accounts.first(where: { $0.accountId == a.accountId })?.openingBalanceCents else { return "Balance" }
+        guard let open = dataset.accounts.first(where: { $0.accountId == a.accountId })?.openingBalanceCents else { return "Imported" }
         let d = a.balanceCents - open
         return d == 0 ? "No change in \(month)" : "\(usd(d, plus: true)) in \(month)"
     }
 
-    private func service(_ icon: String, _ color: Color, _ title: String, _ sub: String, _ tag: String) -> some View {
+    private func symbolMark(_ icon: String, _ color: Color) -> some View {
+        Image(systemName: icon).font(.subheadline.weight(.semibold)).foregroundStyle(.white).frame(width: 36, height: 36)
+            .background(color.gradient, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+    }
+
+    private func service(_ mark: AnyView, _ title: String, _ sub: String, _ tag: String) -> some View {
         HStack(spacing: 12) {
-            Image(systemName: icon).font(.subheadline.weight(.semibold)).foregroundStyle(.white).frame(width: 36, height: 36)
-                .background(color.gradient, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+            mark
             VStack(alignment: .leading, spacing: 1) { Text(title).fontWeight(.semibold); Text(sub).font(.caption).foregroundStyle(Theme.ink2) }
             Spacer()
             Tag(text: tag, tone: tag == "Handoff" ? Theme.accent : Theme.warn, fill: tag == "Handoff" ? Theme.accentSoft : Theme.warnSoft)
         }
-    }
-
-    private static func kindName(_ kind: String) -> String {
-        ["checking": "Checking", "savings": "Savings", "brokerage": "Brokerage", "credit_card": "Credit card", "student_loan": "Student loan"][kind]
-            ?? kind.replacingOccurrences(of: "_", with: " ").capitalized
-    }
-
-    /// Demo institution colours, matched on the name so new fixture institutions still get a sensible mark.
-    private static func brand(_ institution: String) -> (monogram: String, colors: [Color]) {
-        let n = institution.lowercased()
-        let letter = String(institution.replacingOccurrences(of: "Demo ", with: "").prefix(1)).uppercased()
-        if n.contains("broker") { return (letter, [Color(light: 0x34C759, dark: 0x30D158), Color(light: 0x248A3D, dark: 0x248A3D)]) }
-        if n.contains("card") { return (letter, [Color(light: 0x636366, dark: 0x8E8E93), Color(light: 0x2C2C2E, dark: 0x48484A)]) }
-        if n.contains("loan") { return (letter, [Color(light: 0xFF9F0A, dark: 0xFF9F0A), Color(light: 0xFF6B00, dark: 0xFF6B00)]) }
-        return (letter, [Color(light: 0x0A84FF, dark: 0x0A84FF), Color(light: 0x5E5CE6, dark: 0x5E5CE6)])
     }
 
     private var secondFactor: some View {
