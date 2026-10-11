@@ -398,7 +398,7 @@ struct Avatar: View {
 struct StateTrack: View {
     let current: RequestState
     var body: some View {
-        if current == .cancelled { Tag(text: "Cancelled", tone: Theme.bg, fill: Theme.ink) }
+        if current == .cancelled { Tag(text: "Cancelled", tone: Theme.ink2, fill: Theme.line) }
         else {
             let order: [RequestState] = [.draft, .readyForReview, .handedOff, .userReportedRequested, .paidReported]
             let idx = order.firstIndex(of: current) ?? 0
@@ -406,6 +406,6 @@ struct StateTrack: View {
         }
     }
     private func chip(_ s: RequestState, _ i: Int, _ idx: Int) -> some View {
-        Tag(text: s.label, tone: i == idx ? Theme.bg : (i < idx ? Theme.accent : Theme.ink3), fill: i == idx ? Theme.ink : (i < idx ? Theme.accentSoft : Theme.line))
+        Tag(text: s.label, tone: i == idx ? .white : (i < idx ? Theme.accent : Theme.ink3), fill: i == idx ? Theme.accent : (i < idx ? Theme.accentSoft : Theme.line))
     }
 }

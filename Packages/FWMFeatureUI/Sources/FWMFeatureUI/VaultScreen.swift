@@ -148,7 +148,7 @@ struct VaultScreen: View {
                 }
             }
             Text("All values are synthetic demo credentials.").font(.caption).foregroundStyle(Theme.ink3)
-            Button("Lock now") { lock() }.buttonStyle(PrimaryButtonStyle(fill: Theme.ink))
+            Button("Lock now") { lock() }.buttonStyle(PrimaryButtonStyle())
         }
         .privacySensitive()
     }

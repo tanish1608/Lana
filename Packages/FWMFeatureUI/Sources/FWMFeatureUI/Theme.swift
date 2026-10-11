@@ -5,24 +5,35 @@ import UIKit
 import AppKit
 #endif
 
-// One restrained accent on warm neutrals; mirrors preview/web/styles.css.
+// Apple-native palette: system grouped backgrounds, semantic label colors, one system accent (blue).
+// Mirrors preview/web/styles.css.
 enum Theme {
-    static let bg = Color(light: 0xFAF8F4, dark: 0x161614)
-    static let card = Color(light: 0xFFFFFF, dark: 0x1F1E1B)
-    static let ink = Color(light: 0x1B1A17, dark: 0xF3F0EA)
-    static let ink2 = Color(light: 0x5B574F, dark: 0xB5B0A6)
-    static let ink3 = Color(light: 0x8C877D, dark: 0x7F7A71)
-    static let line = Color(light: 0xE4DFD6, dark: 0x2D2B27)
-    static let accent = Color(light: 0x12664F, dark: 0x5CC29F)
-    static let accent2 = Color(light: 0x3E8E74, dark: 0x3E9C7D)
-    static let accent3 = Color(light: 0x8FC2AE, dark: 0x2B6E58)
-    static let accentSoft = Color(light: 0xE2F0EA, dark: 0x16302A)
-    static let goes = Color(light: 0xB9B2A6, dark: 0x5A5650)
-    static let warn = Color(light: 0xA35A12, dark: 0xE8A65C)
-    static let warnSoft = Color(light: 0xFBEBD8, dark: 0x33261A)
-    static let bad = Color(light: 0xA3322A, dark: 0xEE8A80)
+    #if canImport(UIKit)
+    static let bg = Color(uiColor: .systemGroupedBackground)
+    static let card = Color(uiColor: .secondarySystemGroupedBackground)
+    static let ink = Color(uiColor: .label)
+    static let ink2 = Color(uiColor: .secondaryLabel)
+    static let ink3 = Color(uiColor: .tertiaryLabel)
+    static let line = Color(uiColor: .tertiarySystemFill)
+    #else
+    static let bg = Color(nsColor: .windowBackgroundColor)
+    static let card = Color(nsColor: .controlBackgroundColor)
+    static let ink = Color(nsColor: .labelColor)
+    static let ink2 = Color(nsColor: .secondaryLabelColor)
+    static let ink3 = Color(nsColor: .tertiaryLabelColor)
+    static let line = Color(nsColor: .quaternaryLabelColor)
+    #endif
+    static let accent = Color.blue
+    static let accent2 = Color.blue.opacity(0.6)
+    static let accent3 = Color.blue.opacity(0.3)
+    static let accentSoft = Color.blue.opacity(0.12)
+    static let goes = Color(light: 0xC7C7CC, dark: 0x48484A)
+    static let warn = Color.orange
+    static let warnSoft = Color.orange.opacity(0.15)
+    static let bad = Color.red
+    static let bubbleIn = Color(light: 0xE9E9EB, dark: 0x26252A)
 
-    static func display(_ size: CGFloat) -> Font { .system(size: size, weight: .medium, design: .serif) }
+    static func display(_ size: CGFloat) -> Font { .system(size: size, weight: .bold) }
 }
 
 extension Color {
@@ -63,14 +74,13 @@ func usd(_ cents: Int, cents showCents: Bool = false, plus: Bool = false) -> Str
 }
 
 struct Card<Content: View>: View {
-    var padding: CGFloat = 18
+    var padding: CGFloat = 16
     @ViewBuilder var content: Content
     var body: some View {
         VStack(alignment: .leading, spacing: 10) { content }
             .padding(padding)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Theme.card, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
-            .shadow(color: .black.opacity(0.06), radius: 12, y: 6)
+            .background(Theme.card, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 }
 
@@ -78,8 +88,8 @@ struct SectionLabel: View {
     let text: String
     init(_ text: String) { self.text = text }
     var body: some View {
-        Text(text.uppercased()).font(.caption.weight(.bold)).tracking(1.2).foregroundStyle(Theme.ink3)
-            .padding(.top, 18).padding(.horizontal, 4)
+        Text(text.uppercased()).font(.footnote).foregroundStyle(Theme.ink2)
+            .padding(.top, 18).padding(.horizontal, 16)
     }
 }
 
@@ -147,8 +157,7 @@ struct MessagePreview: View {
             HStack { Spacer(minLength: 50); Text(question).padding(.horizontal, 13).padding(.vertical, 9).foregroundStyle(.white)
                 .background(Color.blue, in: RoundedRectangle(cornerRadius: 18)) }
             HStack { Text(answer).padding(.horizontal, 13).padding(.vertical, 9).foregroundStyle(Theme.ink)
-                .background(Theme.card, in: RoundedRectangle(cornerRadius: 18))
-                .overlay(RoundedRectangle(cornerRadius: 18).stroke(Theme.line)); Spacer(minLength: 40) }
+                .background(Theme.bubbleIn, in: RoundedRectangle(cornerRadius: 18)); Spacer(minLength: 40) }
         }
         .font(.subheadline)
     }
@@ -158,15 +167,17 @@ struct PrimaryButtonStyle: ButtonStyle {
     var fill: Color = Theme.accent
     func makeBody(configuration: Configuration) -> some View {
         configuration.label.font(.body.weight(.semibold)).frame(maxWidth: .infinity, minHeight: 50)
-            .foregroundStyle(.white).background(fill, in: RoundedRectangle(cornerRadius: 14))
-            .scaleEffect(configuration.isPressed ? 0.98 : 1)
+            .foregroundStyle(.white).background(fill, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .scaleEffect(configuration.isPressed ? 0.96 : 1)
+            .animation(.easeOut(duration: 0.12), value: configuration.isPressed)
     }
 }
 
 struct GhostButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
-        configuration.label.font(.subheadline.weight(.semibold)).padding(.horizontal, 14).frame(minHeight: 44)
-            .foregroundStyle(Theme.ink).overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.line, lineWidth: 1.5))
-            .opacity(configuration.isPressed ? 0.7 : 1)
+        configuration.label.font(.subheadline.weight(.semibold)).padding(.horizontal, 16).frame(minHeight: 44)
+            .foregroundStyle(Theme.accent).background(Theme.line, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+            .scaleEffect(configuration.isPressed ? 0.96 : 1)
+            .animation(.easeOut(duration: 0.12), value: configuration.isPressed)
     }
 }
