@@ -8,7 +8,7 @@ struct BudgetProjection {
     let targets: [String: Int]
     let savingsCents: Int
     static func make(dataset: Dataset, period: String, accepted: Set<String>, useHistory: Bool) throws -> Self {
-        let current = try MoneyEngine.moneyView(dataset, period: period)
+        let current = try MoneyViewCache.shared.view(dataset, period: period)
         var targets = Dictionary(uniqueKeysWithValues: current.categories.map { ($0.category, $0.totalCents) })
         let swaps = useHistory ? PreviewBudgetPlan.swaps : PreviewBudgetPlan.swaps.map { $0.id == "s_coffee" ? PreviewBudgetPlan.instantCoffee : $0 }
         for s in swaps where accepted.contains(s.id) { targets[s.category, default: 0] -= s.savingsCents }
@@ -32,7 +32,7 @@ struct FeatureTools: CoreToolExecuting {
         switch call {
         case .getMoneyView(let period, let filter):
             let base = try await CoreDatasetTools(dataset: dataset).query(call, scope: scope)
-            let v = try MoneyEngine.moneyView(dataset, period: period, accountFilter: filter)
+            let v = try MoneyViewCache.shared.view(dataset, period: period, accountFilter: filter)
             let categories = v.categories.map { "\($0.category): \(CoreDatasetTools.money($0.totalCents))" }.joined(separator: "; ")
             let accounts = v.accounts.map { "\($0.institution) \($0.kind): \(CoreDatasetTools.money($0.balanceCents))" }.joined(separator: "; ")
             let status = requestStates.sorted { $0.key < $1.key }.map { "\($0.key): \($0.value)" }.joined(separator: "; ")

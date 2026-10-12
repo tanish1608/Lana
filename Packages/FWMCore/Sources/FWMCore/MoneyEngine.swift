@@ -145,7 +145,14 @@ public enum MoneyEngine {
     }
 
     /// Calendar month of an ISO 8601 timestamp in the user's time zone (CORE-02).
-    static func monthKey(_ iso: String, _ tz: TimeZone) -> String? {
+    /// The "YYYY-MM" an ISO-8601 timestamp falls in, in `tz`. The common "YYYY-MM-DDTHH:MM:SS±HH:MM" / "Z" form is
+    /// converted arithmetically; creating a formatter per transaction made a three-year month view take ~0.5 s.
+    public static func monthKey(_ iso: String, _ tz: TimeZone) -> String? {
+        if let epoch = fastEpoch(iso) {
+            let local = epoch + tz.secondsFromGMT(for: Date(timeIntervalSince1970: TimeInterval(epoch)))
+            let (y, m, _) = civil(fromDays: Int((Double(local) / 86_400).rounded(.down)))
+            return String(format: "%04d-%02d", y, m)
+        }
         let f = ISO8601DateFormatter()
         f.formatOptions = [.withInternetDateTime]
         guard let date = f.date(from: iso) else { return nil }
@@ -153,5 +160,46 @@ public enum MoneyEngine {
         cal.timeZone = tz
         let c = cal.dateComponents([.year, .month], from: date)
         return String(format: "%04d-%02d", c.year!, c.month!)
+    }
+
+    /// Seconds since 1970 for exactly "YYYY-MM-DDTHH:MM:SS" followed by "Z" or "±HH:MM"; nil for anything else.
+    static func fastEpoch(_ s: String) -> Int? {
+        let b = Array(s.utf8)
+        guard b.count == 20 || b.count == 25, b[4] == 45, b[7] == 45, b[10] == 84, b[13] == 58, b[16] == 58 else { return nil }
+        func num(_ from: Int, _ len: Int) -> Int? {
+            var v = 0
+            for i in from..<(from + len) { let d = Int(b[i]) - 48; guard (0...9).contains(d) else { return nil }; v = v * 10 + d }
+            return v
+        }
+        guard let y = num(0, 4), let mo = num(5, 2), let d = num(8, 2), let h = num(11, 2), let mi = num(14, 2), let se = num(17, 2),
+              (1...12).contains(mo), (1...31).contains(d), h < 24, mi < 60, se < 61 else { return nil }
+        var offset = 0
+        if b.count == 20 { guard b[19] == 90 else { return nil } }
+        else {
+            guard b[19] == 43 || b[19] == 45, b[22] == 58, let oh = num(20, 2), let om = num(23, 2) else { return nil }
+            offset = (oh * 3_600 + om * 60) * (b[19] == 45 ? -1 : 1)
+        }
+        return days(fromCivil: y, mo, d) * 86_400 + h * 3_600 + mi * 60 + se - offset
+    }
+
+    // Howard Hinnant's days_from_civil / civil_from_days (proleptic Gregorian, 1970-01-01 = day 0).
+    static func days(fromCivil y0: Int, _ m: Int, _ d: Int) -> Int {
+        let y = m <= 2 ? y0 - 1 : y0
+        let era = (y >= 0 ? y : y - 399) / 400
+        let yoe = y - era * 400
+        let doy = (153 * (m + (m > 2 ? -3 : 9)) + 2) / 5 + d - 1
+        let doe = yoe * 365 + yoe / 4 - yoe / 100 + doy
+        return era * 146_097 + doe - 719_468
+    }
+    static func civil(fromDays z0: Int) -> (Int, Int, Int) {
+        let z = z0 + 719_468
+        let era = (z >= 0 ? z : z - 146_096) / 146_097
+        let doe = z - era * 146_097
+        let yoe = (doe - doe / 1_460 + doe / 36_524 - doe / 146_096) / 365
+        let doy = doe - (365 * yoe + yoe / 4 - yoe / 100)
+        let mp = (5 * doy + 2) / 153
+        let d = doy - (153 * mp + 2) / 5 + 1
+        let m = mp + (mp < 10 ? 3 : -9)
+        return (yoe + era * 400 + (m <= 2 ? 1 : 0), m, d)
     }
 }

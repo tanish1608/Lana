@@ -12,7 +12,7 @@ struct AccountDetailView: View {
     @State private var showAll = false
 
     private var account: Account? { dataset.accounts.first { $0.accountId == accountID } }
-    private var balance: AccountBalance? { (try? MoneyEngine.moneyView(dataset, period: period, accountFilter: [accountID]))?.accounts.first }
+    private var balance: AccountBalance? { (try? MoneyViewCache.shared.view(dataset, period: period, accountFilter: [accountID]))?.accounts.first }
     private var transactions: [FWMCore.Transaction] {
         dataset.transactions.filter { $0.accountId == accountID }.sorted { ($0.postedAt, $0.transactionId) > ($1.postedAt, $1.transactionId) }
     }

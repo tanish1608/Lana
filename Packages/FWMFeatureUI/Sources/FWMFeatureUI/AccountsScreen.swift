@@ -54,7 +54,6 @@ struct AccountsScreen: View {
     @State private var lockAt = Date.distantFuture
     @Environment(\.scenePhase) private var scenePhase
     private let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
-    @State private var now = Date()
     @State private var linking = false
     @State private var working: String?
     @State private var connectionNote: String?
@@ -119,7 +118,7 @@ struct AccountsScreen: View {
             .sheet(isPresented: $messaging) { RelaySettings(connection: relay) }
             .onChange(of: isActive) { _, active in if !active { lock() } }
             .onChange(of: scenePhase) { _, phase in if phase == .background || (phase != .active && stage != .checking) { lock() } }
-            .onReceive(timer) { t in now = t; if stage == .unlocked && t >= lockAt { lock(); error = "Locked after 5 minutes." } }
+            .onReceive(timer) { t in if stage == .unlocked && t >= lockAt { lock(); error = "Locked after 5 minutes." } } // no state change per tick
             #if DEBUG
             .onAppear { if previewUnlocked { stage = .unlocked; lockAt = Date().addingTimeInterval(Self.unlockedFor) } }
             #endif
@@ -221,7 +220,7 @@ struct AccountsScreen: View {
 
     // MARK: connected accounts
 
-    private var view: MoneyView? { try? MoneyEngine.moneyView(dataset, period: store.snapshotPeriod) }
+    private var view: MoneyView? { try? MoneyViewCache.shared.view(dataset, period: store.snapshotPeriod) }
     /// Institutions in first-seen order.
     private func institutions(_ all: [AccountBalance]) -> [String] { all.reduce(into: [String]()) { if !$0.contains($1.institution) { $0.append($1.institution) } } }
 
