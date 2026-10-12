@@ -96,3 +96,32 @@ final class ContractTests: XCTestCase {
         if case .failure(let e) = ToolCall.parse(malformed) { XCTAssertEqual(e.code, .invalidArguments) } else { XCTFail() }
     }
 }
+
+final class MonthKeyTests: XCTestCase {
+    /// The arithmetic fast path must agree with ISO8601DateFormatter + Calendar on every timestamp it accepts.
+    func testFastMonthKeyMatchesFormatter() throws {
+        func slow(_ iso: String, _ tz: TimeZone) -> String? {
+            let f = ISO8601DateFormatter(); f.formatOptions = [.withInternetDateTime]
+            guard let d = f.date(from: iso) else { return nil }
+            var cal = Calendar(identifier: .gregorian); cal.timeZone = tz
+            let c = cal.dateComponents([.year, .month], from: d)
+            return String(format: "%04d-%02d", c.year!, c.month!)
+        }
+        var samples = ["2026-09-30T23:59:59-07:00", "2026-10-01T06:30:00Z", "2026-11-01T01:30:00-07:00", "2026-03-08T02:30:00-08:00",
+                       "2024-02-29T23:00:00-08:00", "2025-12-31T23:59:59-08:00", "2026-01-01T07:59:59Z", "2026-06-30T20:00:00+05:30",
+                       "2026-09-01T00:00:00-07:00", "1999-12-31T16:00:00-08:00"]
+        let ledger = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+            .deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("fixtures/world-v1/full_financial_world/ledger.json")
+        if let data = try? Data(contentsOf: ledger), let json = try JSONSerialization.jsonObject(with: data) as? [String: Any] {
+            samples += (json["transactions"] as! [[String: Any]]).map { $0["posted_at"] as! String }
+        }
+        for tzName in ["America/Los_Angeles", "UTC", "Asia/Kolkata", "America/New_York"] {
+            let tz = TimeZone(identifier: tzName)!
+            for s in samples { XCTAssertEqual(MoneyEngine.monthKey(s, tz), slow(s, tz), "\(s) in \(tzName)") }
+        }
+        XCTAssertNotNil(MoneyEngine.fastEpoch("2026-09-30T23:59:59-07:00"))
+        XCTAssertNil(MoneyEngine.fastEpoch("2026-09-30T23:59:59.123-07:00"), "fractional seconds use the formatter")
+        // Unchanged behavior: the engine's formatter doesn't accept fractional seconds either.
+        XCTAssertNil(MoneyEngine.monthKey("2026-09-30T23:59:59.123-07:00", TimeZone(identifier: "UTC")!))
+    }
+}

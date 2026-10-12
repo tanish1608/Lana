@@ -10,6 +10,21 @@ struct SplitExample: Decodable {
 
 private struct SeedExtras: Decodable { var splitExample: SplitExample? }
 
+/// Month views are recomputed only when the dataset changes. Every app mutation gives the dataset a new version, and
+/// the key also carries record counts as a second guard.
+final class MoneyViewCache: @unchecked Sendable {
+    static let shared = MoneyViewCache()
+    private let lock = NSLock()
+    private var views: [String: MoneyView] = [:]
+    func view(_ ds: Dataset, period: String, accountFilter: [String]? = nil) throws -> MoneyView {
+        let key = "\(ds.datasetVersion)|\(ds.accounts.count)|\(ds.transactions.count)|\(period)|\(accountFilter?.joined(separator: ",") ?? "*")"
+        if let hit = lock.withLock({ views[key] }) { return hit }
+        let v = try MoneyEngine.moneyView(ds, period: period, accountFilter: accountFilter)
+        lock.withLock { if views.count > 64 { views.removeAll() }; views[key] = v }
+        return v
+    }
+}
+
 /// Fixture-backed source for the feature screens. Engines compute every number; this only loads inputs.
 /// A live build swaps in provider-backed datasets with the same `Dataset` shape.
 public final class DemoStore {
@@ -44,8 +59,15 @@ public final class DemoStore {
         public var title: String { self == .threeYear ? "3-year history" : "September sample" }
     }
 
-    /// Months that have transactions, plus the demo clock's month (in progress).
+    /// Months that have transactions, plus the demo clock's month (in progress). Cached per dataset version.
     var periods: [String] {
+        if let cached = periodCache, cached.version == dataset.datasetVersion, cached.count == dataset.transactions.count { return cached.periods }
+        let p = computePeriods()
+        periodCache = (dataset.datasetVersion, dataset.transactions.count, p)
+        return p
+    }
+    private var periodCache: (version: String, count: Int, periods: [String])?
+    private func computePeriods() -> [String] {
         var set = Set(dataset.transactions.compactMap { Self.month($0.postedAt) })
         if let c = dataset.demoClock, let m = Self.month(c) { set.insert(m) }
         return set.sorted()
@@ -53,7 +75,7 @@ public final class DemoStore {
     var snapshotPeriod: String { Self.month(dataset.asOf) ?? "2026-09" }
 
     func moneyView(_ period: String) -> Result<MoneyView, ToolError> {
-        do { return .success(try MoneyEngine.moneyView(dataset, period: period)) }
+        do { return .success(try MoneyViewCache.shared.view(dataset, period: period)) }
         catch let e as ToolError { return .failure(e) }
         catch { return .failure(ToolError(.invalidArguments, error.localizedDescription)) }
     }
@@ -64,6 +86,7 @@ public final class DemoStore {
     }
 
     static func month(_ iso: String) -> String? {
+        if let m = MoneyEngine.monthKey(iso, TimeZone(identifier: "America/Los_Angeles")!) { return m }
         let f = ISO8601DateFormatter()
         f.formatOptions = [.withInternetDateTime]
         guard let d = f.date(from: iso) else { return nil }
