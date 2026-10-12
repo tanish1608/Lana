@@ -40,13 +40,41 @@ Here's the same evening with Lana.
 
 Lana's time counts checking every receipt line and approving each request. Setup happens once. You pair the phone with the relay in Accounts → Messaging → Configure messaging relay, using a code the relay gives you. The relay serves the live receipt at `GET /v1/time-receipt`.
 
-## Partners
+## Built with Dial, Keewano and Sparta
 
-| Partner | What it does for Lana | Code |
-|---|---|---|
-| Dial | Gives Lana a real phone number. Texts and receipt photos come in on Dial's event stream, and replies go out through Dial. Calls use Dial's Self-Hosted mode, so Dial handles the speech and the answer comes from the phone. | `relay/src/server.ts`, `relay/src/voice.ts` |
-| Keewano | Remembers which swaps you turned down, like instant coffee, so Lana stops suggesting them. It also stores the measured chore times behind the time receipt. | `relay/src/keewano.ts` |
-| Sparta Worlds | We tested the code that applies an approved phone-plan switch. Our first version switched a plan without approval and applied a repeated request twice. It passed 1 of 4 cases, and 0 of 4 when the billing server failed. The fixed version passes all 4 both ways. | `sparta/README.md`, `sparta/evidence/` |
+Each partner does a job we couldn't have faked in a day.
+
+### Dial gave Lana a phone number
+
+![Before Dial, Lana only answers inside the app. After, a text or call goes through Dial and the relay to the model on Ashwin's iPhone and back](docs/diagrams/dial.png)
+
+Without Dial, Lana is one more finance app you have to remember to open. With Dial it's a contact in your phone. Text it a receipt photo and it splits the bill. Call it on the walk home and it tells you how September went. In our tests, text answers came back in 4 to 5 seconds, and receipt photos reached the phone byte for byte.
+
+The piece that matters most is Self-Hosted mode. Dial runs the call, the speech to text and the voice. Every word of the answer comes from the model on Ashwin's phone. That's how a phone call to Lana keeps the same promise as the app: your bank data stays on your device.
+
+Code: `relay/src/server.ts` for texts, photos and nudges, `relay/src/voice.ts` for calls.
+
+### Keewano is Lana's memory, and our proof
+
+![Before Keewano, Lana suggests instant coffee again and the time-saved claim has nothing behind it. After, decisions and stopwatch runs become Keewano events that Lana and the time receipt read back](docs/diagrams/keewano.png)
+
+Keewano does two jobs. The first is memory. When Ashwin turns down instant coffee, that decision goes to Keewano as an event, and Lana reads back which swaps to stop suggesting. The preference lives in Keewano, so it doesn't get lost when a conversation ends.
+
+The second is proof. Every stopwatch run goes into Keewano as a measured event, and the time receipt is a SQL query over those rows. When we say the dinner split took 22 minutes by hand, there's a row for it.
+
+Code: `relay/src/keewano.ts`, and the live receipt at `GET /v1/time-receipt`.
+
+### Sparta caught the bugs we least wanted you to find
+
+![Before, executor v1 switched an unapproved plan, wrote to the wrong line, confirmed twice and crashed, passing 1 of 4 then 0 of 4. After, v2 checks the signature, skips repeats and retries safely, passing 4 of 4 both ways](docs/diagrams/sparta.png)
+
+Lana is allowed to change things for you, like switching your phone plan. That's the scariest part of the product, so we tested it in Sparta Worlds against a Stripe twin before it touched anything real.
+
+Our first executor failed badly. It switched a plan nobody approved. It wrote to the roommate's line when the request was tampered with. It confirmed twice when the same request arrived again, and it crashed on the first billing error. It passed 1 of 4 missions, and 0 of 4 with the billing server failing.
+
+Version 2 checks the phone's signature over the exact payload, remembers which actions it already applied, and retries with a stable idempotency key. It passes all 8 runs. We found every one of those bugs in Sparta, not in front of a user.
+
+Code: `sparta/README.md`, with the four run reports in `sparta/evidence/`.
 
 ## How a text or call gets answered
 
